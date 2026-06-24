@@ -4,18 +4,83 @@
 
 // --- Constants & Config ---
 const OFFICE_TIERS = {
-  Garage: { name: "Parent's Damp Basement", cost: 0, capacity: 0, speedMult: 1.0 },
-  CoWorking: { name: "Overpriced Co-Working Desk", cost: 2000, capacity: 2, speedMult: 1.2 },
-  IndieStudio: { name: "Hipster Loft with Single Window", cost: 15000, capacity: 5, speedMult: 1.5 },
-  MegaCampus: { name: "Mega-Corp Subterranean Bunker", cost: 100000, capacity: 10, speedMult: 2.5 }
+  Garage: { 
+    name: "Parent's Damp Basement", 
+    cost: 0, 
+    capacity: 0, 
+    speedMult: 1.0,
+    desc: "The absolute birthplace of corporate legends. Features an overwhelming scent of laundry detergent, a leaking pipe that you've integrated into the build environment, and a total capacity of exactly zero people (because your parents keep threatening to turn this space into a home gym)."
+  },
+  CoWorking: { 
+    name: "Overpriced Co-Working Desk", 
+    cost: 2000, 
+    capacity: 2, 
+    speedMult: 1.2,
+    desc: "A single wobbly desk shared with three other startup founders who are currently pitch-decking an AI-based laundry app. The subscription includes one cup of wobbly matcha green tea daily and access to beanbag chairs that are structurally impossible to exit."
+  },
+  IndieStudio: { 
+    name: "Hipster Loft with Single Window", 
+    cost: 15000, 
+    capacity: 5, 
+    speedMult: 1.5,
+    desc: "A trendy open-space studio with exposed wooden beams and a single, tiny window that overlooks an industrial brick wall. Equipped with a vintage arcade machine that doesn't turn on and a water dispenser that only dispenses lukewarm tap water."
+  },
+  MegaCampus: { 
+    name: "Mega-Corp Subterranean Bunker", 
+    cost: 100000, 
+    capacity: 10, 
+    speedMult: 2.5,
+    desc: "A massive, subterranean bunker constructed of concrete and glass. Has automated security doors, three cafeterias serving micro-greens, a slide connecting the 3rd and 1st floors, and an atmosphere of sterile corporate compliance. Perfect for maximum developer speed."
+  }
 };
 
 const EMPLOYEES_INFO = {
-  junior_dev: { id: "junior_dev", name: "ChatGPT Prompter (Junior)", cost: 1000, salary: 50, techRate: 1, designRate: 0.1 },
-  junior_artist: { id: "junior_artist", name: "MS Paint Specialist (Junior)", cost: 1000, salary: 50, techRate: 0.1, designRate: 1 },
-  senior_dev: { id: "senior_dev", name: "StackOverflow Archmage (Senior)", cost: 5000, salary: 200, techRate: 4, designRate: 0.5 },
-  senior_artist: { id: "senior_artist", name: "Vibe Director (Senior)", cost: 5000, salary: 200, techRate: 0.5, designRate: 4 },
-  project_mgr: { id: "project_mgr", name: "Professional Stand-Up Host", cost: 12000, salary: 450, techRate: 2, designRate: 2, bugFixRate: 1 }
+  junior_dev: { 
+    id: "junior_dev", 
+    name: "ChatGPT Prompter (Junior)", 
+    cost: 1000, 
+    salary: 50, 
+    techRate: 1, 
+    designRate: 0.1,
+    desc: "An enthusiastic intern who doesn't know how to code but has a paid subscription to an AI chatbot. Spends 6 hours a day crafting prompts like 'write entire game engine in HTML' and 2 hours copy-pasting the output, introducing exactly 40 compiler warnings per second."
+  },
+  junior_artist: { 
+    id: "junior_artist", 
+    name: "MS Paint Specialist (Junior)", 
+    cost: 1000, 
+    salary: 50, 
+    techRate: 0.1, 
+    designRate: 1,
+    desc: "A visionary creator who insists that drawing everything using the 2px pencil tool in MS Paint is a 'deconstructive post-modern critique of modern high-fidelity shaders'. Morale is high; resolution is low."
+  },
+  senior_dev: { 
+    id: "senior_dev", 
+    name: "StackOverflow Archmage (Senior)", 
+    cost: 5000, 
+    salary: 200, 
+    techRate: 4, 
+    designRate: 0.5,
+    desc: "An ancient programmer who speaks in binary and has a keyboard that doesn't contain letters, only control characters. Can solve segfaults by looking intensely at the monitor. Refuses to explain how their code works, calling it 'job security architecture'."
+  },
+  senior_artist: { 
+    id: "senior_artist", 
+    name: "Vibe Director (Senior)", 
+    cost: 5000, 
+    salary: 200, 
+    techRate: 0.5, 
+    designRate: 4,
+    desc: "Insists that they don't 'draw' assets, but rather 'curate visual vibes' and 'conceptualize graphic resonances'. Spends most of their time adjusting the ambient lighting of their dual-monitor setup to warm orange and drinking artisanal drip coffee."
+  },
+  project_mgr: { 
+    id: "project_mgr", 
+    name: "Professional Stand-Up Host", 
+    cost: 12000, 
+    salary: 450, 
+    techRate: 2, 
+    designRate: 2, 
+    bugFixRate: 1,
+    desc: "A certified host of daily stand-up meetings. Spends their entire day moving digital tickets across columns on virtual boards and asking developers if their 10-minute task is 'on track for deployment'. Boosts management and bug squashing by sheer administrative pressure."
+  }
 };
 
 const PLATFORMS = {
@@ -698,16 +763,17 @@ function renderTrainingGym() {
     return;
   }
 
-  const xpCostText = gameState.level > 1 ? "-15 ✨" : "FREE";
-  
   container.innerHTML = `
     <div class="card-item" style="padding: 14px;">
       <div class="card-item-title" style="font-size: 0.95rem;">
         <span>Code Optimization Class</span>
         <span style="color: #ffd700; display:flex; gap:8px;"><span>-10 ⚡</span> <span style="color:var(--color-cyan); font-weight:bold;">${xpCostText}</span></span>
       </div>
-      <div class="card-item-desc" style="font-size: 0.8rem;">
-        Solve complex algorithm challenges. Coding skill increases points generated during sprints.
+      <div class="card-item-desc" style="font-size: 0.8rem; line-height:1.4;">
+        Solve complex algorithm challenges. Coding skill increases points generated during sprints.<br>
+        <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block; margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
+          <strong>Syllabus Excerpt:</strong> Learn how to write O(N^3) nested loops and explain it to management as 'dynamic scaling'. Study why comments like <code>// do not touch this or server melts</code> are essential for job security.
+        </span>
       </div>
       <button class="btn-primary" style="padding: 10px;" onclick="trainSkill('coding_skill')">Train Coding</button>
     </div>
@@ -717,8 +783,11 @@ function renderTrainingGym() {
         <span>Design Theory Templates</span>
         <span style="color: #ffd700; display:flex; gap:8px;"><span>-10 ⚡</span> <span style="color:var(--color-cyan); font-weight:bold;">${xpCostText}</span></span>
       </div>
-      <div class="card-item-desc" style="font-size: 0.8rem;">
-        Study harmonic layout guidelines. Design skill contributes heavy design points to active games.
+      <div class="card-item-desc" style="font-size: 0.8rem; line-height:1.4;">
+        Study harmonic layout guidelines. Design skill contributes heavy design points to active games.<br>
+        <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block; margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
+          <strong>Syllabus Excerpt:</strong> Discover why using 12 neon shades of purple creates a 'cyberpunk layout' that distracts reviewers from collision detection failures. Learn the hex codes of wobbly loot boxes.
+        </span>
       </div>
       <button class="btn-primary" style="padding: 10px;" onclick="trainSkill('design_skill')">Train Design</button>
     </div>
@@ -728,8 +797,11 @@ function renderTrainingGym() {
         <span>Agile Lead Seminars</span>
         <span style="color: #ffd700; display:flex; gap:8px;"><span>-10 ⚡</span> <span style="color:var(--color-cyan); font-weight:bold;">${xpCostText}</span></span>
       </div>
-      <div class="card-item-desc" style="font-size: 0.8rem;">
-        Practice project management classes. Management skill boosts gig success and bug squashing.
+      <div class="card-item-desc" style="font-size: 0.8rem; line-height:1.4;">
+        Practice project management classes. Management skill boosts gig success and bug squashing.<br>
+        <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block; margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
+          <strong>Syllabus Excerpt:</strong> A 4-hour presentation on why talking about coding is mathematically more productive than coding. Learn how to convert 2 lines of edits into a 15-person standup meeting.
+        </span>
       </div>
       <button class="btn-primary" style="padding: 10px;" onclick="trainSkill('management_skill')">Train Management</button>
     </div>
@@ -852,11 +924,12 @@ function renderStaffPanel() {
             <span>${tier.name}</span>
             <span>${tier.cost > 0 ? `$${tier.cost.toLocaleString()}` : "Free"}</span>
           </div>
-          <div class="card-item-desc">
+          <div class="card-item-desc" style="font-size:0.76rem; margin:6px 0; color:var(--color-text-muted); line-height:1.35;">
+            ${tier.desc}<br><br>
             Staff Capacity: <strong>${tier.capacity}</strong> employees.<br>
             Dev Speed Multiplier: <strong>${tier.speedMult}x</strong> speed.
           </div>
-          <button class="btn-primary" ${isOwned || !canAfford ? "disabled" : ""} onclick="buyOffice('${tierKey}')">
+          <button class="btn-primary" style="padding: 10px;" ${isOwned || !canAfford ? "disabled" : ""} onclick="buyOffice('${tierKey}')">
             ${isOwned ? "Owned" : "Upgrade"}
           </button>
         </div>
@@ -878,7 +951,8 @@ function renderStaffPanel() {
             <span>${emp.name}</span>
             <span>$${emp.cost.toLocaleString()}</span>
           </div>
-          <div class="card-item-desc">
+          <div class="card-item-desc" style="font-size:0.76rem; margin:6px 0; color:var(--color-text-muted); line-height:1.35;">
+            ${emp.desc}<br><br>
             Passively Generates:<br>
             Tech: <strong>+${emp.techRate}/s</strong> | Design: <strong>+${emp.designRate}/s</strong><br>
             Salary: <strong>$${emp.salary}/minute</strong>
@@ -1590,37 +1664,36 @@ function releaseGameProject() {
   if (proj.scale === "AAA") { price = 49.99; baseSales = 2500; }
 
   // Platform multipliers
+  const reviewers = [
+    { name: "IGNion", comments: [
+      "Worse than formatting a hard drive. It made our lead reviewer cry in binary, drop his laptop in the fish tank, and question why he spent four years in journalism school. The frame rate is so wobbly it feels like a slide presentation running on a digital smart kettle. Truly a landmark of digital despair.",
+      "Too much water, too much air, too many files, and not nearly enough gameplay. The character movement is wobbly, and clipping through a brick wall into the void is a common occurrence. Ironically, adjusting the character's sock design was the most fluid part of the entire code stack. A solid distraction.",
+      "A solid average. It exists. It consumes electricity. It does not actively melt your GPU, but it will make you ponder if there are better ways to spend a Saturday evening, like reading the documentation of a deprecated library. We didn't fall asleep, but we did think about coffee a lot.",
+      "Extremely good! We only encountered 12 fatal segmentation faults during our initial play session, which is a massive upgrade from this studio's previous wobbly prototypes. The visual styling has some nice border-radius curves that really showcase the ChatGPT developer's prompt engineering skills.",
+      "An absolute masterpiece! It cured our lead writer's coffee addiction by replacing caffeine with raw digital hype. The synergies are incredible, the microtransactions are beautifully integrated into the pause screen, and the main menu music is so premium we are nominating it for a Grammy!"
+    ] },
+    { name: "GameSpotter", comments: [
+      "This isn't a game; it's a digital crime scene. Our testing suite started whispering 'please stop compiling me' after two minutes. The code comments are likely just a chain of wobbly cries for help. We recommend restoring the repository to an empty git commit and starting over in a different industry.",
+      "A wobbly, mediocre experience. Like drinking cold decaf coffee at 2 AM while trying to find a missing semicolon in a 50,000-line spaghetti codebase. It technically launches, it has a menu, and the buttons do things, but the vibe is one of deep corporate fatigue and minimal testing.",
+      "A fun weekend distraction, provided you don't mind clipping through the floor, falling into a digital void, and having your character custom socks launch into orbit. The physics engine feels like it was coded by a smart toaster, which gives it a charming, chaotic atmosphere.",
+      "Incredibly innovative mechanics! We spent four consecutive hours customizing the micro-threads on the developer's ergonomic chairs instead of completing the tutorial. The design is harmonic, the visual templates are sleek, and it is clear the designers spent a lot of time ignoring the programmers.",
+      "It completely redefined the genre of software. We are currently writing a 50-page philosophical essay on why the wobbly loading screen is a metaphor for developer crunch-time. The netcode is spaghetti, but it lags so beautifully that PvP encounters feel like a post-modern art gallery."
+    ] },
+    { name: "Metacritic rating", comments: [
+      "0/10 would not compile again. The code comments are probably just links to therapist directories and coffee machine manuals. Playing this game is like trying to center a wobbly CSS div on a mobile layout while your house is actively on fire. A total disaster of software engineering.",
+      "Not great, not terrible. It feels like a project made by a tired junior developer who copy-pasted StackOverflow snippets at 4:30 PM on a Friday before a major launch. It works, but you can feel the desperation in every wobbly frame. It needs a major refactoring pass.",
+      "Good vibes! The UI uses some actual border-radius styling instead of raw neon rectangles, which is a nice touch. The gameplay is wobbly, but it is clear the developers tried their best under severe coffee shortages and parent lease agreements.",
+      "Very impressive UI! The design matches target color resonances and the CSS transitions are remarkably smooth. It is clear that the ChatGPT prompter spent a lot of time refining their design prompts. A highly polished package that we recommend to interface designers.",
+      "A masterclass of modern engineering that should be preserved in a museum of clean architecture. The algorithms are optimized, the design synergy is flawless, and the gameplay is so immersive we forgot we were supposed to be reviewing it. Bravo to the garage developers!"
+    ] }
+  ];
+
   const pMult = PLATFORMS[proj.platform].marketSize;
 
   // Rating curve (exponential bonus for excellent ratings)
   const ratingMult = Math.pow(rating / 7.0, 3.5);
 
   const initialSalesRate = Math.ceil(baseSales * pMult * ratingMult);
-
-  // Reviews generated
-  const reviewers = [
-    { name: "IGNition", comments: [
-      "Worse than formatting a hard drive. It made our reviewer cry in binary.",
-      "Too much water. Also, the main menu was more fun than the actual gameplay.",
-      "A solid average. It exists. It uses electricity. We did not fall asleep.",
-      "Extremely good. We only found 12 memory leaks during our play session.",
-      "Masterpiece! It cured my coffee addiction. 11/10 - would buy microtransactions again."
-    ] },
-    { name: "GameSpotter", comments: [
-      "This isn't a game; it's a digital crime scene. My GPU started whispering 'why?'",
-      "A mediocre experience. Like drinking decaf coffee at 2 AM.",
-      "A fun weekend distraction, provided you don't mind clipping through the floor.",
-      "Innovative mechanics! We spent 4 hours customizing the character's socks.",
-      "It redefined the genre. I am going to write a 50-page essay on the loading screen."
-    ] },
-    { name: "Metacritic rating", comments: [
-      "0/10 would not code again. Code comments are probably just 'Help me'.",
-      "Not great, not terrible. It feels like a project made by a tired junior developer.",
-      "Good vibes! Some nice code formatting, but the AI behavior is weird.",
-      "Very impressive UI! They used actual border-radius instead of raw squares!",
-      "A masterpiece of modern engineering. Should be preserved in the museum of clean code."
-    ] }
-  ];
 
   let commentIndex = 0;
   if (rating < 3.0) commentIndex = 0;
@@ -1873,21 +1946,21 @@ function renderResearchLab() {
       id: "unlocked_console",
       name: "3D Cube spinning renderer (Graphics!)",
       cost: 50,
-      desc: "Draw a spinning green cube. Unlocks Console platform, claiming it represents 'Next Gen' tech.",
+      desc: "Research a revolutionary technology that renders a single, flat, spinning green cube on screen at 24 FPS. Claim to the press that this represents a '120 FPS ray-traced next-generation graphics engine'. Unlocks target compatibility for console platforms. Warn your hardware provider about smoke hazards.",
       owned: !!gameState.unlocked_console
     },
     {
       id: "researched_multiplayer",
       name: "Peer-to-Peer Spaghetti Netcode",
       cost: 100,
-      desc: "Link players directly over unstable UDP sockets. Boosts metacritic ratings by +1.0 because reviewers love laggy PvP.",
+      desc: "Implement a chaotic networking system that links players together via wobbly, unencrypted peer-to-peer UDP sockets. Includes no latency compensation, so characters will teleport through walls. Critics will rate it +1.0 point higher anyway because 'everything is better with friends'.",
       owned: !!gameState.researched_multiplayer
     },
     {
       id: "ai_behavior",
       name: "ChatGPT Copy-Paster v0.1",
       cost: 150,
-      desc: "Automate keyboard mashing. Extends Syntax Striker coding mini-game duration from 15s to 25s so you have more time to search StackOverflow.",
+      desc: "Integrate a custom script that automatically scrapes developer forums and copy-pastes solutions into your main codebase. Increases the duration of the Syntax Striker coding mini-game from 15 seconds to 25 seconds, giving you ample time to read through forum complaints and pretend you understand memory leaks.",
       owned: !!gameState.ai_behavior
     }
   ];
