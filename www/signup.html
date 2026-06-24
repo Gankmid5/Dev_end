@@ -26,6 +26,9 @@
   <!-- 4.5 Synthwave soundtrack engine -->
   <script defer src="synthwave-audio.js"></script>
 
+  <!-- 4.6 Dev captcha mini-game (prove you are a real developer) -->
+  <script defer src="site-minigames.js"></script>
+
   <!-- 5. Page logic (depends on api.js and supabaseClient) -->
   <script defer src="signup.js"></script>
 
@@ -97,6 +100,16 @@
         <div class="auth-tabs" id="auth-tabs">
           <button type="button" class="btn-secondary active" id="tab-register-btn">👾 Sign Up</button>
           <button type="button" class="btn-secondary" id="tab-login-btn">🔑 Log In</button>
+        </div>
+
+        <div id="signup-minigame-zone" class="zone-minigame-hub signup-minigame-zone">
+          <div class="zone-minigame-head">
+            <h4 class="dev-section-label">🤖 Developer Captcha</h4>
+            <span class="zone-minigame-cost">FREE</span>
+          </div>
+          <p class="zone-minigame-hint">Click every SHIP IT button to prove you are not a bot. Totally secure.</p>
+          <div id="signup-minigame-mount"></div>
+          <button type="button" class="btn-secondary btn-sm" id="signup-captcha-btn">▶ Run Dev Captcha</button>
         </div>
 
         <!-- Active Profile Card (logged in) -->

@@ -618,9 +618,61 @@ function showToast(message, type = "info") {
 }
 window.showToast = showToast;
 
+function startSignupCaptcha() {
+  const mount = document.getElementById("signup-minigame-mount");
+  const btn = document.getElementById("signup-captcha-btn");
+  if (!mount || !window.SiteMinigames) return;
+  if (btn) btn.disabled = true;
+
+  let started = false;
+  mount.innerHTML = window.SiteMinigames.renderShell("captcha_ship", { started });
+
+  const overlay = document.getElementById("site-start-overlay");
+  const countdownEl = document.getElementById("site-countdown");
+  const startBtn = overlay ? overlay.querySelector(".arcade-start-btn") : null;
+  if (!overlay || !countdownEl) return;
+
+  if (startBtn) {
+    startBtn.onclick = () => {
+      if (started) return;
+      startBtn.disabled = true;
+      const steps = ["3", "2", "1", "GO!"];
+      let step = 0;
+      countdownEl.hidden = false;
+      countdownEl.textContent = steps[step];
+      const tick = () => {
+        step++;
+        if (step < steps.length) {
+          countdownEl.textContent = steps[step];
+          setTimeout(tick, 650);
+          return;
+        }
+        overlay.classList.add("arcade-start-overlay--gone");
+        started = true;
+        const canvas = document.getElementById("site-minigame-canvas");
+        window.SiteMinigames.mount(canvas, "captcha_ship", {
+          onWin: () => {
+            showToast("Captcha passed. You are legally a developer.", "success");
+            if (window.SynthwaveAudio) SynthwaveAudio.playSFX("success");
+            if (btn) { btn.disabled = false; btn.textContent = "✓ Verified Dev"; }
+          },
+          onLose: (reason) => {
+            showToast(reason || "Captcha failed. Try shipping again.", "error");
+            if (btn) btn.disabled = false;
+            mount.innerHTML = "";
+          }
+        });
+      };
+      setTimeout(tick, 650);
+    };
+  }
+}
+
 window.addEventListener("DOMContentLoaded", () => {
   if (window.SynthwaveAudio) {
     SynthwaveAudio.boot("profile");
     SynthwaveAudio.setZone("profile");
   }
+  const captchaBtn = document.getElementById("signup-captcha-btn");
+  if (captchaBtn) captchaBtn.addEventListener("click", startSignupCaptcha);
 });

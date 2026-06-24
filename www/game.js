@@ -497,16 +497,17 @@ function refreshHudHumor() {
     const fps = 12 + Math.min(24, gameState.coding_skill);
     const dms = 3 + Math.floor(gameState.level / 2);
     vitals.innerHTML = `
-      <span class="hud-vital-chip" title="Mandatory meetings about meetings">📅 Standups: <strong>${standups}</strong> (lunch meta)</span>
-      <span class="hud-vital-chip" title="Stack Overflow tabs — close at your peril">🌐 SO tabs: <strong>${tabs}</strong></span>
-      <span class="hud-vital-chip" title="Survey optional. Results ignored.">😶 Morale: <strong>${morale}%</strong></span>
-      <span class="hud-vital-chip" title="Production health indicator">🐛 Bugs: <strong>${gameState.current_project?.bug_points ?? "¯\\_(ツ)_/¯"}</strong></span>
-      <span class="hud-vital-chip" title="Inbox zero is a myth">📧 Unread: <strong>${847 + gameState.games_released * 12}</strong></span>
-      <span class="hud-vital-chip" title="Technical debt stat — does not decrease">📚 Tech debt: <strong>${techDebt}</strong></span>
-      <span class="hud-vital-chip" title="Build FPS on dev machine">🎮 Dev FPS: <strong>${fps}</strong></span>
-      <span class="hud-vital-chip" title="Recruiters in queue">💼 LinkedIn DMs: <strong>${dms}</strong></span>
+      <button type="button" class="hud-vital-chip hud-vital-play" onclick="launchZoneMiniGame('hud','standup_bingo')" title="Play Standup Bingo">📅 Standups: <strong>${standups}</strong> ▶</button>
+      <button type="button" class="hud-vital-chip hud-vital-play" onclick="launchZoneMiniGameRandom('hud')" title="Random HUD arcade">🌐 SO tabs: <strong>${tabs}</strong> ▶</button>
+      <button type="button" class="hud-vital-chip hud-vital-play" onclick="launchZoneMiniGame('studio','investor_qte')" title="Investor pitch QTE">😶 Morale: <strong>${morale}%</strong> ▶</button>
+      <button type="button" class="hud-vital-chip hud-vital-play" onclick="launchZoneMiniGame('develop','scope_creep')" title="Scope creep catcher">🐛 Bugs: <strong>${gameState.current_project?.bug_points ?? "¯\\_(ツ)_/¯"}</strong> ▶</button>
+      <button type="button" class="hud-vital-chip hud-vital-play" onclick="launchZoneMiniGame('hud','email_whack')" title="Inbox whack-a-mole">📧 Unread: <strong>${847 + gameState.games_released * 12}</strong> ▶</button>
+      <button type="button" class="hud-vital-chip hud-vital-play" onclick="launchZoneMiniGame('research','research_orbs')" title="Grant orb catcher">📚 Tech debt: <strong>${techDebt}</strong> ▶</button>
+      <button type="button" class="hud-vital-chip hud-vital-play" onclick="launchZoneMiniGameRandom('gigs')" title="VPN dash or blame roulette">🎮 Dev FPS: <strong>${fps}</strong> ▶</button>
+      <button type="button" class="hud-vital-chip hud-vital-play" onclick="launchZoneMiniGame('staff','hire_interview')" title="Hire interview mini-game">💼 LinkedIn DMs: <strong>${dms}</strong> ▶</button>
     `;
   }
+  renderHudMiniGameSlot();
 }
 
 function randHudMorale() {
@@ -761,6 +762,7 @@ function switchTab(tabName) {
 
   // Load conditional panels
   if (tabName === "leaderboard") {
+    setTimeout(() => renderLeaderboardMiniGameSlot(), 50);
     loadLeaderboard();
   } else if (tabName === "staff") {
     renderStaffPanel();
@@ -2523,6 +2525,11 @@ function renderStudioDashboard() {
     ? gameState.studioAwards.map(a => `<span class="award-chip">🏆 ${a}</span>`).join("")
     : `<span class="studio-empty">No studio awards yet. Ship hits, pay rent on time, fool investors.</span>`;
 
+  if (activeMiniGame && activeMiniGame.isZoneBonus && activeMiniGame.zoneId === "studio") {
+    container.innerHTML = getZoneMiniGamePanel("studio");
+    return;
+  }
+
   container.innerHTML = `
     <div class="studio-dashboard-hub">
       <div class="studio-dash-header">
@@ -2611,6 +2618,8 @@ function renderStudioDashboard() {
           </div>
         </div>
       </div>
+
+      ${getZoneMiniGamePanel("studio")}
     </div>
   `;
 }
@@ -2865,7 +2874,12 @@ function renderTrainingGym() {
   if (!container) return;
 
   if (activeMiniGame && activeMiniGame.isTraining) {
-    container.innerHTML = buildArcadeMiniGameHtml(activeMiniGame, "grid-column: span 3; width: 100%;");
+    container.innerHTML = buildActiveCanvasGameHtml(activeMiniGame, "grid-column: span 3; width: 100%;");
+    return;
+  }
+
+  if (activeMiniGame && activeMiniGame.isZoneBonus && activeMiniGame.zoneId === "gigs") {
+    container.innerHTML = getZoneMiniGamePanel("gigs");
     return;
   }
 
@@ -2916,6 +2930,7 @@ function renderTrainingGym() {
         Each training session launches a random retro arcade mini-game — Snake, Space Invaders, Breakout, Tetris, Frogger, Whack-a-Bug, and more. Management said it's "gamified upskilling."
       </div>
     </div>
+    ${getZoneMiniGamePanel("gigs")}
   `;
 }
 
@@ -2991,6 +3006,13 @@ function runGig(gigId) {
 
 // --- Staff & Office Panel Upgrades ---
 function renderStaffPanel() {
+  const staffZoneSlot = document.getElementById("staff-minigame-slot");
+  if (activeMiniGame && activeMiniGame.isZoneBonus && activeMiniGame.zoneId === "staff") {
+    if (staffZoneSlot) staffZoneSlot.innerHTML = getZoneMiniGamePanel("staff");
+    return;
+  }
+  if (staffZoneSlot) staffZoneSlot.innerHTML = getZoneMiniGamePanel("staff");
+
   const staffContainer = document.getElementById("staff-capacity-status");
   const officeCapacity = OFFICE_TIERS[gameState.office_tier]?.capacity || 0;
 
@@ -3225,6 +3247,7 @@ function renderDevelopPanel() {
           </div>
         </div>
       </div>
+      ${window.SiteMinigames ? window.SiteMinigames.renderZoneHub("develop") : ""}
     `;
     initFormInputs();
   } else if (gameState.current_project.phase === "post_release") {
@@ -3406,8 +3429,190 @@ function mountActiveArcadeMiniGame() {
   });
 }
 
-function stopArcadeMiniGame() {
+function stopCanvasMiniGame() {
   if (window.ArcadeMinigames) window.ArcadeMinigames.unmount();
+  if (window.SiteMinigames) window.SiteMinigames.unmount();
+}
+
+function stopArcadeMiniGame() {
+  stopCanvasMiniGame();
+}
+
+function isSiteMiniGame(mg) {
+  return mg && mg.type === "site";
+}
+
+function buildSiteMiniGameHtml(mg, extraStyle) {
+  if (!window.SiteMinigames) return "";
+  return window.SiteMinigames.renderShell(mg.siteGameId, {
+    started: !!mg.siteStarted,
+    extraStyle: extraStyle || ""
+  });
+}
+
+function buildActiveCanvasGameHtml(mg, extraStyle) {
+  if (isSiteMiniGame(mg)) return buildSiteMiniGameHtml(mg, extraStyle);
+  if (isArcadeMiniGame(mg)) return buildArcadeMiniGameHtml(mg, extraStyle);
+  return "";
+}
+
+function refreshZoneAfterMiniGame(zoneId) {
+  switch (zoneId) {
+    case "studio": renderStudioDashboard(); break;
+    case "develop": renderDevelopPanel(); break;
+    case "staff": renderStaffPanel(); renderResearchLab(); break;
+    case "research": renderResearchLab(); break;
+    case "leaderboard": renderLeaderboardMiniGameSlot(); break;
+    case "gigs": renderTrainingGym(); renderGigsBoard(); break;
+    case "store": renderDeveloperStore(); break;
+    case "hud": renderHudMiniGameSlot(); break;
+    case "post_release": renderPostReleaseDashboard(); break;
+    default: updateUI();
+  }
+}
+
+function getZoneMiniGamePanel(zoneId) {
+  if (activeMiniGame && activeMiniGame.isZoneBonus && activeMiniGame.zoneId === zoneId && isSiteMiniGame(activeMiniGame)) {
+    return `<div class="zone-minigame-active">${buildSiteMiniGameHtml(activeMiniGame, "width:100%;")}</div>`;
+  }
+  return window.SiteMinigames ? window.SiteMinigames.renderZoneHub(zoneId) : "";
+}
+
+function launchZoneMiniGame(zoneId, gameId) {
+  if (activeMiniGame) {
+    showToast("Finish the current mini-game first!", "warning");
+    return;
+  }
+  if (!window.SiteMinigames) return;
+  const meta = window.SiteMinigames.getMeta(gameId);
+  const energyCost = meta.energyCost ?? 5;
+  if (energyCost > 0 && gameState.energy < energyCost) {
+    showToast(`Need ${energyCost} more caffeine!`, "error");
+    return;
+  }
+  if (energyCost > 0) gameState.energy -= energyCost;
+  activeMiniGame = {
+    type: "site",
+    siteGameId: gameId,
+    zoneId,
+    isZoneBonus: true,
+    duration: window.SiteMinigames.getDuration(gameId),
+    elapsed: 0,
+    timeLeft: 100,
+    siteStarted: false
+  };
+  refreshZoneAfterMiniGame(zoneId);
+  updateUI();
+  showToast(`${meta.emoji} ${meta.title} loaded. Completely necessary.`, "info");
+}
+
+function launchZoneMiniGameRandom(zoneId) {
+  if (!window.SiteMinigames) return;
+  launchZoneMiniGame(zoneId, window.SiteMinigames.pickForZone(zoneId));
+}
+
+function launchHudMiniGame(gameId) {
+  launchZoneMiniGame("hud", gameId);
+}
+
+function startSiteMiniGameSession() {
+  if (!activeMiniGame || activeMiniGame.type !== "site" || activeMiniGame.siteStarted) return;
+  const overlay = document.getElementById("site-start-overlay");
+  const countdownEl = document.getElementById("site-countdown");
+  const startBtn = overlay ? overlay.querySelector(".arcade-start-btn") : null;
+  if (!overlay || !countdownEl) return;
+  if (startBtn) startBtn.disabled = true;
+  const steps = ["3", "2", "1", "GO!"];
+  let step = 0;
+  countdownEl.hidden = false;
+  countdownEl.textContent = steps[step];
+  const tick = () => {
+    step++;
+    if (step < steps.length) {
+      countdownEl.textContent = steps[step];
+      setTimeout(tick, 650);
+      return;
+    }
+    overlay.classList.add("arcade-start-overlay--gone");
+    activeMiniGame.siteStarted = true;
+    activeMiniGame.elapsed = 0;
+    activeMiniGame.timeLeft = 100;
+    const badge = document.querySelector(".site-minigame .arcade-badge");
+    if (badge) badge.textContent = "LIVE";
+    const timerTrack = document.querySelector(".site-minigame .arcade-timer");
+    if (timerTrack) timerTrack.classList.remove("arcade-timer-paused");
+    const bar = document.getElementById("site-minigame-timer-bar");
+    if (bar) bar.style.width = "100%";
+    mountActiveSiteMiniGame();
+    activateMiniGameTimer();
+  };
+  setTimeout(tick, 650);
+}
+
+function mountActiveSiteMiniGame() {
+  if (!isSiteMiniGame(activeMiniGame) || !window.SiteMinigames) return;
+  const canvas = document.getElementById("site-minigame-canvas");
+  if (!canvas) return;
+  window.SiteMinigames.mount(canvas, activeMiniGame.siteGameId, {
+    onWin: () => {
+      if (miniGameTimer) clearInterval(miniGameTimer);
+      successMiniGame();
+    },
+    onLose: (reason) => {
+      if (miniGameTimer) clearInterval(miniGameTimer);
+      failMiniGame(reason || "Mini-game failed");
+    }
+  });
+}
+
+function finishZoneMiniGameReward(won, reason, zoneId, gameId) {
+  const zone = zoneId || (activeMiniGame && activeMiniGame.zoneId);
+  const gid = gameId || (activeMiniGame && activeMiniGame.siteGameId);
+  const meta = window.SiteMinigames ? window.SiteMinigames.getMeta(gid) : { title: "Mini-game" };
+  gameState.siteMiniGamesPlayed = (gameState.siteMiniGamesPlayed || 0) + 1;
+  if (won) {
+    gameState.siteMiniGamesWon = (gameState.siteMiniGamesWon || 0) + 1;
+    gameState.arcadeClears = (gameState.arcadeClears || 0) + 1;
+    const xpGain = randInt(4, 10);
+    const cashGain = randInt(15, 65);
+    gameState.xp += xpGain;
+    gameState.cash += cashGain;
+    ensureStudioMeta();
+    gameState.studioMorale = Math.min(100, gameState.studioMorale + randInt(2, 6));
+    gameState.studioBuzz = Math.min(100, gameState.studioBuzz + randInt(1, 4));
+    if (zone === "research") gameState.research_points += randInt(2, 6);
+    spawnFloatText(`+${xpGain} XP`, "xp");
+    spawnFloatText(`+$${cashGain}`, "cyan");
+    addLog(`Zone Arcade Win: ${meta.title}`, `Won in ${zone} zone. +${xpGain} XP, +$${cashGain}. Management calls it culture.`, "arcade");
+    showToast(`${meta.title} cleared! +${xpGain} XP, +$${cashGain}`, "success");
+    if (window.SynthwaveAudio) SynthwaveAudio.playSFX("cash");
+    checkFunnyAchievements();
+  } else {
+    addLog(`Zone Arcade Fail: ${meta.title}`, reason || "Failed for comedic reasons.");
+    showToast(reason || `${meta.title} failed.`, "error");
+    if (window.SynthwaveAudio) SynthwaveAudio.playSFX("fail");
+  }
+  saveGame();
+  refreshZoneAfterMiniGame(zone);
+  updateUI();
+}
+
+function renderHudMiniGameSlot() {
+  const slot = document.getElementById("hud-minigame-slot");
+  if (!slot) return;
+  if (activeMiniGame && activeMiniGame.isZoneBonus && activeMiniGame.zoneId === "hud") {
+    slot.innerHTML = getZoneMiniGamePanel("hud");
+    slot.style.display = "block";
+    return;
+  }
+  slot.style.display = "none";
+  slot.innerHTML = "";
+}
+
+function renderLeaderboardMiniGameSlot() {
+  const slot = document.getElementById("leaderboard-minigame-slot");
+  if (!slot) return;
+  slot.innerHTML = getZoneMiniGamePanel("leaderboard");
 }
 
 function getRandomColorHex() {
@@ -3465,9 +3670,11 @@ function startMiniGame(type, isTraining = false) {
 
 function cancelMiniGame() {
   if (miniGameTimer) clearInterval(miniGameTimer);
-  stopArcadeMiniGame();
+  stopCanvasMiniGame();
   if (!activeMiniGame) return;
 
+  const isZoneBonus = activeMiniGame.isZoneBonus;
+  const zoneId = activeMiniGame.zoneId;
   const isTraining = activeMiniGame.isTraining;
   const isGig = activeMiniGame.isGig;
   const isStore = activeMiniGame.isStore;
@@ -3476,6 +3683,16 @@ function cancelMiniGame() {
   const storeNerve = activeMiniGame.nerveGain;
   const refundNerve = activeMiniGame._refundNerve || 0;
   const refundXp = activeMiniGame._refundXp || 0;
+
+  if (isZoneBonus) {
+    activeMiniGame = null;
+    addLog("Zone Arcade Cancelled", "Aborted unnecessary mini-game. Productivity unchanged.");
+    showToast("Mini-game aborted. Back to pretending to work.", "warning");
+    saveGame();
+    refreshZoneAfterMiniGame(zoneId);
+    updateUI();
+    return;
+  }
 
   activeMiniGame = null;
 
@@ -3558,10 +3775,11 @@ function clickBugButton(clickedIndex) {
 
 function successMiniGame() {
   if (!activeMiniGame) return;
-  stopArcadeMiniGame();
+  stopCanvasMiniGame();
   ChiptuneAudio.playSFX("success");
   const type = getMiniGameSprintType(activeMiniGame);
   const arcadeMeta = isArcadeMiniGame(activeMiniGame) ? getArcadeMeta(activeMiniGame) : null;
+  const isZoneBonus = activeMiniGame.isZoneBonus;
   const isTraining = activeMiniGame.isTraining;
   const isGig = activeMiniGame.isGig;
   const gigId = activeMiniGame.gigId;
@@ -3570,6 +3788,14 @@ function successMiniGame() {
 
   const storeEnergy = activeMiniGame.energyGain;
   const storeNerve = activeMiniGame.nerveGain;
+
+  if (isZoneBonus) {
+    const zid = activeMiniGame.zoneId;
+    const gid = activeMiniGame.siteGameId;
+    activeMiniGame = null;
+    finishZoneMiniGameReward(true, null, zid, gid);
+    return;
+  }
 
   activeMiniGame = null;
 
@@ -3690,9 +3916,10 @@ function successMiniGame() {
 
 function failMiniGame(reason) {
   if (!activeMiniGame) return;
-  stopArcadeMiniGame();
+  stopCanvasMiniGame();
   ChiptuneAudio.playSFX("fail");
   const type = getMiniGameSprintType(activeMiniGame);
+  const isZoneBonus = activeMiniGame.isZoneBonus;
   const isTraining = activeMiniGame.isTraining;
   const isGig = activeMiniGame.isGig;
   const gigId = activeMiniGame.gigId;
@@ -3701,6 +3928,14 @@ function failMiniGame(reason) {
 
   const storeEnergy = activeMiniGame.energyGain;
   const storeNerve = activeMiniGame.nerveGain;
+
+  if (isZoneBonus) {
+    const zid = activeMiniGame.zoneId;
+    const gid = activeMiniGame.siteGameId;
+    activeMiniGame = null;
+    finishZoneMiniGameReward(false, reason, zid, gid);
+    return;
+  }
 
   activeMiniGame = null;
 
@@ -3863,14 +4098,19 @@ function renderProjectProgress() {
   const readyToShip = canReleaseProject(proj);
   const energyCost = getDevEnergyCost();
 
-  if (activeMiniGame && !activeMiniGame.isGig && !activeMiniGame.isStore) {
+  if (activeMiniGame && activeMiniGame.isZoneBonus && activeMiniGame.zoneId === "develop") {
+    devPanel.innerHTML = getZoneMiniGamePanel("develop");
+    return;
+  }
+
+  if (activeMiniGame && !activeMiniGame.isGig && !activeMiniGame.isStore && !activeMiniGame.isZoneBonus) {
     devPanel.innerHTML = `
       <div class="develop-progress-card">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <h3 style="font-size:1.1rem; color:var(--color-cyan);">${proj.name}</h3>
           <span style="font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; color:var(--color-text-muted);">${proj.scale} Project</span>
         </div>
-        ${buildArcadeMiniGameHtml(activeMiniGame, "margin-top: 15px;")}
+        ${buildActiveCanvasGameHtml(activeMiniGame, "margin-top: 15px;")}
       </div>
     `;
     return;
@@ -3966,6 +4206,8 @@ function renderProjectProgress() {
           <p class="dev-section-hint">Sprints won: ${proj.miniGamesWon || 0}/${proj.miniGamesPlayed || 0} · Playtests: ${proj.playtestsRun || 0}</p>
         </div>
       </div>
+
+      ${getZoneMiniGamePanel("develop")}
     </div>
   `;
 }
@@ -4181,15 +4423,18 @@ async function loadLeaderboard() {
       }
 
       simulated.sort((a, b) => b.net_worth - a.net_worth);
-      window.leaderboardCache = simulated;
+    window.leaderboardCache = simulated;
       renderLeaderboardRows(container, simulated);
+      renderLeaderboardMiniGameSlot();
       return;
     }
 
     window.leaderboardCache = list;
     renderLeaderboardRows(container, list);
+    renderLeaderboardMiniGameSlot();
   } catch (err) {
     container.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#ff1744; padding:24px 0;">Failed to fetch leaderboards. Offline.</td></tr>`;
+    renderLeaderboardMiniGameSlot();
   }
 }
 
@@ -4346,6 +4591,11 @@ function renderResearchLab() {
   const container = document.getElementById("research-upgrades-list");
   if (!container) return;
 
+  if (activeMiniGame && activeMiniGame.isZoneBonus && activeMiniGame.zoneId === "research") {
+    container.innerHTML = getZoneMiniGamePanel("research");
+    return;
+  }
+
   const upgrades = [
     {
       id: "unlocked_console",
@@ -4384,7 +4634,7 @@ function renderResearchLab() {
         </button>
       </div>
     `;
-  }).join("");
+  }).join("") + getZoneMiniGamePanel("research");
 }
 
 function buyResearch(upgradeId) {
@@ -4734,6 +4984,12 @@ function renderPostReleaseDashboard() {
     return;
   }
 
+  if (activeMiniGame && activeMiniGame.isZoneBonus && activeMiniGame.zoneId === "post_release") {
+    const devPanelEarly = document.getElementById("develop-panel-content");
+    if (devPanelEarly) devPanelEarly.innerHTML = getZoneMiniGamePanel("post_release");
+    return;
+  }
+
   const proj = ensureProjectMeta(gameState.current_project);
   
   // Safety checks for corrupted or legacy save files
@@ -5031,6 +5287,8 @@ function renderPostReleaseDashboard() {
           <button class="btn-primary live-ops-btn" onclick="startSequelProject()">Greenlight Sequel<br><small>New project++</small></button>
         </div>
       </div>
+
+      ${getZoneMiniGamePanel("post_release")}
 
       <div class="post-release-footer">
         <button class="btn-secondary" onclick="runPostMortem()" ${proj.postMortemDone ? "disabled" : ""}>📋 ${proj.postMortemDone ? "Post-Mortem Filed" : "Run Post-Mortem (+XP)"}</button>
@@ -5796,11 +6054,12 @@ function activateMiniGameTimer() {
     }
 
     if (activeMiniGame.type === "arcade" && !activeMiniGame.arcadeStarted) return;
+    if (activeMiniGame.type === "site" && !activeMiniGame.siteStarted) return;
 
     activeMiniGame.elapsed += interval;
     activeMiniGame.timeLeft = Math.max(0, 100 - (activeMiniGame.elapsed / activeMiniGame.duration) * 100);
 
-    const bar = document.getElementById("minigame-timer-bar");
+    const bar = document.getElementById("minigame-timer-bar") || document.getElementById("site-minigame-timer-bar");
     if (bar) {
       bar.style.width = `${activeMiniGame.timeLeft}%`;
     }
@@ -5843,6 +6102,11 @@ function activateMiniGameTimer() {
 function renderDeveloperStore() {
   const container = document.getElementById("store-items-grid");
   if (!container) return;
+
+  if (activeMiniGame && activeMiniGame.isZoneBonus && activeMiniGame.zoneId === "store") {
+    container.innerHTML = getZoneMiniGamePanel("store");
+    return;
+  }
 
   if (activeMiniGame && activeMiniGame.isStore) {
     container.innerHTML = `
@@ -5901,12 +6165,18 @@ function renderDeveloperStore() {
       </div>
       <button class="btn-primary btn-sm" onclick="buyItem('nootropic')">Buy &amp; Consume</button>
     </div>
+    ${getZoneMiniGamePanel("store")}
   `;
 }
 
 function renderGigsBoard() {
   const container = document.getElementById("gigs-board-grid");
   if (!container) return;
+
+  if (activeMiniGame && activeMiniGame.isZoneBonus && activeMiniGame.zoneId === "gigs") {
+    container.innerHTML = `<p class="zone-minigame-hint" style="padding:12px;">Zone arcade running in the Workout Gym above ↑</p>`;
+    return;
+  }
 
   if (activeMiniGame && activeMiniGame.isGig) {
     if (activeMiniGame.type === 'arcade') {
@@ -6007,7 +6277,7 @@ function renderGigsBoard() {
         <button class="btn-primary btn-sm" onclick="runGig('${gig.id}')">Perform Gig</button>
       </div>
     `;
-  }).join("");
+  }).join("") + getZoneMiniGamePanel("gigs");
 }
 
 function stopCoffeePour() {
@@ -6128,6 +6398,10 @@ window.pokePostReleaseBadge = pokePostReleaseBadge;
 window.toggleUselessFeature = toggleUselessFeature;
 window.pokeMysteryDesk = pokeMysteryDesk;
 window.rerollCeoHotTake = rerollCeoHotTake;
+window.launchZoneMiniGame = launchZoneMiniGame;
+window.launchZoneMiniGameRandom = launchZoneMiniGameRandom;
+window.launchHudMiniGame = launchHudMiniGame;
+window.startSiteMiniGameSession = startSiteMiniGameSession;
 window.stopCoffeePour = stopCoffeePour;
 window.stopGigSlider = stopGigSlider;
 window.clickGigBinary = clickGigBinary;

@@ -26,6 +26,9 @@
   <!-- 3.95 Shipped platformer (playable game in post-release Dev Lab) -->
   <script defer src="shipped-platformer.js"></script>
 
+  <!-- 3.96 Site-wide zone mini-games (every tab gets arcade chaos) -->
+  <script defer src="site-minigames.js"></script>
+
   <!-- 4. Main Game logic (depends on api.js and supabase.js) -->
   <script defer src="game.js"></script>
 </head>
@@ -178,6 +181,8 @@
           <div class="rpg-stat-bar"><div class="rpg-stat-fill rpg-save" id="rpg-save-bar"></div></div>
         </div>
       </div>
+
+      <div id="hud-minigame-slot" class="hud-minigame-slot" style="display:none;"></div>
 
       <div class="hud-vitals-row" id="hud-vitals-row">
         <span class="hud-vital-chip">📅 Standups today: <strong>3</strong> (2 were about lunch)</span>
@@ -566,6 +571,7 @@
     <!-- Tab 4: Staff & Office Upgrades      -->
     <!-- ═══════════════════════════════════ -->
     <main class="main-layout staff-zone-layout" id="staff-section" style="display: none;">
+      <div id="staff-minigame-slot" class="staff-minigame-slot"></div>
       <section class="glass-panel section-gap">
         <div class="panel-title">
           <span><span class="panel-title-icon">🏗️</span> Office Expansion</span>
@@ -603,6 +609,7 @@
           <span><span class="panel-title-icon">🏆</span> Global Net Worth Leaderboard</span>
         </div>
         <p class="panel-tagline">Humblebrag leaderboard. Net worth may include imaginary valuation multiples.</p>
+        <div id="leaderboard-minigame-slot" class="leaderboard-minigame-slot"></div>
         <div class="history-container">
           <table class="history-table">
             <thead>
@@ -636,6 +643,9 @@
             <button type="button" class="chaos-btn" onclick="runChaosAction('save_scum')" title="Reload last good vibe">Save Scum</button>
             <button type="button" class="chaos-btn" onclick="runChaosAction('deploy_friday')" title="Friday deploy ritual">Fri Deploy</button>
             <button type="button" class="chaos-btn" onclick="runChaosAction('readme_lies')" title="Update README fiction">README</button>
+            <button type="button" class="chaos-btn chaos-btn-arcade" onclick="launchZoneMiniGameRandom('hud')" title="Random HUD mini-game">🎮 Arcade</button>
+            <button type="button" class="chaos-btn chaos-btn-arcade" onclick="launchZoneMiniGame('hud','email_whack')" title="Inbox whack-a-mole">📧 Inbox</button>
+            <button type="button" class="chaos-btn chaos-btn-arcade" onclick="launchZoneMiniGame('gigs','blame_wheel')" title="Blame roulette">🎰 Blame</button>
           </div>
           <div class="ceo-thought-bubble" id="ceo-thought-bubble">"We should AI the blockchain synergy."</div>
         </div>

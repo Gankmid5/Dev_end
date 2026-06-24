@@ -1942,6 +1942,98 @@ h1.logo-title span {
   font-size: 0.75rem;
 }
 
+/* ═══ SITE-WIDE ZONE MINI-GAMES ═══ */
+.zone-minigame-hub {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(179, 136, 255, 0.05);
+  border: 1px dashed rgba(179, 136, 255, 0.28);
+}
+
+.zone-minigame-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.zone-minigame-hint {
+  font-size: 0.74rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+  margin: 0 0 10px;
+  line-height: 1.4;
+}
+
+.zone-minigame-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.zone-minigame-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.32);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+
+.zone-minigame-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.12);
+}
+
+.zone-minigame-emoji { font-size: 1.15rem; }
+.zone-minigame-label { font-size: 0.72rem; font-weight: 700; color: var(--color-text-muted); }
+.zone-minigame-cost { font-size: 0.62rem; color: var(--color-gold); font-weight: 700; }
+
+.zone-minigame-active { width: 100%; }
+
+.hud-minigame-slot,
+.staff-minigame-slot,
+.leaderboard-minigame-slot {
+  margin-bottom: 12px;
+}
+
+.hud-vital-chip.hud-vital-play {
+  cursor: pointer;
+  border: none;
+  background: rgba(0, 0, 0, 0.22);
+  transition: all 0.15s ease;
+}
+
+.hud-vital-chip.hud-vital-play:hover {
+  border-color: rgba(0, 229, 255, 0.35);
+  color: var(--color-cyan);
+  transform: translateY(-1px);
+}
+
+.chaos-btn-arcade {
+  border-color: rgba(0, 229, 255, 0.25) !important;
+  color: var(--color-cyan) !important;
+}
+
+.site-minigame .arcade-canvas-wrap canvas {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  height: auto;
+  image-rendering: pixelated;
+}
+
+.signup-minigame-zone {
+  margin: 14px 0 18px;
+}
+
 @media (max-width: 900px) {
   .dev-board-grid, .post-release-grid { grid-template-columns: 1fr; }
   .post-release-telemetry-hub { grid-template-columns: 1fr; }
@@ -1951,6 +2043,7 @@ h1.logo-title span {
   .play-game-launch-btn { width: 100%; }
   .useless-feature-grid { grid-template-columns: repeat(2, 1fr); }
   .mystery-desk-hint { width: 100%; margin-left: 0; }
+  .zone-minigame-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 /* ═══ STUDIO DASHBOARD ═══ */
