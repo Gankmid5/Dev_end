@@ -499,6 +499,21 @@ function initFormInputs() {
       gameNameInput.value = `${r1} ${r2}`;
     });
   }
+
+  const genreSel = document.getElementById("genre-select");
+  const topicSel = document.getElementById("topic-select");
+  const synergyPreview = document.getElementById("synergy-preview");
+  const updateSynergyPreview = () => {
+    if (!synergyPreview || !genreSel || !topicSel) return;
+    const info = getSynergyInfo(genreSel.value, topicSel.value);
+    synergyPreview.innerHTML = `
+      <span style="color:${info.color}; font-weight:700;">${info.label}</span>
+      <span style="color:var(--color-text-muted);"> — ${info.key} (${info.mult.toFixed(2)}× critic multiplier)</span>
+    `;
+  };
+  if (genreSel) genreSel.addEventListener("change", updateSynergyPreview);
+  if (topicSel) topicSel.addEventListener("change", updateSynergyPreview);
+  updateSynergyPreview();
 }
 
 // --- Game Tick Loops (1s) ---
@@ -714,8 +729,9 @@ function getTargetPointsForScale(scale) {
 
 function getProjectProgressPercent(proj) {
   const target = getTargetPointsForScale(proj.scale);
+  const scopeMult = 1 + ((proj && proj.scopeFeatures) || 0) * 0.1;
   const totalPoints = (proj.tech_points || 0) + (proj.design_points || 0);
-  return Math.min(100, (totalPoints / (target * 2)) * 100);
+  return Math.min(100, (totalPoints / (target * 2 * scopeMult)) * 100);
 }
 
 function canReleaseProject(proj) {
@@ -772,6 +788,187 @@ const GIG_DOSSIERS = {
     dossier: "Target a rival whose servers run on a Raspberry Pi and hope. Success means champagne; failure means your router gets subpoenaed by three countries."
   }
 };
+
+const DEV_PHASES = [
+  { id: "concept", label: "Concept", min: 0, icon: "💡" },
+  { id: "prototype", label: "Prototype", min: 20, icon: "🔧" },
+  { id: "alpha", label: "Alpha", min: 45, icon: "🧪" },
+  { id: "beta", label: "Beta", min: 70, icon: "📋" },
+  { id: "gold", label: "Gold", min: 90, icon: "🏆" }
+];
+
+const DEV_MILESTONES = [25, 50, 75];
+
+const DEV_DIARY_POOL = {
+  concept: [
+    "Brainstormed 47 game ideas. Chose the one with the least documentation required.",
+    "Wrote a 200-page design doc. Page 3 is the only page anyone will read.",
+    "Stakeholder (your mom) requested 'less violence, more laundry simulator'."
+  ],
+  prototype: [
+    "First playable build: player can walk into a wall forever. Immersive.",
+    "Placeholder art is a gray cube. Marketing calls it 'minimalist brutalism'.",
+    "Physics engine powered by hope and an unclosed while loop."
+  ],
+  alpha: [
+    "QA filed 312 bugs. 300 are 'feature requests' from your cousin.",
+    "Cutscenes are still PowerPoint slides with fade transitions.",
+    "Networking works on LAN only if everyone whispers near the router."
+  ],
+  beta: [
+    "Beta testers demand darker mode, lighter mode, and emotional support mode.",
+    "Performance optimized from 12 FPS to 13 FPS. Ship it.",
+    "Legal approved the EULA after removing the clause about soul ownership."
+  ],
+  gold: [
+    "Gold master burned to a USB stick labeled 'DO NOT DROP'.",
+    "Launch trailer uses 90% stock footage of people high-fiving in offices.",
+    "CFO asked if we can ship bugs as DLC. Finance loves recurring revenue."
+  ],
+  post_release: [
+    "Players discovered a speedrun strat involving the pause menu.",
+    "Discord is debating whether the tutorial is a hate crime.",
+    "Influencer called it 'mid' then bought the season pass anyway."
+  ]
+};
+
+const SUPPORT_TICKET_TEMPLATES = [
+  "Game crashed when I alt-tabbed to pay my rent.",
+  "My character is stuck inside a decorative lamp. Send help.",
+  "Is the 4th boss supposed to be a JPEG of a raccoon?",
+  "I bought the deluxe edition but only received existential dread.",
+  "Multiplayer lobby is just three guys arguing about tabs vs spaces.",
+  "Achievement 'Finish Tutorial' won't unlock. Tutorial has no end.",
+  "Refund request: game too fun, productivity destroyed.",
+  "Bug: loot box opened itself and contained a PDF of HR policies."
+];
+
+function ensureProjectMeta(proj) {
+  if (!proj) return proj;
+  proj.techDebt = proj.techDebt ?? 0;
+  proj.hypeMeter = proj.hypeMeter ?? 0;
+  proj.scopeFeatures = proj.scopeFeatures ?? 0;
+  proj.milestonesHit = proj.milestonesHit ?? [];
+  proj.devDiary = proj.devDiary ?? [];
+  proj.focusGroupBonus = proj.focusGroupBonus ?? 0;
+  proj.playtestsRun = proj.playtestsRun ?? 0;
+  proj.dlcCount = proj.dlcCount ?? 0;
+  proj.hotfixCount = proj.hotfixCount ?? 0;
+  proj.expansionCount = proj.expansionCount ?? 0;
+  proj.amaCount = proj.amaCount ?? 0;
+  proj.freeWeekendsUsed = proj.freeWeekendsUsed ?? 0;
+  proj.seasonPassActive = proj.seasonPassActive ?? false;
+  proj.postMortemDone = proj.postMortemDone ?? false;
+  proj.legacyScore = proj.legacyScore ?? 0;
+  proj.awards = proj.awards ?? [];
+  proj.roadmap = proj.roadmap ?? [
+    { id: "patch", label: "Day-One Patch", done: false },
+    { id: "dlc1", label: "Cosmetic DLC Pack", done: false },
+    { id: "expansion", label: "Story Expansion", done: false },
+    { id: "sequel", label: "Franchise Sequel", done: false }
+  ];
+  proj.supportTickets = proj.supportTickets ?? [];
+  return proj;
+}
+
+function getDevPhaseId(progressPercent) {
+  let phase = DEV_PHASES[0].id;
+  for (const p of DEV_PHASES) {
+    if (progressPercent >= p.min) phase = p.id;
+  }
+  return phase;
+}
+
+function getSynergyInfo(genre, topic) {
+  const key = `${genre}-${topic}`;
+  const mult = SYNERGIES[key] || 0.85;
+  let label = "Awkward Match";
+  let color = "#ff1744";
+  if (mult >= 1.25) { label = "God-Tier Synergy"; color = "#39ff14"; }
+  else if (mult >= 1.15) { label = "Strong Synergy"; color = "#00e5ff"; }
+  else if (mult >= 1.0) { label = "Decent Fit"; color = "#ffd700"; }
+  else if (mult >= 0.9) { label = "Questionable"; color = "#ff9100"; }
+  return { mult, label, color, key };
+}
+
+function pushDevDiary(proj, phaseId, customText) {
+  ensureProjectMeta(proj);
+  const pool = DEV_DIARY_POOL[phaseId] || DEV_DIARY_POOL.concept;
+  const text = customText || pool[Math.floor(Math.random() * pool.length)];
+  proj.devDiary.unshift({ time: new Date().toLocaleTimeString().split(" ")[0], phase: phaseId, text });
+  if (proj.devDiary.length > 8) proj.devDiary.pop();
+}
+
+function checkDevMilestones(proj) {
+  ensureProjectMeta(proj);
+  const pct = getProjectProgressPercent(proj);
+  DEV_MILESTONES.forEach(ms => {
+    if (pct >= ms && !proj.milestonesHit.includes(ms)) {
+      proj.milestonesHit.push(ms);
+      const xp = ms === 25 ? 12 : ms === 50 ? 25 : 40;
+      const cash = ms === 75 ? 150 : 0;
+      if (cash) gameState.cash += cash;
+      gainXP(xp);
+      pushDevDiary(proj, getDevPhaseId(pct), `Milestone ${ms}% reached! Publisher sent ${cash ? `$${cash} and ` : ""}+${xp} XP in motivational Post-its.`);
+      addLog("Dev Milestone", `'${proj.name}' hit ${ms}% completion. ${cash ? `+$${cash}, ` : ""}+${xp} XP.`);
+      showToast(`Milestone ${ms}%! ${cash ? `+$${cash}, ` : ""}+${xp} XP`, "success");
+    }
+  });
+}
+
+function getStaffDevContribution() {
+  let tech = 0, design = 0, bugs = 0;
+  gameState.employees.forEach(emp => {
+    const info = EMPLOYEES_INFO[emp.id];
+    if (!info) return;
+    tech += info.techRate || 0;
+    design += info.designRate || 0;
+    bugs -= (info.bugFixRate || 0) * 0.5;
+  });
+  const mult = OFFICE_TIERS[gameState.office_tier]?.speedMult || 1;
+  return { tech: tech * mult, design: design * mult, bugFix: bugs * mult };
+}
+
+function renderDevPhasePipeline(progressPercent) {
+  const cur = getDevPhaseId(progressPercent);
+  return `
+    <div class="dev-phase-pipeline">
+      ${DEV_PHASES.map(p => {
+        const active = p.id === cur;
+        const done = progressPercent > p.min + 15 || (p.id === "gold" && progressPercent >= 90);
+        const cls = done ? "done" : active ? "active" : "";
+        return `<div class="dev-phase-step ${cls}"><span class="dev-phase-icon">${p.icon}</span><span class="dev-phase-label">${p.label}</span></div>`;
+      }).join("")}
+    </div>
+  `;
+}
+
+function generateSupportTickets(proj, count = 4) {
+  ensureProjectMeta(proj);
+  const shuffled = [...SUPPORT_TICKET_TEMPLATES].sort(() => Math.random() - 0.5);
+  proj.supportTickets = shuffled.slice(0, count).map((text, i) => ({
+    id: `ticket_${Date.now()}_${i}`,
+    text,
+    resolved: false
+  }));
+}
+
+function getCommunitySentiment(proj) {
+  ensureProjectMeta(proj);
+  let score = Math.min(100, Math.max(0, (proj.rating || 5) * 10));
+  score += (proj.patchCompleted ? 8 : 0);
+  score += (proj.dlcCount || 0) * 4;
+  score -= proj.supportTickets.filter(t => !t.resolved).length * 5;
+  score += proj.amaCount * 3;
+  return Math.min(100, Math.max(0, Math.round(score)));
+}
+
+function initPostReleaseState(proj) {
+  ensureProjectMeta(proj);
+  if (!proj.cachedTweets) proj.cachedTweets = getSimulatedSocialFeed(proj.rating, proj.name);
+  if (proj.supportTickets.length === 0) generateSupportTickets(proj);
+  pushDevDiary(proj, "post_release");
+}
 
 function suspendMiniGameForTabChange(nextTab) {
   if (!activeMiniGame) return;
@@ -1352,11 +1549,14 @@ function renderDevelopPanel() {
   if (!devPanel) return;
 
   if (!gameState.current_project) {
-    // Project initiation form
+    const portfolioCount = (gameState.portfolio || []).length;
     devPanel.innerHTML = `
-      <div style="display:flex; flex-direction:column; gap:16px;">
-        <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.04); padding: 20px; border-radius: 16px;">
-          <h3 style="margin-bottom:12px;">Start a New Game Project</h3>
+      <div class="dev-board-intro">
+        <p class="dev-board-tagline">Formulate a project, sign away your sanity, and enter crunch time. The board tracks every sprint, milestone, and regrettable scope decision.</p>
+      </div>
+      <div class="dev-board-grid">
+        <div class="dev-board-card">
+          <h3 style="margin-bottom:12px;">📋 New Project Brief</h3>
           
           <div class="form-group">
             <label class="form-label">Game Title</label>
@@ -1377,7 +1577,6 @@ function renderDevelopPanel() {
                 <option value="Adventure">Adventure</option>
               </select>
             </div>
-
             <div class="form-group">
               <label class="form-label">Topic Selection</label>
               <select id="topic-select">
@@ -1391,6 +1590,8 @@ function renderDevelopPanel() {
             </div>
           </div>
 
+          <div id="synergy-preview" class="synergy-preview-box">Synergy preview loading...</div>
+
           <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
             <div class="form-group">
               <label class="form-label">Target Platform</label>
@@ -1400,7 +1601,6 @@ function renderDevelopPanel() {
                 <option value="mobile">Mobile (Dev Cost: $50)</option>
               </select>
             </div>
-
             <div class="form-group">
               <label class="form-label">Project Scale</label>
               <select id="scale-select">
@@ -1415,6 +1615,17 @@ function renderDevelopPanel() {
           <button class="btn-primary" style="margin-top:10px;" onclick="createGameProject()">
             💻 Start Development Project
           </button>
+        </div>
+
+        <div class="dev-board-card dev-board-sidebar">
+          <h4 style="margin-bottom:10px; color:var(--color-purple); text-transform:uppercase; font-size:0.8rem; letter-spacing:1px;">Studio Pipeline Guide</h4>
+          <div class="dev-pipeline-guide">
+            ${DEV_PHASES.map(p => `<div class="dev-guide-step"><span>${p.icon}</span><div><strong>${p.label}</strong><p>Unlocks at ${p.min}% progress. Each phase unlocks new diary drama.</p></div></div>`).join("")}
+          </div>
+          <div style="margin-top:14px; padding-top:14px; border-top:1px dashed rgba(255,255,255,0.08); font-size:0.78rem; color:var(--color-text-muted); line-height:1.45;">
+            <strong style="color:var(--color-cyan);">Games shipped:</strong> ${portfolioCount}<br>
+            Ship at <strong>90%</strong> with <strong>≤8 bugs</strong>. Post-release live ops, DLC, sequels, and remasters unlock after launch.
+          </div>
         </div>
       </div>
     `;
@@ -1477,7 +1688,8 @@ function createGameProject() {
 
   gameState.cash -= totalCost;
   gameState.xp -= xpCost;
-  gameState.current_project = {
+  const synergy = getSynergyInfo(genre, topic);
+  gameState.current_project = ensureProjectMeta({
     name,
     genre,
     topic,
@@ -1488,12 +1700,21 @@ function createGameProject() {
     bug_points: 0,
     progress: 0,
     phase: "coding",
+    devPhase: "concept",
     miniGamesPlayed: 0,
     miniGamesWon: 0,
-    miniGamesLost: 0
-  };
+    miniGamesLost: 0,
+    techDebt: 0,
+    hypeMeter: 5,
+    scopeFeatures: 0,
+    milestonesHit: [],
+    devDiary: [],
+    focusGroupBonus: 0,
+    playtestsRun: 0
+  });
+  pushDevDiary(gameState.current_project, "concept", `Greenlit '${name}' (${genre}/${topic}). Synergy forecast: ${synergy.label}. CFO cried, then approved.`);
 
-  addLog("Project Started", `Initiated development of '${name}' (${genre}/${topic}) on ${PLATFORMS[platformKey].name}. Budget spent: $${totalCost}.`);
+  addLog("Project Started", `Initiated development of '${name}' (${genre}/${topic}) on ${PLATFORMS[platformKey].name}. Budget spent: $${totalCost}. Synergy: ${synergy.label}.`);
   showToast("Development initialized!", "success");
 
   saveGame();
@@ -1800,6 +2021,12 @@ function successMiniGame() {
 
   const xpGain = 5 + Math.min(10, miniGameCombo * 2);
   gainXP(xpGain);
+  const proj = ensureProjectMeta(gameState.current_project);
+  const pct = getProjectProgressPercent(proj);
+  proj.devPhase = getDevPhaseId(pct);
+  proj.techDebt = Math.max(0, (proj.techDebt || 0) - 1);
+  if (Math.random() < 0.35) pushDevDiary(proj, proj.devPhase);
+  checkDevMilestones(proj);
   saveGame();
   renderProjectProgress();
   updateUI();
@@ -1875,6 +2102,90 @@ function failMiniGame(reason) {
     showToast(`Squash failed: +3 Bugs`, "error");
   }
 
+  if (gameState.current_project && !isTraining && !isGig && !isStore) {
+    ensureProjectMeta(gameState.current_project);
+    gameState.current_project.techDebt = (gameState.current_project.techDebt || 0) + 2;
+    if (Math.random() < 0.4) {
+      pushDevDiary(gameState.current_project, getDevPhaseId(getProjectProgressPercent(gameState.current_project)), `Sprint failed: ${reason}. Tech debt now haunts stand-up meetings.`);
+    }
+  }
+
+  saveGame();
+  renderProjectProgress();
+  updateUI();
+}
+
+function runDevSprintAction(actionId) {
+  if (!gameState.current_project || gameState.current_project.phase === "post_release" || activeMiniGame) return;
+  const proj = ensureProjectMeta(gameState.current_project);
+  const target = getTargetPointsForScale(proj.scale);
+
+  if (actionId === "crunch") {
+    if (gameState.nerve < 3) { showToast("Need 3 Nerve to crunch!", "error"); return; }
+    gameState.nerve -= 3;
+    const boost = Math.ceil(target * 0.12);
+    proj.tech_points += boost;
+    proj.design_points += Math.ceil(boost * 0.6);
+    proj.bug_points += 3;
+    proj.techDebt += 2;
+    proj.hypeMeter = Math.min(100, proj.hypeMeter + 4);
+    pushDevDiary(proj, getDevPhaseId(getProjectProgressPercent(proj)), "Crunch weekend declared. Pizza budget exceeded. Morale file not found.");
+    addLog("Crunch Sprint", `+${boost} tech, +bugs. Nerve spent. HR has left the chat.`);
+    showToast(`Crunch mode! +${boost} points, +3 bugs`, "warning");
+  } else if (actionId === "refactor") {
+    if (gameState.cash < 200) { showToast("Refactor costs $200!", "error"); return; }
+    gameState.cash -= 200;
+    proj.bug_points = Math.max(0, proj.bug_points - 5);
+    proj.techDebt = Math.max(0, proj.techDebt - 4);
+    pushDevDiary(proj, getDevPhaseId(getProjectProgressPercent(proj)), "Paid down tech debt. Senior dev called it 'a weekend of deleting comments'.");
+    addLog("Refactor Pass", "Spent $200. -5 bugs, -4 tech debt.");
+    showToast("Refactor complete! Bugs and debt reduced.", "success");
+  } else if (actionId === "playtest") {
+    if (gameState.energy < 8) { showToast("Playtest needs 8 Energy!", "error"); return; }
+    gameState.energy -= 8;
+    proj.playtestsRun += 1;
+    const feedback = [
+      "Tester fell through the floor. Called it 'immersive verticality'.",
+      "Tutorial took 45 minutes. Tester aged visibly.",
+      "UI praised. Gameplay described as 'present'.",
+      "One tester speedran the menu. New meta?"
+    ];
+    const note = feedback[Math.floor(Math.random() * feedback.length)];
+    proj.design_points += Math.ceil(target * 0.06);
+    if (Math.random() < 0.4) proj.bug_points = Math.max(0, proj.bug_points - 2);
+    pushDevDiary(proj, getDevPhaseId(getProjectProgressPercent(proj)), `Playtest #${proj.playtestsRun}: ${note}`);
+    addLog("Playtest Session", note);
+    showToast("Playtest done! Design up.", "info");
+  } else if (actionId === "scope_creep") {
+    if (gameState.cash < 100) { showToast("Scope creep costs $100!", "error"); return; }
+    gameState.cash -= 100;
+    proj.scopeFeatures += 1;
+    proj.hypeMeter = Math.min(100, proj.hypeMeter + 12);
+    const features = ["battle royale mode", "NFT horse armor", "procedural eyebrows", "live-service battle pass", "roguelike fishing minigame"];
+    const feat = features[Math.floor(Math.random() * features.length)];
+    pushDevDiary(proj, getDevPhaseId(getProjectProgressPercent(proj)), `Added ${feat}. Scope expanded. Deadline remains a suggestion.`);
+    addLog("Scope Creep", `Added '${feat}'. Hype +12. Completion bar now harder (more points needed).`);
+    showToast(`Scope creep: ${feat}! Hype rising.`, "warning");
+  } else if (actionId === "focus_group") {
+    if (gameState.cash < 350 || gameState.xp < 10) { showToast("Focus group: $350 + 10 XP!", "error"); return; }
+    gameState.cash -= 350;
+    gameState.xp -= 10;
+    proj.focusGroupBonus = Math.min(0.5, proj.focusGroupBonus + 0.15);
+    const synergy = getSynergyInfo(proj.genre, proj.topic);
+    pushDevDiary(proj, getDevPhaseId(getProjectProgressPercent(proj)), `Focus group loved the ${synergy.label} pitch. Marketing cried happy tears.`);
+    addLog("Focus Group", `Synergy validated (${synergy.label}). Release rating bonus increased.`);
+    showToast("Focus group approved the vibe!", "success");
+  } else if (actionId === "asset_store") {
+    if (gameState.cash < 75) { showToast("Asset pack costs $75!", "error"); return; }
+    gameState.cash -= 75;
+    proj.design_points += Math.ceil(target * 0.08);
+    pushDevDiary(proj, getDevPhaseId(getProjectProgressPercent(proj)), "Bought generic asset pack. Every tree looks like the same tree. Efficiency.");
+    addLog("Asset Store", "Bought stock assets. +Design points.");
+    showToast("Assets imported! Design boosted.", "success");
+  }
+
+  checkDevMilestones(proj);
+  proj.devPhase = getDevPhaseId(getProjectProgressPercent(proj));
   saveGame();
   renderProjectProgress();
   updateUI();
@@ -1940,12 +2251,11 @@ function renderProjectProgress() {
       gameHtml = `
         <div style="background: rgba(0,0,0,0.4); border: 1px solid #ffd700; padding: 20px; border-radius: 12px; margin-top: 15px;">
           <h4 style="color:#ffd700; margin-bottom: 8px;">🐛 Polish Mini-game: Bug Squasher</h4>
-          <p style="font-size:0.85rem; color:var(--color-text-muted); margin-bottom:12px;">Click the button containing the BUG to squash it:</p>
+          <p style="font-size:0.85rem; color:var(--color-text-muted); margin-bottom:12px;">One cell hides the bug. The others are lying.</p>
           
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:15px;">
             ${buttons.map(i => {
-        const isBug = i === activeMiniGame.bugIndex;
-        return `<button class="btn-secondary" style="padding:16px; font-size:1rem; font-weight:bold;" onclick="clickBugButton(${i})">${isBug ? "🐛 BUG" : "Clean Line"}</button>`;
+        return `<button class="btn-secondary" style="padding:16px; font-size:1.2rem; font-weight:bold;" onclick="clickBugButton(${i})">❓</button>`;
       }).join("")}
           </div>
 
@@ -1977,68 +2287,89 @@ function renderProjectProgress() {
     return;
   }
 
+  ensureProjectMeta(proj);
+  const synergy = getSynergyInfo(proj.genre, proj.topic);
+  const staff = getStaffDevContribution();
+  const phaseId = getDevPhaseId(progressPercent);
+  proj.devPhase = phaseId;
+  const milestoneHtml = DEV_MILESTONES.map(ms => {
+    const hit = (proj.milestonesHit || []).includes(ms);
+    return `<span class="dev-milestone ${hit ? "hit" : ""}">${hit ? "✓" : "○"} ${ms}%</span>`;
+  }).join("");
+
+  const diaryHtml = (proj.devDiary || []).slice(0, 5).map(d => `
+    <div class="dev-diary-entry"><span class="dev-diary-time">[${d.time}]</span> <span class="dev-diary-phase">${d.phase}</span> — ${d.text}</div>
+  `).join("") || `<div class="dev-diary-entry" style="font-style:italic; opacity:0.6;">No diary entries yet. Make questionable decisions to generate lore.</div>`;
+
   devPanel.innerHTML = `
     <div class="develop-progress-card">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h3 style="font-size:1.1rem; color:var(--color-cyan);">${proj.name}</h3>
-        <span style="font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; color:var(--color-text-muted);">${proj.scale} Project</span>
-      </div>
-      
-      <div style="font-size:0.85rem; color:var(--color-text-muted); display:flex; flex-direction:column; gap:4px;">
-        <div>Topic: <strong>${proj.topic}</strong> | Genre: <strong>${proj.genre}</strong></div>
-        <div>Platform: <strong>${PLATFORMS[proj.platform].name}</strong></div>
+      <div class="dev-board-header">
+        <div>
+          <h3 class="dev-board-title">${proj.name}</h3>
+          <span class="dev-board-subtitle">${proj.scale} · ${proj.genre}/${proj.topic} · ${PLATFORMS[proj.platform].name}</span>
+        </div>
+        <div class="dev-synergy-badge" style="border-color:${synergy.color}; color:${synergy.color};">${synergy.label}</div>
       </div>
 
-      <!-- Tech vs Design indicators -->
-      <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px; margin-top:8px;">
-        <div style="background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.03); padding:10px; border-radius:10px; text-align:center;">
-          <span style="font-size:0.75rem; color:var(--color-text-muted); text-transform:uppercase;">Tech Points</span>
-          <div style="font-size:1.2rem; font-weight:bold; color:var(--color-cyan); margin-top:4px;">${Math.floor(proj.tech_points)}</div>
-        </div>
-        <div style="background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.03); padding:10px; border-radius:10px; text-align:center;">
-          <span style="font-size:0.75rem; color:var(--color-text-muted); text-transform:uppercase;">Design Points</span>
-          <div style="font-size:1.2rem; font-weight:bold; color:var(--color-purple); margin-top:4px;">${Math.floor(proj.design_points)}</div>
-        </div>
-        <div style="background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.03); padding:10px; border-radius:10px; text-align:center;">
-          <span style="font-size:0.75rem; color:var(--color-text-muted); text-transform:uppercase;">Bugs</span>
-          <div style="font-size:1.2rem; font-weight:bold; color:#ff1744; margin-top:4px;">${Math.floor(proj.bug_points)}</div>
-        </div>
+      ${renderDevPhasePipeline(progressPercent)}
+
+      <div class="dev-stats-grid">
+        <div class="dev-stat-card"><span>Tech</span><strong style="color:var(--color-cyan)">${Math.floor(proj.tech_points)}</strong></div>
+        <div class="dev-stat-card"><span>Design</span><strong style="color:var(--color-purple)">${Math.floor(proj.design_points)}</strong></div>
+        <div class="dev-stat-card"><span>Bugs</span><strong style="color:#ff1744">${Math.floor(proj.bug_points)}</strong></div>
+        <div class="dev-stat-card"><span>Tech Debt</span><strong style="color:#ff9100">${proj.techDebt}</strong></div>
+        <div class="dev-stat-card"><span>Hype</span><strong style="color:#ffd700">${proj.hypeMeter}%</strong></div>
+        <div class="dev-stat-card"><span>Scope+</span><strong>${proj.scopeFeatures}</strong></div>
       </div>
 
-      <!-- Completion bar -->
-      <div class="status-bar-container" style="margin-top:10px;">
-        <div class="status-bar-header">
-          <span>Project Completion</span>
-          <span>${Math.floor(progressPercent)}%</span>
-        </div>
+      <div class="status-bar-container">
+        <div class="status-bar-header"><span>Completion (${phaseId})</span><span>${Math.floor(progressPercent)}%</span></div>
         <div class="status-bar-track">
-          <div class="status-bar-fill" style="width: ${progressPercent}%; height:100%; background: linear-gradient(90deg, var(--color-cyan), var(--color-purple));"></div>
+          <div class="status-bar-fill" style="width:${progressPercent}%; height:100%; background:linear-gradient(90deg, var(--color-cyan), var(--color-purple));"></div>
         </div>
       </div>
 
-      <div style="font-size:0.8rem; color:var(--color-text-muted); line-height:1.4; margin-top:5px; text-align:center;">
-        💡 Mini-games build your game. Costs <strong>${energyCost} energy</strong> per sprint. Ship at <strong>90%</strong> with <strong>≤8 bugs</strong> (industry standard™).
-      </div>
+      <div class="dev-milestone-row">${milestoneHtml}</div>
 
-      <!-- Interactive develop actions -->
-      <div style="display:flex; gap:10px; margin-top:10px;">
-        <button class="btn-primary" style="flex:1; background:rgba(0,229,255,0.08); border-color:var(--color-cyan); color:#fff;" onclick="startMiniGame('code')">
-          ⌨️ Code Game (Mini-game)
-        </button>
-        <button class="btn-primary" style="flex:1; background:rgba(179,136,255,0.08); border-color:var(--color-purple); color:#fff;" onclick="startMiniGame('design')">
-          🎨 Match Assets (Mini-game)
-        </button>
-        <button class="btn-primary" style="flex:1; background:rgba(255,23,68,0.08); border-color:#ff1744; color:#fff;" onclick="startMiniGame('polish')">
-          🔧 Squash Bugs (Mini-game)
-        </button>
-      </div>
+      <div class="dev-board-grid" style="margin-top:4px;">
+        <div>
+          <h4 class="dev-section-label">⚡ Dev Sprints (Mini-games)</h4>
+          <p class="dev-section-hint">${energyCost} energy per sprint · Ship at 90% with ≤8 bugs</p>
+          <div class="dev-sprint-row">
+            <button class="btn-primary dev-sprint-btn" onclick="startMiniGame('code')">⌨️ Code</button>
+            <button class="btn-primary dev-sprint-btn" onclick="startMiniGame('design')">🎨 Design</button>
+            <button class="btn-primary dev-sprint-btn" onclick="startMiniGame('polish')">🔧 Polish</button>
+          </div>
 
-      <button class="btn-primary" style="margin-top:10px; background:#39ff14; border-color:#39ff14; color:#000;" ${readyToShip ? "" : "disabled"} onclick="releaseGameProject()">
-        ${readyToShip ? "🚀 Ship It (Lawyers Pre-Approved)" : `🔒 Need 90% + ≤8 bugs (${Math.floor(progressPercent)}%, ${proj.bug_points || 0} bugs)`}
-      </button>
-      <button class="btn-primary nuke-btn" style="margin-top:10px; background:rgba(255,23,68,0.15); border-color:#ff1744; color:#fff;" onclick="nukeGameProject()">
-        💥 Nuke Project (Cancel & Delete)
-      </button>
+          <h4 class="dev-section-label" style="margin-top:14px;">🛠️ Production Actions</h4>
+          <div class="dev-action-grid">
+            <button class="btn-secondary dev-action-btn" onclick="runDevSprintAction('crunch')">Crunch Weekend<br><small>-3 🎯 nerve</small></button>
+            <button class="btn-secondary dev-action-btn" onclick="runDevSprintAction('refactor')">Refactor Pass<br><small>-$200</small></button>
+            <button class="btn-secondary dev-action-btn" onclick="runDevSprintAction('playtest')">Playtest<br><small>-8 ⚡</small></button>
+            <button class="btn-secondary dev-action-btn" onclick="runDevSprintAction('scope_creep')">Scope Creep<br><small>-$100</small></button>
+            <button class="btn-secondary dev-action-btn" onclick="runDevSprintAction('focus_group')">Focus Group<br><small>-$350 · -10 XP</small></button>
+            <button class="btn-secondary dev-action-btn" onclick="runDevSprintAction('asset_store')">Asset Store<br><small>-$75</small></button>
+          </div>
+
+          <div class="dev-ship-row">
+            <button class="btn-primary dev-ship-btn" ${readyToShip ? "" : "disabled"} onclick="releaseGameProject()">
+              ${readyToShip ? "🚀 Ship It (Lawyers Pre-Approved)" : `🔒 ${Math.floor(progressPercent)}% · ${proj.bug_points || 0} bugs`}
+            </button>
+            <button class="btn-secondary nuke-btn" onclick="nukeGameProject()">💥 Nuke</button>
+          </div>
+        </div>
+
+        <div class="dev-board-sidebar">
+          <h4 class="dev-section-label">📓 Dev Diary</h4>
+          <div class="dev-diary-feed">${diaryHtml}</div>
+          <h4 class="dev-section-label" style="margin-top:12px;">👥 Staff / Tick</h4>
+          <p class="dev-section-hint" style="margin-bottom:6px;">
+            Each second staff adds ~${staff.tech.toFixed(1)} tech, ~${staff.design.toFixed(1)} design
+            ${staff.bugFix < 0 ? `, fixes ~${Math.abs(staff.bugFix).toFixed(1)} bugs` : ""} while this project is active.
+          </p>
+          <p class="dev-section-hint">Sprints won: ${proj.miniGamesWon || 0}/${proj.miniGamesPlayed || 0} · Playtests: ${proj.playtestsRun || 0}</p>
+        </div>
+      </div>
     </div>
   `;
 }
@@ -2078,6 +2409,10 @@ function releaseGameProject() {
   if (gameState.researched_multiplayer) {
     rating += 1.0;
   }
+  ensureProjectMeta(proj);
+  rating += (proj.hypeMeter || 0) * 0.008;
+  rating += proj.focusGroupBonus || 0;
+  if ((proj.scopeFeatures || 0) > 2) rating -= 0.3;
   rating = Math.max(1.0, Math.min(10.0, rating));
 
   // Determine copies sold and price based on platform, scale, and rating
@@ -2197,6 +2532,8 @@ function releaseGameProject() {
   proj.applesCollected = 0;
   proj.patchCompleted = false;
   proj.appleIndex = Math.floor(Math.random() * 16);
+  proj.legacyScore = Math.round(rating * 10 + (proj.hypeMeter || 0) * 0.2);
+  initPostReleaseState(proj);
 
   saveGame();
   renderDevelopPanel();
@@ -2600,7 +2937,7 @@ function renderPostReleaseDashboard() {
   const devPanel = document.getElementById("develop-panel-content");
   if (!devPanel || !gameState.current_project) return;
 
-  const proj = gameState.current_project;
+  const proj = ensureProjectMeta(gameState.current_project);
   
   // Safety checks for corrupted or legacy save files
   if (proj.rating === undefined) proj.rating = 5.0;
@@ -2622,8 +2959,13 @@ function renderPostReleaseDashboard() {
   
   const totalSold = activeGame ? activeGame.totalSold : (portGame ? portGame.totalSold : 0);
   const totalRevenue = activeGame ? activeGame.totalRevenue : (portGame ? portGame.totalRevenue : 0);
-  const curIncome = activeGame ? (activeGame.initialSalesRate * Math.exp(-activeGame.age / 90) * activeGame.price * 0.70) / 20 : 0;
+  const curIncome = activeGame ? getGameIncomePerTick(activeGame) : 0;
   const isSelling = !!activeGame;
+  ensureProjectMeta(proj);
+  const sentiment = getCommunitySentiment(proj);
+  let sentimentColor = "#ffd700";
+  if (sentiment >= 75) sentimentColor = "#39ff14";
+  else if (sentiment < 45) sentimentColor = "#ff1744";
 
   // Choose rating badge color
   let badgeColor = "#00e5ff";
@@ -2673,120 +3015,130 @@ function renderPostReleaseDashboard() {
     `;
   }
 
+  const ticketsHtml = (proj.supportTickets || []).map(t => `
+    <div class="support-ticket ${t.resolved ? "resolved" : ""}">
+      <span>${t.resolved ? "✓" : "🎫"} ${t.text}</span>
+      ${t.resolved ? "" : `<button class="btn-secondary" style="padding:4px 8px; font-size:0.65rem;" onclick="resolveSupportTicket('${t.id}')">Resolve</button>`}
+    </div>
+  `).join("");
+
+  const roadmapHtml = (proj.roadmap || []).map(r => `
+    <div class="roadmap-item ${r.done ? "done" : ""}"><span>${r.done ? "✓" : "○"}</span> ${r.label}</div>
+  `).join("");
+
+  const awardsHtml = (proj.awards || []).length
+    ? proj.awards.map(a => `<span class="award-chip">🏆 ${a}</span>`).join("")
+    : `<span style="font-size:0.75rem; color:var(--color-text-muted); font-style:italic;">No awards yet. Host an AMA or ship DLC to impress the industry.</span>`;
+
+  const diaryHtml = (proj.devDiary || []).slice(0, 4).map(d => `
+    <div class="dev-diary-entry"><span class="dev-diary-time">[${d.time}]</span> ${d.text}</div>
+  `).join("");
+
   devPanel.innerHTML = `
-    <div class="develop-progress-card" style="gap:20px;">
-      <!-- Title & Scale -->
-      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:12px; flex-wrap:wrap; gap:10px;">
+    <div class="develop-progress-card post-release-hub">
+      <div class="dev-board-header post-release-header">
         <div>
-          <h3 style="font-size:1.3rem; color:var(--color-cyan); margin:0;">${proj.name} (Post-Release)</h3>
-          <span style="font-size:0.75rem; color:var(--color-text-muted); text-transform:uppercase;">${proj.scale} Project | ${proj.genre} / ${proj.topic}</span>
+          <h3 class="dev-board-title">${proj.name} <span class="post-release-tag">LIVE OPS</span></h3>
+          <span class="dev-board-subtitle">${proj.scale} · ${proj.genre}/${proj.topic} · Legacy ${proj.legacyScore || 0} · DLC×${proj.dlcCount || 0}</span>
         </div>
-        <div style="text-align:right; display:flex; align-items:center; gap:10px;">
-          <div style="text-align:right;">
-            <div class="reviewer-score-badge" style="width:50px; height:50px; border-color:${badgeColor}; color:${badgeColor}; background:${badgeBg}; box-shadow:0 0 10px ${badgeBg}; margin:0 auto; font-size:1.1rem; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800;">
-              ${proj.rating.toFixed(1)}
-            </div>
-            <span style="font-size:0.6rem; color:var(--color-text-muted); text-transform:uppercase; margin-top:2px; display:block;">Metacritic</span>
-          </div>
+        <div class="post-release-badges">
+          <div class="reviewer-score-badge" style="width:52px; height:52px; border-color:${badgeColor}; color:${badgeColor}; background:${badgeBg};">${proj.rating.toFixed(1)}</div>
+          <div class="sentiment-badge" style="border-color:${sentimentColor}; color:${sentimentColor};">${sentiment}%<small>sentiment</small></div>
         </div>
       </div>
 
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
-        <!-- Left: Reviews & Social Feed -->
-        <div style="display:flex; flex-direction:column; gap:15px;">
-          <div style="background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.03); padding:15px; border-radius:12px;">
-            <h4 style="margin-bottom:8px; font-size:0.85rem; text-transform:uppercase; color:var(--color-purple);">Critic Reviews</h4>
-            <div style="display:flex; flex-direction:column; gap:8px;">
-              ${proj.reviewers.map(rev => {
-                let revNameColor = "#fff";
-                if (rev.name === "IGNion") revNameColor = "#ff1744";
-                else if (rev.name === "GameSpotter") revNameColor = "#ffd700";
-                else if (rev.name === "Metacritic rating" || rev.name === "Metacritic") revNameColor = "#39ff14";
-                const displayRevName = rev.name === "Metacritic rating" ? "Metacritic" : rev.name;
-                const commentText = rev.comments ? (rev.comments[proj.commentIndex] || rev.comments[0] || "No comment.") : "No comment.";
-                return `
-                  <div style="font-size:0.78rem; line-height:1.4;">
-                    <strong style="color:${revNameColor};">${displayRevName}</strong>: "${commentText}"
-                  </div>
-                `;
-              }).join("")}
+      <div class="post-release-grid">
+        <div class="post-release-col">
+          <div class="dev-board-card compact">
+            <h4 class="dev-section-label">📰 Critic Desk</h4>
+            ${proj.reviewers.map(rev => {
+              let revNameColor = "#fff";
+              if (rev.name === "IGNion") revNameColor = "#ff1744";
+              else if (rev.name === "GameSpotter") revNameColor = "#ffd700";
+              else if (rev.name === "Metacritic rating" || rev.name === "Metacritic") revNameColor = "#39ff14";
+              const displayRevName = rev.name === "Metacritic rating" ? "Metacritic" : rev.name;
+              const commentText = rev.comments ? (rev.comments[proj.commentIndex] || rev.comments[0] || "No comment.") : "No comment.";
+              return `<p class="critic-line"><strong style="color:${revNameColor}">${displayRevName}</strong>: "${commentText}"</p>`;
+            }).join("")}
+          </div>
+
+          <div class="dev-board-card compact">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <h4 class="dev-section-label" style="margin:0;">🐦 Social Feed</h4>
+              <button class="btn-secondary" style="padding:4px 10px; font-size:0.65rem;" onclick="refreshSocialFeed()">Refresh ($25)</button>
+            </div>
+            <div class="social-feed-scroll">
+              ${proj.cachedTweets.map(t => `<div class="social-line"><strong>@gamer_${t.user}</strong> "${t.text}"</div>`).join("")}
             </div>
           </div>
 
-          <div style="background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.03); padding:15px; border-radius:12px;">
-            <h4 style="margin-bottom:8px; font-size:0.85rem; text-transform:uppercase; color:var(--color-cyan);">Crowd & Social Feed</h4>
-            <div style="display:flex; flex-direction:column; gap:6px;">
-              ${proj.cachedTweets.map(t => {
-                return `
-                  <div style="font-size:0.75rem; border-bottom:1px solid rgba(255,255,255,0.02); padding-bottom:6px; display:flex; gap:6px;">
-                    <span style="color:var(--color-cyan); font-weight:600;">@gamer_${t.user}</span>
-                    <span style="color:var(--color-text-muted); font-style:italic;">"${t.text}"</span>
-                  </div>
-                `;
-              }).join("")}
-            </div>
+          <div class="dev-board-card compact">
+            <h4 class="dev-section-label">📓 Post-Launch Diary</h4>
+            <div class="dev-diary-feed">${diaryHtml || "<em>Silence on the dev blog. Concerning.</em>"}</div>
           </div>
         </div>
 
-        <!-- Right: Sales Stats & Patch Mini-game -->
-        <div style="display:flex; flex-direction:column; gap:15px;">
-          <div style="background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.03); padding:15px; border-radius:12px;">
-            <h4 style="margin-bottom:8px; font-size:0.85rem; text-transform:uppercase; color:#39ff14;">Sales Statistics</h4>
-            <div style="font-size:0.8rem; display:flex; flex-direction:column; gap:6px;">
-              <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.02); padding-bottom:4px;">
-                <span>Status:</span>
-                <span style="font-weight:bold; color:${isSelling ? "#39ff14" : "var(--color-text-muted)"};">${isSelling ? "Active Sales" : "Concluded"}</span>
-              </div>
-              <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.02); padding-bottom:4px;">
-                <span>Current Velocity:</span>
-                <span style="font-weight:bold; color:#39ff14;">+ $${curIncome.toFixed(1)}/s</span>
-              </div>
-              <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.02); padding-bottom:4px;">
-                <span>Copies Sold:</span>
-                <span style="font-weight:bold;">${parseInt(totalSold).toLocaleString()} copies</span>
-              </div>
-              <div style="display:flex; justify-content:space-between; padding-bottom:2px;">
-                <span>Total Revenue:</span>
-                <span style="font-weight:bold; color:#39ff14;">$${parseFloat(totalRevenue).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-              </div>
+        <div class="post-release-col">
+          <div class="dev-board-card compact">
+            <h4 class="dev-section-label">💰 Sales Pulse</h4>
+            <div class="sales-stat-list">
+              <div><span>Status</span><strong style="color:${isSelling ? "#39ff14" : "var(--color-text-muted)"}">${isSelling ? "On shelves" : "Catalog concluded"}</strong></div>
+              <div><span>Velocity</span><strong style="color:#39ff14">+$${curIncome.toFixed(1)}/s</strong></div>
+              <div><span>Copies</span><strong>${parseInt(totalSold).toLocaleString()}</strong></div>
+              <div><span>Revenue</span><strong style="color:#39ff14">$${parseFloat(totalRevenue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
+              <div><span>Season Pass</span><strong>${proj.seasonPassActive ? "ACTIVE" : "Inactive"}</strong></div>
             </div>
           </div>
 
           ${patchHtml}
 
-          <!-- Live Ops Actions -->
-          <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--color-purple); padding: 15px; border-radius: 12px; margin-top: 5px;">
-            <h4 style="color:var(--color-purple); margin-bottom: 6px; font-size:0.85rem; text-transform:uppercase;">
-              <span>🚀 Support & Live Ops Actions</span>
-            </h4>
-            <p style="font-size:0.75rem; color:var(--color-text-muted); margin-bottom:10px; line-height:1.3;">Add DLC features or start ad campaigns to revive sales!</p>
-            
-            <div style="display:flex; gap:10px;">
-              <button class="btn-primary" style="flex:1; font-size:0.75rem; padding:8px;" onclick="supportActiveProject('dlc')">
-                Release DLC Update<br><span style="font-size:0.65rem; color:#ffd700;">-$150 | -15⚡</span>
-              </button>
-              <button class="btn-primary" style="flex:1; font-size:0.75rem; padding:8px;" onclick="supportActiveProject('marketing')">
-                Launch Hype Ads<br><span style="font-size:0.65rem; color:#ffd700;">-$100 | -5⚡</span>
-              </button>
-            </div>
+          <div class="dev-board-card compact">
+            <h4 class="dev-section-label">🎫 Support Queue (${(proj.supportTickets || []).filter(t => !t.resolved).length} open)</h4>
+            <div class="support-ticket-list">${ticketsHtml}</div>
+          </div>
+
+          <div class="dev-board-card compact">
+            <h4 class="dev-section-label">🗺️ Live Roadmap</h4>
+            <div class="roadmap-list">${roadmapHtml}</div>
+          </div>
+
+          <div class="dev-board-card compact">
+            <h4 class="dev-section-label">🏆 Trophy Case</h4>
+            <div class="awards-row">${awardsHtml}</div>
           </div>
         </div>
       </div>
 
-      <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; width:100%;">
-        <button class="btn-primary" style="flex:2; min-width:200px; background:rgba(255,255,255,0.08); border-color:rgba(255,255,255,0.1); color:#fff; padding:12px; border-radius:8px;" onclick="concludeGameProject()">
-          💼 Conclude Project & Return to Studio
-        </button>
-        <button class="btn-primary nuke-btn" style="flex:1; min-width:120px; background:rgba(255,23,68,0.15); border-color:#ff1744; color:#fff; padding:12px; border-radius:8px;" onclick="nukeGameProject()">
-          💥 Nuke Game (Store Pull)
-        </button>
+      <div class="live-ops-hub">
+        <h4 class="dev-section-label">🚀 Live Ops Command Center</h4>
+        <p class="dev-section-hint">Support tickets, DLC, esports, remasters, sequels — the game never truly ends until you conclude the project.</p>
+        <div class="live-ops-grid">
+          <button class="btn-primary live-ops-btn" onclick="supportActiveProject('dlc')">DLC Drop<br><small>-$150 · -15⚡</small></button>
+          <button class="btn-primary live-ops-btn" onclick="supportActiveProject('marketing')">Hype Ads<br><small>-$100 · -5⚡</small></button>
+          <button class="btn-primary live-ops-btn" onclick="supportActiveProject('hotfix')">Emergency Hotfix<br><small>-$50 · -5⚡</small></button>
+          <button class="btn-primary live-ops-btn" onclick="supportActiveProject('expansion')">Story Expansion<br><small>-$800 · -25⚡</small></button>
+          <button class="btn-primary live-ops-btn" onclick="supportActiveProject('free_weekend')" ${!isSelling || proj.freeWeekendsUsed >= 2 ? "disabled" : ""}>Free Weekend<br><small>Free · ${2 - (proj.freeWeekendsUsed || 0)} left</small></button>
+          <button class="btn-primary live-ops-btn" onclick="supportActiveProject('ama')">Community AMA<br><small>-4 🎯</small></button>
+          <button class="btn-primary live-ops-btn" onclick="supportActiveProject('esports')">Esports Circuit<br><small>-$600</small></button>
+          <button class="btn-primary live-ops-btn" onclick="supportActiveProject('season_pass')" ${proj.seasonPassActive ? "disabled" : ""}>Season Pass<br><small>-$400</small></button>
+          <button class="btn-primary live-ops-btn" onclick="supportActiveProject('influencer')">Influencer Drop<br><small>-$250</small></button>
+          <button class="btn-primary live-ops-btn" onclick="supportActiveProject('goty')">GOTY Bundle<br><small>-$300</small></button>
+          <button class="btn-primary live-ops-btn" onclick="launchRemaster()" ${isSelling ? "disabled" : ""}>4K Remaster<br><small>-$2000 · relaunch</small></button>
+          <button class="btn-primary live-ops-btn" onclick="startSequelProject()">Greenlight Sequel<br><small>New project++</small></button>
+        </div>
+      </div>
+
+      <div class="post-release-footer">
+        <button class="btn-secondary" onclick="runPostMortem()" ${proj.postMortemDone ? "disabled" : ""}>📋 ${proj.postMortemDone ? "Post-Mortem Filed" : "Run Post-Mortem (+XP)"}</button>
+        <button class="btn-primary" onclick="concludeGameProject()">💼 Conclude & Return to Studio</button>
+        <button class="btn-secondary nuke-btn" onclick="nukeGameProject()">💥 Pull from Store</button>
       </div>
     </div>
   `;
 }
 
 function getSimulatedSocialFeed(rating, name) {
-  const users = ["alpha_coder", "indie_fan", "console_cowboy", "pixel_purist", "noob_slayer", "hype_beast"];
+  const users = ["alpha_coder", "indie_fan", "console_cowboy", "pixel_purist", "noob_slayer", "hype_beast", "patch_when", "dlc_whale", "speedrun_god", "review_bomber"];
   
   let comments = [];
   if (rating >= 8.0) {
@@ -2794,31 +3146,57 @@ function getSimulatedSocialFeed(rating, name) {
       `I looked at the binary. The compilers themselves wept at the efficiency. 10/10.`,
       `I sold my kidney to buy the launch DLC for ${name}. Totally worth it.`,
       `I've been playing ${name} for 24 hours. My family misses me.`,
-      `The shadow effects in ${name} are so smooth I am literally crying.`
+      `The shadow effects in ${name} are so smooth I am literally crying.`,
+      `Day one: masterpiece. Day two: still masterpiece. Day three: I am the masterpiece.`,
+      `Streamer economy saved. ${name} carries my entire content calendar.`,
+      `Patch notes read like poetry. Dev team cooked.`,
+      `My therapist says ${name} counts as emotional regulation.`
     ];
   } else if (rating < 5.0) {
     comments = [
       `The code for ${name} is held together by sticky tape and thoughts. Avoid.`,
       `My GPU literally started smoking when I booted ${name}. Beautiful fire though.`,
       `Wait for the day-one patch, they forgot to compile half the files. Total mess.`,
-      `Refunded. Hope the devs release a fix or switch careers.`
+      `Refunded. Hope the devs release a fix or switch careers.`,
+      `${name} crashed so hard it opened my tax documents.`,
+      `Tutorial soft-locked me in the options menu. Impressive.`,
+      `Review bomb incoming. Not because it's bad — because it's honest about being bad.`,
+      `Dev blog post was just 'we are investigating'. Investigate faster.`
     ];
   } else {
     comments = [
       `${name} runs at 60 FPS, but only if you disable the shadows and close Google Chrome.`,
       `Decent game loop, but there's a bug where my character gets stuck in a toilet.`,
       `A solid 7/10. It kept me away from doing my actual software job for a couple of hours.`,
-      `Nice vibe, but the buttons are misaligned by exactly 1 pixel.`
+      `Nice vibe, but the buttons are misaligned by exactly 1 pixel.`,
+      `${name} is comfort food for people who enjoy mild suffering.`,
+      `Played 3 hours. 2 hours were loading screens with personality.`,
+      `Would recommend to enemies and close friends only.`,
+      `The soundtrack slaps. The netcode slaps back.`
     ];
   }
 
-  // Shuffle and pick 3 comments
-  const shuffled = comments.sort(() => Math.random() - 0.5);
-  return [
-    { user: users[0], text: shuffled[0] },
-    { user: users[1], text: shuffled[1] },
-    { user: users[2], text: shuffled[2] }
-  ];
+  const shuffled = [...comments].sort(() => Math.random() - 0.5);
+  const pick = shuffled.slice(0, 6);
+  return pick.map((text, i) => ({ user: users[i % users.length], text }));
+}
+
+function markRoadmapDone(proj, roadmapId) {
+  ensureProjectMeta(proj);
+  const item = (proj.roadmap || []).find(r => r.id === roadmapId);
+  if (item) item.done = true;
+}
+
+function syncActiveGameStats(proj) {
+  const activeGame = gameState.active_games.find(g => g.name === proj.name);
+  const portItem = gameState.portfolio.find(p => p.name === proj.name);
+  if (activeGame) {
+    activeGame.rating = proj.rating;
+  }
+  if (portItem) {
+    portItem.rating = proj.rating;
+    if (activeGame) portItem.initialSalesRate = activeGame.initialSalesRate;
+  }
 }
 
 function clickPatchGrid(index) {
@@ -2887,6 +3265,10 @@ function applyDayOnePatch() {
   // Refresh cached comments to be more positive with rating boost
   proj.cachedTweets = getSimulatedSocialFeed(proj.rating, proj.name);
 
+  markRoadmapDone(proj, "patch");
+  proj.legacyScore = (proj.legacyScore || 0) + 8;
+  pushDevDiary(proj, "post_release", "Day-one patch shipped. Players can now log in. Revolutionary.");
+
   addLog("Day-One Patch Released!", `Metacritic rating for '${proj.name}' improved from ${oldRating.toFixed(1)} to ${proj.rating.toFixed(1)}! Sales rate boosted.`);
   showToast("Patch released! Rating boosted +1.0!", "success");
   
@@ -2894,11 +3276,136 @@ function applyDayOnePatch() {
   renderPostReleaseDashboard();
 }
 
+function resolveSupportTicket(ticketId) {
+  if (!gameState.current_project || gameState.current_project.phase !== "post_release") return;
+  const proj = ensureProjectMeta(gameState.current_project);
+  const ticket = proj.supportTickets.find(t => t.id === ticketId && !t.resolved);
+  if (!ticket) return;
+  ticket.resolved = true;
+  gainXP(6);
+  pushDevDiary(proj, "post_release", `Closed ticket: "${ticket.text.substring(0, 40)}..." Support hero status: pending.`);
+  addLog("Ticket Resolved", `Support closed: ${ticket.text}`);
+  showToast("Ticket resolved! +6 XP", "success");
+  saveGame();
+  renderPostReleaseDashboard();
+}
+
+function refreshSocialFeed() {
+  if (!gameState.current_project || gameState.current_project.phase !== "post_release") return;
+  const proj = gameState.current_project;
+  if (gameState.cash < 25) { showToast("Social refresh costs $25!", "error"); return; }
+  gameState.cash -= 25;
+  proj.cachedTweets = getSimulatedSocialFeed(proj.rating, proj.name);
+  pushDevDiary(proj, "post_release", "Community manager scheduled 14 identical hype posts across all platforms.");
+  showToast("Social feed refreshed!", "info");
+  saveGame();
+  renderPostReleaseDashboard();
+}
+
+function runPostMortem() {
+  if (!gameState.current_project || gameState.current_project.phase !== "post_release") return;
+  const proj = ensureProjectMeta(gameState.current_project);
+  if (proj.postMortemDone) return;
+  proj.postMortemDone = true;
+  const lessons = [
+    "Lesson 1: Scope creep is a feature, not a bug. Lesson 2: It is still a bug.",
+    "We shipped on time by redefining what 'time' means.",
+    "Morale was low but the coffee was lower.",
+    "Would crunch again (lie). Would document less (truth)."
+  ];
+  const lesson = lessons[Math.floor(Math.random() * lessons.length)];
+  gainXP(35);
+  proj.legacyScore = (proj.legacyScore || 0) + 15;
+  addLog("Post-Mortem Filed", `'${proj.name}': ${lesson}`);
+  showToast(`Post-mortem complete! +35 XP. ${lesson}`, "success");
+  saveGame();
+  renderPostReleaseDashboard();
+}
+
+function launchRemaster() {
+  if (!gameState.current_project || gameState.current_project.phase !== "post_release") return;
+  const proj = ensureProjectMeta(gameState.current_project);
+  const activeGame = gameState.active_games.find(g => g.name === proj.name);
+  if (activeGame) { showToast("Wait for sales to end before remastering!", "error"); return; }
+  if (gameState.cash < 2000) { showToast("4K Remaster costs $2000!", "error"); return; }
+  if (!confirm(`Relaunch '${proj.name}' as a Definitive Edition for $2000?`)) return;
+
+  gameState.cash -= 2000;
+  const portItem = gameState.portfolio.find(p => p.name === proj.name) || proj;
+  proj.rating = Math.min(10, proj.rating + 0.8);
+  const relaunch = {
+    name: proj.name,
+    genre: proj.genre,
+    topic: proj.topic,
+    scale: proj.scale,
+    price: (portItem.price || proj.price || 14.99) + 5,
+    rating: proj.rating,
+    initialSalesRate: Math.ceil((portItem.initialSalesRate || proj.initialSalesRate || 100) * 1.5),
+    totalSold: portItem.totalSold || 0,
+    totalRevenue: portItem.totalRevenue || 0,
+    age: 0,
+    revenueCap: (portItem.revenueCap || 3000) + 2000,
+    decayHalfLife: 120
+  };
+  gameState.active_games.push(relaunch);
+  syncActiveGameStats(proj);
+  proj.legacyScore = (proj.legacyScore || 0) + 25;
+  if (!proj.awards.includes("Definitive Re-Re-Release")) proj.awards.push("Definitive Re-Re-Release");
+  pushDevDiary(proj, "post_release", "Remastered with 4K shadows and 8K marketing. Same bugs, prettier.");
+  addLog("Remaster Launched", `'${proj.name}' Definitive Edition back on shelves!`);
+  showToast("Remaster live! Sales relaunched.", "success");
+  saveGame();
+  renderPostReleaseDashboard();
+  updateUI();
+}
+
+function startSequelProject() {
+  if (!gameState.current_project || gameState.current_project.phase !== "post_release") return;
+  const parent = ensureProjectMeta(gameState.current_project);
+  if (!confirm(`Greenlight sequel to '${parent.name}'? Development starts immediately with franchise bonuses.`)) return;
+
+  markRoadmapDone(parent, "sequel");
+  const baseName = parent.name.replace(/\s+\d+:.*$/, "");
+  const sequelName = `${baseName} 2: Electric Bugaloo`;
+  const scaleOrder = ["Small", "Medium", "Large", "AAA"];
+  let sequelScale = parent.scale;
+  const idx = scaleOrder.indexOf(parent.scale);
+  if (idx < scaleOrder.length - 1 && parent.rating >= 7) sequelScale = scaleOrder[idx + 1];
+
+  const target = getTargetPointsForScale(sequelScale);
+  gameState.current_project = ensureProjectMeta({
+    name: sequelName,
+    genre: parent.genre,
+    topic: parent.topic,
+    platform: parent.platform,
+    scale: sequelScale,
+    tech_points: Math.ceil(target * 0.12),
+    design_points: Math.ceil(target * 0.1),
+    bug_points: 3,
+    phase: "coding",
+    hypeMeter: Math.min(100, (parent.hypeMeter || 20) + 20),
+    franchiseParent: parent.name,
+    miniGamesPlayed: 0,
+    miniGamesWon: 0,
+    miniGamesLost: 0
+  });
+  pushDevDiary(gameState.current_project, "concept", `Sequel greenlit off '${parent.name}'. Fan forums already arguing about canon.`);
+  addLog("Sequel Greenlit", `'${sequelName}' enters production.`);
+  showToast(`Sequel '${sequelName}' now in development!`, "success");
+  saveGame();
+  renderDevelopPanel();
+  updateUI();
+}
+
 function concludeGameProject() {
   if (!gameState.current_project) return;
-  const proj = gameState.current_project;
-  addLog("Project Concluded", `Finalized post-release cycle of '${proj.name}'. Returning to studio catalog.`);
-  showToast(`Concluded '${proj.name}'!`, "info");
+  const proj = ensureProjectMeta(gameState.current_project);
+  if (!proj.postMortemDone && !confirm("Conclude without a post-mortem? You'll miss +35 XP and priceless industry wisdom.")) {
+    return;
+  }
+  proj.legacyScore = (proj.legacyScore || 0) + Math.round((proj.rating || 5) * 2);
+  addLog("Project Concluded", `Finalized '${proj.name}'. Legacy score: ${proj.legacyScore}. Studio catalog updated.`);
+  showToast(`Concluded '${proj.name}'! Legacy +${proj.legacyScore}`, "info");
   
   gameState.current_project = null;
   
@@ -2909,71 +3416,113 @@ function concludeGameProject() {
 
 function supportActiveProject(actionType) {
   if (!gameState.current_project || gameState.current_project.phase !== "post_release") return;
-  const proj = gameState.current_project;
-  
+  const proj = ensureProjectMeta(gameState.current_project);
   const activeGame = gameState.active_games.find(g => g.name === proj.name);
-  if (!activeGame) {
-    showToast("This game is no longer active on the market!", "error");
+  const needsActive = ["dlc", "marketing", "hotfix", "expansion", "free_weekend", "esports", "influencer", "goty", "season_pass"];
+  if (needsActive.includes(actionType) && !activeGame) {
+    showToast("This game is no longer on shelves — try Remaster or Sequel!", "error");
     return;
   }
 
   if (actionType === "dlc") {
-    const cashCost = 150;
-    const energyCost = 15;
-    if (gameState.cash < cashCost) {
-      showToast(`Requires $${cashCost} cash!`, "error");
-      return;
-    }
-    if (gameState.energy < energyCost) {
-      showToast(`Requires ${energyCost} Energy!`, "error");
-      return;
-    }
-
-    if (!confirm(`Are you sure you want to release a DLC Update for '${proj.name}'? Costs $${cashCost} and ${energyCost} Energy.`)) {
-      return;
-    }
-
-    gameState.cash -= cashCost;
-    gameState.energy -= energyCost;
+    if (gameState.cash < 150 || gameState.energy < 15) { showToast("DLC: $150 + 15 energy!", "error"); return; }
+    gameState.cash -= 150;
+    gameState.energy -= 15;
     proj.rating = Math.min(10.0, proj.rating + 0.5);
-    activeGame.rating = proj.rating;
-
-    // Recalculate sales rate
     activeGame.initialSalesRate = Math.ceil(activeGame.initialSalesRate * 1.3);
-
-    const portItem = gameState.portfolio.find(p => p.name === proj.name);
-    if (portItem) {
-      portItem.rating = proj.rating;
-      portItem.initialSalesRate = activeGame.initialSalesRate;
-    }
-
-    proj.dlcCount = (proj.dlcCount || 0) + 1;
-    addLog("DLC Launched", `Released DLC Update #${proj.dlcCount} for '${proj.name}'. Rating boosted to ${proj.rating.toFixed(1)}/10.`);
-    showToast("DLC update launched! Sales rate boosted +30%!", "success");
+    proj.dlcCount += 1;
+    markRoadmapDone(proj, "dlc1");
+    proj.legacyScore += 5;
+    if (proj.dlcCount >= 2 && !proj.awards.includes("DLC Machine")) proj.awards.push("DLC Machine");
+    pushDevDiary(proj, "post_release", `DLC #${proj.dlcCount}: Horse armor (cosmetic). $19.99. Community thrilled/confused.`);
+    addLog("DLC Launched", `DLC #${proj.dlcCount} for '${proj.name}'. Rating ${proj.rating.toFixed(1)}.`);
+    showToast("DLC dropped! +30% sales rate", "success");
   } else if (actionType === "marketing") {
-    const cashCost = 100;
-    const energyCost = 5;
-    if (gameState.cash < cashCost) {
-      showToast(`Requires $${cashCost} cash!`, "error");
-      return;
-    }
-    if (gameState.energy < energyCost) {
-      showToast(`Requires ${energyCost} Energy!`, "error");
-      return;
-    }
-
-    if (!confirm(`Are you sure you want to launch Hype Ads for '${proj.name}'? Costs $${cashCost} and ${energyCost} Energy.`)) {
-      return;
-    }
-
-    gameState.cash -= cashCost;
-    gameState.energy -= energyCost;
+    if (gameState.cash < 100 || gameState.energy < 5) { showToast("Ads: $100 + 5 energy!", "error"); return; }
+    gameState.cash -= 100;
+    gameState.energy -= 5;
     activeGame.decayHalfLife = (activeGame.decayHalfLife || 90) + 45;
-
-    addLog("Community Hype Boosted", `Launched ad blitz for '${proj.name}'. Shelf-life extended.`);
-    showToast("Community Hype boosted! Sales decay slowed.", "success");
+    pushDevDiary(proj, "post_release", "Ad blitz bought bots, hope, and three podcast sponsorships.");
+    addLog("Hype Ads", `Marketing push for '${proj.name}'. Shelf life extended.`);
+    showToast("Hype ads live! Decay slowed.", "success");
+  } else if (actionType === "hotfix") {
+    if (gameState.cash < 50 || gameState.energy < 5) { showToast("Hotfix: $50 + 5 energy!", "error"); return; }
+    gameState.cash -= 50;
+    gameState.energy -= 5;
+    proj.hotfixCount += 1;
+    proj.rating = Math.min(10, proj.rating + 0.2);
+    const open = proj.supportTickets.filter(t => !t.resolved);
+    if (open.length) open[0].resolved = true;
+    pushDevDiary(proj, "post_release", `Hotfix v${proj.hotfixCount}.0.001: fixed crash when player exists.`);
+    addLog("Hotfix", `Emergency patch #${proj.hotfixCount} for '${proj.name}'.`);
+    showToast("Hotfix deployed!", "success");
+  } else if (actionType === "expansion") {
+    if (gameState.cash < 800 || gameState.energy < 25) { showToast("Expansion: $800 + 25 energy!", "error"); return; }
+    gameState.cash -= 800;
+    gameState.energy -= 25;
+    proj.expansionCount += 1;
+    proj.rating = Math.min(10, proj.rating + 1.0);
+    activeGame.initialSalesRate = Math.ceil(activeGame.initialSalesRate * 1.8);
+    markRoadmapDone(proj, "expansion");
+    proj.legacyScore += 12;
+    pushDevDiary(proj, "post_release", "Expansion adds 6 hours of fetch quests and one new hat.");
+    addLog("Expansion", `Major expansion for '${proj.name}'. Rating +1.0!`);
+    showToast("Expansion shipped! Sales surging.", "success");
+  } else if (actionType === "free_weekend") {
+    if ((proj.freeWeekendsUsed || 0) >= 2) return;
+    proj.freeWeekendsUsed += 1;
+    activeGame.age = Math.max(0, activeGame.age - 35);
+    const burst = Math.ceil(activeGame.initialSalesRate * 0.4);
+    activeGame.initialSalesRate += burst;
+    pushDevDiary(proj, "post_release", "Free weekend: servers melted, player count briefly looked healthy.");
+    addLog("Free Weekend", `'${proj.name}' free weekend #${proj.freeWeekendsUsed}. Player spike!`);
+    showToast("Free weekend! Sales spike.", "success");
+  } else if (actionType === "ama") {
+    if (gameState.nerve < 4) { showToast("AMA needs 4 nerve!", "error"); return; }
+    gameState.nerve -= 4;
+    proj.amaCount += 1;
+    proj.rating = Math.min(10, proj.rating + 0.15);
+    proj.cachedTweets = getSimulatedSocialFeed(proj.rating, proj.name);
+    pushDevDiary(proj, "post_release", "AMA went well until someone asked about crunch. You answered with emojis.");
+    addLog("Community AMA", `Hosted AMA for '${proj.name}'. Sentiment improved.`);
+    showToast("AMA complete! Social feed updated.", "success");
+  } else if (actionType === "esports") {
+    if (gameState.cash < 600) { showToast("Esports costs $600!", "error"); return; }
+    gameState.cash -= 600;
+    activeGame.initialSalesRate = Math.ceil(activeGame.initialSalesRate * 1.5);
+    activeGame.age = Math.max(0, activeGame.age - 20);
+    if (!proj.awards.includes("Grassroots Esports")) proj.awards.push("Grassroots Esports");
+    pushDevDiary(proj, "post_release", "Esports finals featured 200 ping and one incredible play.");
+    addLog("Esports", `Funded tournament for '${proj.name}'.`);
+    showToast("Esports event! Sales boosted.", "success");
+  } else if (actionType === "season_pass") {
+    if (proj.seasonPassActive) return;
+    if (gameState.cash < 400) { showToast("Season pass: $400!", "error"); return; }
+    gameState.cash -= 400;
+    proj.seasonPassActive = true;
+    activeGame.initialSalesRate = Math.ceil(activeGame.initialSalesRate * 1.15);
+    pushDevDiary(proj, "post_release", "Season pass live. 90 tiers. 2 rewards are fun.");
+    addLog("Season Pass", `Live service monetization enabled for '${proj.name}'.`);
+    showToast("Season pass activated!", "success");
+  } else if (actionType === "influencer") {
+    if (gameState.cash < 250) { showToast("Influencer drop: $250!", "error"); return; }
+    gameState.cash -= 250;
+    activeGame.initialSalesRate = Math.ceil(activeGame.initialSalesRate * 1.25);
+    pushDevDiary(proj, "post_release", "Influencer streamed 20 minutes, said 'not bad', moved on.");
+    addLog("Influencer", `Sponsored stream for '${proj.name}'.`);
+    showToast("Influencer campaign live!", "success");
+  } else if (actionType === "goty") {
+    if (gameState.cash < 300) { showToast("GOTY bundle: $300!", "error"); return; }
+    gameState.cash -= 300;
+    activeGame.decayHalfLife = (activeGame.decayHalfLife || 90) + 60;
+    proj.rating = Math.min(10, proj.rating + 0.25);
+    if (proj.rating >= 8.5 && !proj.awards.includes("GOTY Nominee")) proj.awards.push("GOTY Nominee");
+    pushDevDiary(proj, "post_release", "GOTY bundle includes soundtrack, wallpaper, and unresolved bugs.");
+    addLog("GOTY Bundle", `Premium bundle for '${proj.name}'.`);
+    showToast("GOTY bundle on sale!", "success");
   }
 
+  syncActiveGameStats(proj);
   saveGame();
   renderPostReleaseDashboard();
   updateUI();
@@ -2997,6 +3546,12 @@ window.runActivity = runActivity;
 window.clickPatchGrid = clickPatchGrid;
 window.concludeGameProject = concludeGameProject;
 window.supportActiveProject = supportActiveProject;
+window.runDevSprintAction = runDevSprintAction;
+window.resolveSupportTicket = resolveSupportTicket;
+window.refreshSocialFeed = refreshSocialFeed;
+window.runPostMortem = runPostMortem;
+window.launchRemaster = launchRemaster;
+window.startSequelProject = startSequelProject;
 
 // TOAST NOTIFICATIONS
 function showToast(message, type = "info") {
