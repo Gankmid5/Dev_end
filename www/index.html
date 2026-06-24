@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Dev end — a text-based developer studio tycoon simulator where your career coding leads to a dead end.">
+  <title>Dev end — Coding to a Dead End</title>
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- 1. Supabase CDN library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- 2. Initialize window.supabaseClient -->
+  <script src="supabase.js"></script>
+
+  <!-- 3. API helpers (depends on window.supabaseClient) -->
+  <script defer src="api.js"></script>
+
+  <!-- 4. Main Game logic (depends on api.js and supabase.js) -->
+  <script defer src="game.js"></script>
+</head>
+
+<body>
+  <div class="app-wrapper">
+    <!-- Header -->
+    <header>
+      <div class="logo-container">
+        <h1 class="logo-title">DEV<span>_END</span></h1>
+        <p class="logo-subtitle">Where dreams go to Stack Overflow</p>
+      </div>
+      <nav class="nav-tabs">
+        <a href="index.html?tab=company" class="nav-tab active">Company</a>
+        <a href="index.html?tab=develop" class="nav-tab">Develop Game</a>
+        <a href="index.html?tab=gigs" class="nav-tab">Gigs & Training</a>
+        <a href="index.html?tab=staff" class="nav-tab">Staff & Office</a>
+        <a href="index.html?tab=leaderboard" class="nav-tab">Leaderboard</a>
+        <a href="signup.html" class="nav-tab">Profile</a>
+      </nav>
+      <div class="wallet-widget">
+        <a href="signup.html" style="text-decoration: none; color: inherit;">
+          <div class="wallet-balance" id="header-profile-badge" title="Active Developer Status">
+            GUEST
+          </div>
+        </a>
+      </div>
+    </header>
+
+    <!-- Top Stats Row (Energy, Nerve, Cash) -->
+    <section class="glass-panel stats-dashboard" style="padding: 16px 24px;">
+      <div class="stat-card" style="box-shadow: none; background: transparent; border: none; padding: 0;">
+        <span class="stat-label">Studio Cash Reserves</span>
+        <span class="stat-value" id="header-cash" style="color: #39ff14;">$500.00</span>
+      </div>
+
+      <div class="status-bar-container" style="flex: 1;">
+        <div class="status-bar-header">
+          <span>⚡ Coding Energy</span>
+          <span id="header-energy-val">100 / 100</span>
+        </div>
+        <div class="status-bar-track">
+          <div class="status-bar-fill energy" id="header-energy-bar" style="width: 100%;"></div>
+        </div>
+      </div>
+
+      <div class="status-bar-container" style="flex: 1;">
+        <div class="status-bar-header">
+          <span>🎯 Nerve Focus</span>
+          <span id="header-nerve-val">10 / 10</span>
+        </div>
+        <div class="status-bar-track">
+          <div class="status-bar-fill nerve" id="header-nerve-bar" style="width: 100%;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════ -->
+    <!-- Tab 1: Company Profile (Dashboard)  -->
+    <!-- ═══════════════════════════════════ -->
+    <main class="main-layout" id="company-section">
+      <!-- Left side: Studio status and releases -->
+      <section class="glass-panel" style="gap: 16px;">
+        <div class="panel-title">
+          <span>Studio Dashboard</span>
+          <span class="count" id="db-company-name">Garage Devs</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+          <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); padding: 12px; border-radius: 12px;">
+            <div style="font-size:0.75rem; color:var(--color-text-muted); text-transform:uppercase;">Net Worth</div>
+            <div style="font-size:1.3rem; font-weight:bold; margin-top:4px;" id="db-net-worth">$500.00</div>
+          </div>
+          <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); padding: 12px; border-radius: 12px;">
+            <div style="font-size:0.75rem; color:var(--color-text-muted); text-transform:uppercase;">Office Tier</div>
+            <div style="font-size:1.3rem; font-weight:bold; margin-top:4px;" id="db-office-name">Garage</div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; text-align: center;">
+          <div style="background: rgba(255,255,255,0.005); border: 1px solid rgba(255,255,255,0.02); padding: 10px; border-radius: 8px;">
+            <div style="font-size:0.68rem; color:var(--color-text-muted); text-transform:uppercase;">Games</div>
+            <div style="font-size:1rem; font-weight:bold; margin-top:2px;" id="db-released">0</div>
+          </div>
+          <div style="background: rgba(255,255,255,0.005); border: 1px solid rgba(255,255,255,0.02); padding: 10px; border-radius: 8px;">
+            <div style="font-size:0.68rem; color:var(--color-text-muted); text-transform:uppercase;">Copies Sold</div>
+            <div style="font-size:1rem; font-weight:bold; margin-top:2px;" id="db-sold">0</div>
+          </div>
+          <div style="background: rgba(255,255,255,0.005); border: 1px solid rgba(255,255,255,0.02); padding: 10px; border-radius: 8px;">
+            <div style="font-size:0.68rem; color:var(--color-text-muted); text-transform:uppercase;">Staff</div>
+            <div style="font-size:1rem; font-weight:bold; margin-top:2px;" id="db-employees">0</div>
+          </div>
+          <div style="background: rgba(255,255,255,0.005); border: 1px solid rgba(255,255,255,0.02); padding: 10px; border-radius: 8px;">
+            <div style="font-size:0.68rem; color:var(--color-text-muted); text-transform:uppercase;">Research</div>
+            <div style="font-size:1rem; font-weight:bold; margin-top:2px;" id="db-research">0</div>
+          </div>
+        </div>
+
+        <div class="panel-title" style="border: none; padding-top: 10px; padding-bottom: 0;">
+          <span>Active Product Sales</span>
+        </div>
+        
+        <div id="active-games-list" style="display:flex; flex-direction:column; gap:8px;">
+          <!-- Loaded dynamically via game.js -->
+          <div class="terminal-line" style="color: var(--color-text-muted); font-style: italic;">No active products generating sales.</div>
+        </div>
+
+        <div class="panel-title" style="border: none; padding-top: 15px; padding-bottom: 0; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.05);">
+          <span>Studio Portfolio (Releases)</span>
+        </div>
+        <div id="portfolio-games-list" style="display:flex; flex-direction:column; gap:8px; max-height: 200px; overflow-y: auto;">
+          <!-- Loaded dynamically via game.js -->
+          <div class="terminal-line" style="color: var(--color-text-muted); font-style: italic;">No games published yet. Go to 'Develop Game' to start!</div>
+        </div>
+      </section>
+
+      <!-- Right side: Developer Console Log -->
+      <section class="glass-panel" style="gap: 16px;">
+        <div class="panel-title">
+          <span>Developer Studio Console</span>
+        </div>
+        <div class="terminal-console" id="terminal-console">
+          <!-- Loaded dynamically via game.js -->
+        </div>
+        <div style="font-size:0.75rem; color:var(--color-text-muted); line-height:1.4;">
+          * Ticks operate in real-time. Employee salaries are calculated every 60 seconds. Active game sales decline as shelf-life decays. Gigs & gym training will refresh stats.
+        </div>
+      </section>
+    </main>
+
+    <!-- ═══════════════════════════════════ -->
+    <!-- Tab 2: Develop Game                 -->
+    <!-- ═══════════════════════════════════ -->
+    <main class="main-layout" id="develop-section" style="display: none;">
+      <section class="glass-panel" style="grid-column: span 2;">
+        <div class="panel-title">
+          <span>Game Development Board</span>
+        </div>
+        
+        <div id="develop-panel-content" class="develop-panel-layout">
+          <!-- Loaded dynamically via game.js -->
+        </div>
+      </section>
+    </main>
+
+    <!-- ═══════════════════════════════════ -->
+    <!-- Tab 3: Gigs & Training (Gym/Crimes) -->
+    <!-- ═══════════════════════════════════ -->
+    <main class="main-layout" id="gigs-section" style="display: none;">
+      <!-- Training Gym (Energy) & Shop -->
+      <section class="glass-panel" style="gap: 16px;">
+        <div class="panel-title">
+          <span>Developer Workout Gym</span>
+        </div>
+        <div class="action-grid" style="grid-template-columns: 1fr; gap: 15px;">
+          <div class="card-item" style="padding: 14px;">
+            <div class="card-item-title" style="font-size: 0.95rem;">
+              <span>Code Optimization Class</span>
+              <span style="color: #ffd700;">-10 ⚡</span>
+            </div>
+            <div class="card-item-desc" style="font-size: 0.8rem;">
+              Solve complex algorithm challenges. Coding skill increases points generated during sprints.
+            </div>
+            <button class="btn-primary" style="padding: 10px;" onclick="trainSkill('coding_skill')">Train Coding</button>
+          </div>
+
+          <div class="card-item" style="padding: 14px;">
+            <div class="card-item-title" style="font-size: 0.95rem;">
+              <span>Design Theory Templates</span>
+              <span style="color: #ffd700;">-10 ⚡</span>
+            </div>
+            <div class="card-item-desc" style="font-size: 0.8rem;">
+              Study harmonic layout guidelines. Design skill contributes heavy design points to active games.
+            </div>
+            <button class="btn-primary" style="padding: 10px;" onclick="trainSkill('design_skill')">Train Design</button>
+          </div>
+
+          <div class="card-item" style="padding: 14px;">
+            <div class="card-item-title" style="font-size: 0.95rem;">
+              <span>Agile Lead Seminars</span>
+              <span style="color: #ffd700;">-10 ⚡</span>
+            </div>
+            <div class="card-item-desc" style="font-size: 0.8rem;">
+              Practice project management classes. Management skill boosts gig success and bug squashing.
+            </div>
+            <button class="btn-primary" style="padding: 10px;" onclick="trainSkill('management_skill')">Train Management</button>
+          </div>
+        </div>
+
+        <div class="panel-title" style="border: none; padding-top: 15px; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.05);">
+          <span>Developer Store (Buy Consumables)</span>
+        </div>
+        <div class="action-grid" style="grid-template-columns: 1fr; gap: 15px;">
+          <div class="card-item" style="padding: 14px;">
+            <div class="card-item-title" style="font-size: 0.9rem;">
+              <span>Java Volt Extra-Battery Acid</span>
+              <span style="color: #39ff14;">$50</span>
+            </div>
+            <div class="card-item-desc" style="font-size: 0.8rem;">
+              A carbonated cocktail of taurine, caffeine, and pure desperation. Instantly restores <strong>+25 Energy</strong>.
+            </div>
+            <button class="btn-primary" style="padding: 10px; font-size: 0.85rem;" onclick="buyItem('energy_drink')">Buy & Consume</button>
+          </div>
+
+          <div class="card-item" style="padding: 14px;">
+            <div class="card-item-title" style="font-size: 0.9rem;">
+              <span>Lukewarm Office Drip Coffee</span>
+              <span style="color: #39ff14;">$20</span>
+            </div>
+            <div class="card-item-desc" style="font-size: 0.8rem;">
+              Brewed last Tuesday. Tastes like copper pennies. Instantly restores <strong>+10 Energy</strong>.
+            </div>
+            <button class="btn-primary" style="padding: 10px; font-size: 0.85rem;" onclick="buyItem('coffee')">Buy & Consume</button>
+          </div>
+
+          <div class="card-item" style="padding: 14px;">
+            <div class="card-item-title" style="font-size: 0.9rem;">
+              <span>Sus Nootropic Focus Pill</span>
+              <span style="color: #39ff14;">$100</span>
+            </div>
+            <div class="card-item-desc" style="font-size: 0.8rem;">
+              Bought from a sketchy forum pop-up banner. Instantly restores <strong>+5 Nerve Focus</strong>.
+            </div>
+            <button class="btn-primary" style="padding: 10px; font-size: 0.85rem;" onclick="buyItem('nootropic')">Buy & Consume</button>
+          </div>
+        </div>
+
+        <div class="panel-title" style="border: none; padding-top: 15px; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.05);">
+          <span>Studio & Team Activities</span>
+        </div>
+        <div class="action-grid" style="grid-template-columns: 1fr; gap: 15px;" id="activities-grid">
+          <div class="card-item" style="padding: 14px;">
+            <div class="card-item-title" style="font-size: 0.9rem;">
+              <span>🍕 Host Soggy Pizza Party</span>
+              <span style="color: #ff1744;">-$150</span>
+            </div>
+            <div class="card-item-desc" style="font-size: 0.8rem;">
+              Buy cheap room-temperature pizza to keep morale barely above absolute zero. Instantly restores <strong>+35 Energy</strong>.
+            </div>
+            <button class="btn-primary" style="padding: 10px; font-size: 0.85rem;" onclick="runActivity('pizza_party')">Host Party</button>
+          </div>
+
+          <div class="card-item" style="padding: 14px;">
+            <div class="card-item-title" style="font-size: 0.9rem;">
+              <span>💡 Host 48-Hour Hackathon</span>
+              <span style="color: #ff1744;">-$500</span>
+            </div>
+            <div class="card-item-desc" style="font-size: 0.8rem;">
+              Lock the studio doors and feed them red bull until the code compiles. Gained <strong>+15 Research Points</strong>.
+            </div>
+            <button class="btn-primary" style="padding: 10px; font-size: 0.85rem;" onclick="runActivity('hackathon')">Start Hackathon</button>
+          </div>
+
+          <div class="card-item" style="padding: 14px;">
+            <div class="card-item-title" style="font-size: 0.9rem;">
+              <span>🎟️ DevCon Free T-Shirt Hunt</span>
+              <span style="color: #ff1744;">-$1,200</span>
+            </div>
+            <div class="card-item-desc" style="font-size: 0.8rem;">
+              Send developers to collect free swag and talk to strangers. Gained <strong>+20 Research Points</strong> and <strong>+5 Coding & Design Skill</strong>.
+            </div>
+            <button class="btn-primary" style="padding: 10px; font-size: 0.85rem;" onclick="runActivity('dev_con')">Attend DevCon</button>
+          </div>
+
+          <div class="card-item" style="padding: 14px;">
+            <div class="card-item-title" style="font-size: 0.9rem;">
+              <span>🛋️ Overpriced Ergonomic Gaming Chairs</span>
+              <span style="color: #ff1744;">-$5,000</span>
+            </div>
+            <div class="card-item-desc" style="font-size: 0.8rem;">
+              Upgrade to neon racing bucket seats that look fast. <strong>Permanently increases passive Energy recovery speed by 50%</strong>.
+            </div>
+            <button class="btn-primary" style="padding: 10px; font-size: 0.85rem;" id="btn-chairs-activity" onclick="runActivity('chairs')">Purchase Chairs</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Gigs Board (Nerve) -->
+      <section class="glass-panel" style="gap: 16px;">
+        <div class="panel-title">
+          <span>Developer Gig Board (Crimes)</span>
+        </div>
+        <div class="action-grid" style="grid-template-columns: 1fr; gap: 15px;">
+          <div class="card-item">
+            <div class="card-item-title">
+              <span>Freelance HTML Edits</span>
+              <span style="color: #ff1744;">-2 🎯</span>
+            </div>
+            <div class="card-item-desc">
+              Tweak markup code templates for small neighborhood stores. High success rate, small payouts.
+            </div>
+            <div class="card-item-meta">
+              <span>💵 Payout: $50 - $100</span>
+              <span>📈 Success: 95%</span>
+            </div>
+            <button class="btn-primary" onclick="runGig('freelance_html')">Perform Gig</button>
+          </div>
+
+          <div class="card-item">
+            <div class="card-item-title">
+              <span>Crack Competitor DRM</span>
+              <span style="color: #ff1744;">-4 🎯</span>
+            </div>
+            <div class="card-item-desc">
+              Leak files of rival software assets to internet forums. Generates decent returns with moderate risk.
+            </div>
+            <div class="card-item-meta">
+              <span>💵 Payout: $200 - $400</span>
+              <span>📈 Success: 75%</span>
+            </div>
+            <button class="btn-primary" onclick="runGig('crack_competitor')">Perform Gig</button>
+          </div>
+
+          <div class="card-item">
+            <div class="card-item-title">
+              <span>Ransomware local server</span>
+              <span style="color: #ff1744;">-6 🎯</span>
+            </div>
+            <div class="card-item-desc">
+              Infect server of offshore shell companies. High payout but failure results in corporate penalties.
+            </div>
+            <div class="card-item-meta">
+              <span>💵 Payout: $800 - $1,500</span>
+              <span>📈 Success: 60%</span>
+            </div>
+            <button class="btn-primary" onclick="runGig('ransomware')">Perform Gig</button>
+          </div>
+
+          <div class="card-item">
+            <div class="card-item-title">
+              <span>DDoS Competitor Platform</span>
+              <span style="color: #ff1744;">-8 🎯</span>
+            </div>
+            <div class="card-item-desc">
+              Crash concurrent database nodes of giant rivals. Extremely risky, but lucrative rewards.
+            </div>
+            <div class="card-item-meta">
+              <span>💵 Payout: $3,000 - $6,000</span>
+              <span>📈 Success: 45%</span>
+            </div>
+            <button class="btn-primary" onclick="runGig('ddos_rival')">Perform Gig</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ═══════════════════════════════════ -->
+    <!-- Tab 4: Staff & Office Upgrades      -->
+    <!-- ═══════════════════════════════════ -->
+    <main class="main-layout" id="staff-section" style="display: none; grid-template-columns: 1fr 1fr;">
+      <!-- Hire Developers and Office spaces -->
+      <section class="glass-panel" style="gap: 16px;">
+        <div class="panel-title">
+          <span>Office Expansion & Premise Upgrades</span>
+        </div>
+        <div id="staff-capacity-status" style="font-size:0.85rem; color:var(--color-text-muted);">
+          Office Capacity: 0 / 0 staff.
+        </div>
+        <div style="display:flex; flex-direction:column; gap:12px;" id="office-upgrade-grid">
+          <!-- Loaded dynamically via game.js -->
+        </div>
+
+        <div class="panel-title" style="border:none; padding-top:10px;">
+          <span>Talent Recruitment (Hire Employees)</span>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:12px;" id="staff-hire-grid">
+          <!-- Loaded dynamically via game.js -->
+        </div>
+      </section>
+
+      <!-- Active employees list & Research lab -->
+      <section class="glass-panel" style="gap: 16px;">
+        <div class="panel-title">
+          <span>Current Active Team</span>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px;" id="active-staff-list">
+          <!-- Loaded dynamically via game.js -->
+        </div>
+
+        <div class="panel-title" style="border: none; padding-top: 15px; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.05);">
+          <span>Research Laboratory</span>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:12px;" id="research-upgrades-list">
+          <!-- Loaded dynamically via game.js -->
+        </div>
+      </section>
+    </main>
+
+    <!-- ═══════════════════════════════════ -->
+    <!-- Tab 5: Leaderboard                  -->
+    <!-- ═══════════════════════════════════ -->
+    <main class="main-layout" id="leaderboard-section" style="display: none;">
+      <section class="glass-panel" style="grid-column: span 2;">
+        <div class="panel-title">
+          <span>Global Net Worth Leaderboard</span>
+        </div>
+        <div class="history-container">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Studio Profile</th>
+                <th>Office Status</th>
+                <th style="text-align: right;">Net Worth</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboard-tbody">
+              <!-- Loaded dynamically via game.js -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <!-- Game Review Modal Overlay -->
+    <div id="review-modal" class="modal-overlay" style="display: none;">
+      <div class="glass-panel review-modal-content">
+        <h2 id="review-game-title" style="color: var(--color-cyan); text-align: center; margin-bottom: 5px; font-size: 1.6rem;">Super Quest</h2>
+        <p id="review-game-meta" style="text-align: center; color: var(--color-text-muted); font-size: 0.85rem; margin-bottom: 20px; font-weight: 500;">RPG / Cyberpunk | Rating: 8.5/10</p>
+        
+        <div id="reviewers-cards-container" style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px;">
+          <!-- Loaded dynamically via game.js -->
+        </div>
+        
+        <button class="btn-primary" style="width: 100%;" onclick="closeReviewModal()">Back to Studio</button>
+      </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Footer -->
+    <footer style="text-align: center; padding: 25px 10px 40px; color: var(--color-text-muted); font-size: 0.8rem; border-top: 1px solid rgba(255,255,255,0.06); margin-top: 20px;">
+      <p>© Dev end Simulator • Where your code compiles by luck • Powered by Supabase & Vercel</p>
+    </footer>
+  </div>
+</body>
+
+</html>

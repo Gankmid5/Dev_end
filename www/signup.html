@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Sign up or log in to Dev end — your studio development portal.">
+  <title>Dev end — Account Portal</title>
+  <link rel="stylesheet" href="styles.css">
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+
+  <!-- 1. Supabase CDN library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- 2. Initialize window.supabaseClient -->
+  <script src="supabase.js"></script>
+
+  <!-- 3. Flatpickr date picker -->
+  <script defer src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+  <!-- 4. API helpers (depends on window.supabaseClient) -->
+  <script defer src="api.js"></script>
+
+  <!-- 5. Page logic (depends on api.js and supabaseClient) -->
+  <script defer src="signup.js"></script>
+
+  <script>
+    window.addEventListener("DOMContentLoaded", () => {
+      console.log("Checking for Flatpickr directly in HTML...");
+
+      if (typeof flatpickr !== 'undefined') {
+        flatpickr("#dob-picker", {
+          theme: "dark",
+          dateFormat: "Y-m-d",
+          maxDate: "today",
+          disableMobile: true,
+          changeMonth: true,
+          changeYear: true,
+          yearRange: [1920, 2026]
+        });
+        console.log("Flatpickr bound to #dob-picker successfully!");
+      }
+    });
+  </script>
+</head>
+
+<body>
+  <div class="app-wrapper">
+    <!-- Header -->
+    <header>
+      <div class="logo-container">
+        <h1 class="logo-title">DEV<span>_END</span></h1>
+        <p class="logo-subtitle">Where dreams go to Stack Overflow</p>
+      </div>
+      <nav class="nav-tabs">
+        <a href="index.html" class="nav-tab">Company</a>
+        <a href="index.html?tab=develop" class="nav-tab">Develop Game</a>
+        <a href="index.html?tab=gigs" class="nav-tab">Gigs & Training</a>
+        <a href="index.html?tab=staff" class="nav-tab">Staff & Office</a>
+        <a href="index.html?tab=leaderboard" class="nav-tab">Leaderboard</a>
+        <a href="signup.html" class="nav-tab active">Profile</a>
+      </nav>
+      <div class="wallet-widget">
+        <a href="signup.html" style="text-decoration: none; color: inherit;">
+          <div class="wallet-balance" id="header-profile-badge" title="Active Initiate Status">
+            UNREGISTERED
+          </div>
+        </a>
+      </div>
+    </header>
+
+    <!-- Single Centered Auth Panel -->
+    <main class="auth-page-layout">
+      <section class="glass-panel auth-panel" id="profile-panel">
+        <div class="panel-title" id="panel-title">
+          <span>Create Your Account</span>
+        </div>
+
+        <!-- Auth Tabs: Sign Up / Log In -->
+        <div class="auth-tabs" id="auth-tabs">
+          <button type="button" class="btn-secondary active" id="tab-register-btn">👾 Sign Up</button>
+          <button type="button" class="btn-secondary" id="tab-login-btn">🔑 Log In</button>
+        </div>
+
+        <!-- Active Profile Card (logged in) -->
+        <div id="active-profile-details" style="display: none; flex-direction: column; gap: 24px;">
+
+          <!-- Identity Card -->
+          <div class="active-profile-card" id="active-profile-card">
+            <div class="profile-avatar-container" id="avatar-container">
+              <div class="profile-avatar-glow" id="avatar-glow-orb"></div>
+              <span id="avatar-emoji">💻</span>
+            </div>
+            <div style="flex:1;">
+              <h2 id="active-codename-display" style="font-size:1.4rem; letter-spacing:2px;">DEVELOPER</h2>
+              <p id="active-email-display" class="active-email-text" style="margin-top:4px;"></p>
+              <p id="active-meta-display" class="active-meta-text" style="margin-top:4px;"></p>
+              <p id="active-rank-display"
+                style="margin-top:8px; font-size:0.78rem; letter-spacing:1.5px; color: var(--color-text-muted); text-transform:uppercase;">
+              </p>
+            </div>
+          </div>
+
+          <!-- Stats Grid -->
+          <div class="profile-stats-grid">
+            <div class="profile-stat-card">
+              <div class="profile-stat-header">
+                <span class="profile-stat-icon">💵</span>
+                <span class="profile-stat-title">Financial Status</span>
+              </div>
+              <div class="profile-stat-row">
+                <span class="profile-stat-label">Net Worth</span>
+                <span class="profile-stat-value" id="prof-net-worth">$500</span>
+              </div>
+              <div class="profile-stat-row">
+                <span class="profile-stat-label">Cash</span>
+                <span class="profile-stat-value" id="prof-cash">$500</span>
+              </div>
+              <div class="profile-stat-row">
+                <span class="profile-stat-label">Office Tier</span>
+                <span class="profile-stat-value" id="prof-office-tier">Garage</span>
+              </div>
+            </div>
+
+            <div class="profile-stat-card">
+              <div class="profile-stat-header">
+                <span class="profile-stat-icon">🧠</span>
+                <span class="profile-stat-title">Skills & Talent</span>
+              </div>
+              <div class="profile-stat-row">
+                <span class="profile-stat-label">Coding Skill</span>
+                <span class="profile-stat-value" id="prof-coding">10</span>
+              </div>
+              <div class="profile-stat-row">
+                <span class="profile-stat-label">Design Skill</span>
+                <span class="profile-stat-value" id="prof-design">10</span>
+              </div>
+              <div class="profile-stat-row">
+                <span class="profile-stat-label">Management</span>
+                <span class="profile-stat-value" id="prof-management">10</span>
+              </div>
+            </div>
+
+            <div class="profile-stat-card">
+              <div class="profile-stat-header">
+                <span class="profile-stat-icon">🎮</span>
+                <span class="profile-stat-title">Releases</span>
+              </div>
+              <div class="profile-stat-row">
+                <span class="profile-stat-label">Games Released</span>
+                <span class="profile-stat-value" id="prof-games-released">0</span>
+              </div>
+              <div class="profile-stat-row">
+                <span class="profile-stat-label">Total Copies Sold</span>
+                <span class="profile-stat-value" id="prof-games-sold">0</span>
+              </div>
+              <div class="profile-stat-row">
+                <span class="profile-stat-label">Staff Count</span>
+                <span class="profile-stat-value" id="prof-employees">0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display: flex; gap: 10px;">
+            <button type="button" class="btn-secondary" id="edit-profile-btn" style="flex: 1;">
+              ⚙️ Edit Profile
+            </button>
+            <button type="button" class="btn-secondary" id="logout-btn"
+              style="flex: 1; border-color: rgba(255, 23, 68, 0.3); color: #ff1744;">
+              🚪 Log Out
+            </button>
+          </div>
+        </div>
+
+        <!-- Auth Form -->
+        <form id="signup-form" autocomplete="off" novalidate>
+          <!-- Email -->
+          <div class="form-group">
+            <label for="email-input" class="form-label">Email Address</label>
+            <input type="email" id="email-input" required placeholder="you@example.com" autocomplete="email">
+          </div>
+
+          <!-- Username (signup only) -->
+          <div class="form-group" id="username-group">
+            <label for="username-input" class="form-label">Username / Studio Name</label>
+            <input type="text" id="username-input" required placeholder="Choose a studio name..." maxlength="15"
+              minlength="3" autocomplete="off">
+            <span class="form-hint">3–15 characters, letters, numbers, spaces allowed</span>
+          </div>
+
+          <!-- Date of Birth (signup only) -->
+          <div class="form-group" id="dob-group">
+            <label for="dob-picker" class="form-label">Date of Birth</label>
+            <input type="text" id="dob-picker" placeholder="Select Date of Birth" readonly>
+            <span class="form-hint">You must be at least 13 years old to create an account</span>
+          </div>
+
+          <!-- Password -->
+          <div class="form-group">
+            <label for="password-input" class="form-label" id="password-label">Password</label>
+            <div class="password-input-wrapper">
+              <input type="password" id="password-input" required placeholder="Create a strong password..."
+                minlength="8" autocomplete="new-password">
+              <button type="button" id="toggle-password-btn" class="password-toggle-btn"
+                aria-label="Toggle password visibility">
+                👁️
+              </button>
+            </div>
+            <!-- Password Strength Meter (signup only) -->
+            <div class="password-strength" id="password-strength">
+              <div class="strength-bar-track">
+                <div class="strength-bar-fill" id="strength-bar-fill"></div>
+              </div>
+              <span class="strength-label" id="strength-label"></span>
+            </div>
+          </div>
+
+          <!-- Confirm Password (signup only) -->
+          <div class="form-group" id="confirm-password-group">
+            <label for="confirm-password-input" class="form-label">Confirm Password</label>
+            <input type="password" id="confirm-password-input" required placeholder="Re-enter your password..."
+              autocomplete="new-password">
+          </div>
+
+          <!-- Spec and Color -->
+          <div id="additional-fields">
+            <div class="form-group">
+              <label for="zodiac-select" class="form-label">Zodiac Sign (Lucky Affinity)</label>
+              <select id="zodiac-select" required>
+                <option value="Aries">Aries ♈</option>
+                <option value="Taurus">Taurus ♉</option>
+                <option value="Gemini">Gemini ♊</option>
+                <option value="Cancer">Cancer ♋</option>
+                <option value="Leo">Leo ♌</option>
+                <option value="Virgo">Virgo ♍</option>
+                <option value="Libra">Libra ♎</option>
+                <option value="Scorpio">Scorpio ♏</option>
+                <option value="Sagittarius">Sagittarius ♐</option>
+                <option value="Capricorn">Capricorn ♑</option>
+                <option value="Aquarius">Aquarius ♒</option>
+                <option value="Pisces">Pisces ♓</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="specialization-select" class="form-label">Developer Specialization</label>
+              <select id="specialization-select" required>
+                <option value="RPG Specialist">RPG Specialist (+10% Coding)</option>
+                <option value="Mobile Specialist">Mobile Specialist (+10% Design)</option>
+                <option value="Casual Specialist">Casual Specialist (+10% Nerve)</option>
+                <option value="Console Specialist">Console Specialist (+10% Net Worth)</option>
+                <option value="VR Specialist">VR/AR Specialist (+10% Research Speed)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="color-select" class="form-label">Studio Theme Color</label>
+              <select id="color-select" required>
+                <option value="#00e5ff">Cyber Neon Cyan</option>
+                <option value="#d500f9">Transcendence Purple</option>
+                <option value="#ffd700">Prestige Gold</option>
+                <option value="#00e676">Lime Green</option>
+                <option value="#ff1744">Hot Crimson Red</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Legal Checkboxes (signup only) -->
+          <div id="legal-checkboxes" class="legal-section">
+            <label class="checkbox-row" for="age-checkbox">
+              <input type="checkbox" id="age-checkbox" required>
+              <span>I confirm that I am <strong>13 years of age or older</strong></span>
+            </label>
+            <label class="checkbox-row" for="terms-checkbox">
+              <input type="checkbox" id="terms-checkbox" required>
+              <span>I agree to the <a href="#" id="terms-link" class="legal-link">Terms of Service</a> and
+                <a href="#" id="privacy-link" class="legal-link">Privacy Policy</a></span>
+            </label>
+          </div>
+
+          <!-- Form Error -->
+          <div id="form-error" class="form-error-msg"></div>
+
+          <!-- Submit Button -->
+          <button type="submit" class="btn-primary" id="submit-btn">
+            🔮 Create Account
+          </button>
+
+          <!-- Forgot Password (login only) -->
+          <div id="forgot-password-row" class="forgot-password-row" style="display: none;">
+            <a href="#" id="forgot-password-link" class="forgot-link">Forgot your password?</a>
+          </div>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <!-- Terms Modal -->
+  <div id="terms-modal" class="auth-modal-overlay">
+    <div class="auth-modal-content">
+      <div class="auth-modal-header">
+        <h2>Terms of Service</h2>
+        <button class="auth-modal-close" id="terms-close" aria-label="Close">✕</button>
+      </div>
+      <div class="auth-modal-body">
+        <p><strong>Effective Date:</strong> June 2026</p>
+        <h3>1. Acceptance of Terms</h3>
+        <p>By using Dev end, you agree to forfeit your sleep, sanity, and promise not to sue us when your spaghetti code causes a memory leak that eats your computer's RAM.</p>
+        <h3>2. Eligibility</h3>
+        <p>You must be at least 13 years of age or possess the mental age of a tired senior developer surviving solely on caffeine and dry humor.</p>
+        <h3>3. Disclaimer</h3>
+        <p>Dev end is a text-based satirical simulation. No actual monetary transactions or real-world company registration takes place, nor does it guarantee you'll ever center a div on your first attempt.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Privacy Modal -->
+  <div id="privacy-modal" class="auth-modal-overlay">
+    <div class="auth-modal-content">
+      <div class="auth-modal-header">
+        <h2>Privacy Policy</h2>
+        <button class="auth-modal-close" id="privacy-close" aria-label="Close">✕</button>
+      </div>
+      <div class="auth-modal-body">
+        <p><strong>Effective Date:</strong> June 2026</p>
+        <h3>1. Information Collected</h3>
+        <p>We collect your email, username, date of birth, and zodiac sign so we can judge your coding style based on astrology (e.g. Scorpios write too many try-catch blocks).</p>
+        <h3>2. Usage</h3>
+        <p>Your simulation progress and stats are stored via Supabase, mostly so you can gloat on the leaderboard about how your 'Asset-Flip Simulator' outsold the local competition.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Email Verification Modal -->
+  <div id="verify-email-modal" class="auth-modal-overlay">
+    <div class="auth-modal-content">
+      <div class="auth-modal-header">
+        <h2>📧 Verify Your Email</h2>
+        <button class="auth-modal-close" id="verify-close-btn" aria-label="Close">✕</button>
+      </div>
+      <div class="auth-modal-body">
+        <p>Account created successfully! We've sent a confirmation link to:</p>
+        <p id="verify-email-display" style="font-weight: 700; color: var(--color-white); font-size: 1.05rem; margin: 12px 0;"></p>
+        <p>Please check your inbox and click the link to activate your account and enable online saving.</p>
+
+        <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
+          <button class="btn-primary" id="resend-verification-btn">🔄 Resend Confirmation Email</button>
+          <button class="btn-secondary" id="go-home-btn">🏠 Continue to Game</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+</body>
+
+</html>
