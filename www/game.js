@@ -61,6 +61,11 @@ let gameState = {
   ai_behavior: false,
   ergonomic_chairs: false,
 
+  // Dev Level & XP System
+  level: 1,
+  xp: 0,
+  xp_needed: 100,
+
   // Local active arrays (not fully serialized to DB, but serialized to localStorage)
   employees: [],
   active_games: [],
@@ -213,6 +218,9 @@ async function loadProfileFromServer() {
       gameState.researched_multiplayer = backup.researched_multiplayer ?? false;
       gameState.ai_behavior = backup.ai_behavior ?? false;
       gameState.ergonomic_chairs = backup.ergonomic_chairs ?? false;
+      gameState.level = backup.level ?? 1;
+      gameState.xp = backup.xp ?? 0;
+      gameState.xp_needed = backup.xp_needed ?? 100;
     }
 
     addLog("Cloud profile synced.", `Welcome back, ${profile.username}.`);
@@ -246,6 +254,46 @@ function loadProfileFromLocal() {
 
   addLog("Guest local profile loaded.", "Progress is stored on this device.");
 }
+
+function gainXP(amount) {
+  if (amount <= 0) return;
+  
+  if (gameState.level === undefined) gameState.level = 1;
+  if (gameState.xp === undefined) gameState.xp = 0;
+  if (gameState.xp_needed === undefined) gameState.xp_needed = gameState.level * 100;
+  
+  gameState.xp += amount;
+  
+  let leveledUp = false;
+  while (gameState.xp >= gameState.xp_needed) {
+    gameState.xp -= gameState.xp_needed;
+    gameState.level += 1;
+    gameState.xp_needed = gameState.level * 100;
+    
+    // Level-up bonuses: increase max resources slightly and refill them!
+    gameState.max_energy = (gameState.max_energy || 100) + 10;
+    gameState.max_nerve = (gameState.max_nerve || 10) + 1;
+    gameState.energy = gameState.max_energy;
+    gameState.nerve = gameState.max_nerve;
+    
+    leveledUp = true;
+  }
+  
+  if (leveledUp) {
+    // Play chiptune release fanfare for Level Up!
+    setTimeout(() => {
+      if (window.ChiptuneAudio) ChiptuneAudio.playSFX("release");
+    }, 100);
+    addLog("LEVEL UP!", `Congratulations! You reached Dev Level ${gameState.level}! Max Energy: ${gameState.max_energy}, Max Nerve: ${gameState.max_nerve}.`);
+    showToast(`✨ LEVEL UP! Level ${gameState.level} reached!`, "success");
+  } else {
+    addLog("XP Gained", `Gained +${amount} XP.`);
+  }
+  
+  saveGame();
+  updateUI();
+}
+window.gainXP = gainXP;
 
 async function saveGame() {
   // Compute Net Worth
@@ -349,15 +397,18 @@ function gameTick() {
       gameState.cash += tickIncome;
       // Prune dead games (age >= 120 seconds or has reached its scale revenue threshold)
       gameState.active_games = gameState.active_games.filter(g => {
-        const scale = g.scale || "Small";
-        let cap = 1000;
-        if (scale === "Medium") cap = 5000;
-        if (scale === "Large") cap = 20000;
-        if (scale === "AAA") cap = 80000;
+        let cap = g.revenueCap;
+        if (cap === undefined) {
+          const scale = g.scale || "Small";
+          cap = 300;
+          if (scale === "Medium") cap = 1500;
+          if (scale === "Large") cap = 6000;
+          if (scale === "AAA") cap = 20000;
+        }
         
         const isDead = g.age >= 120 || (g.totalRevenue || 0) >= cap;
         if (isDead) {
-          addLog("Sales Concluded", `'${g.name}' has finished its sales run (Lifetime Rev: $${parseFloat(g.totalRevenue || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}).`);
+          addLog("Sales Concluded", `'${g.name}' has concluded its sales run (Lifetime Rev: $${parseFloat(g.totalRevenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}).`);
         }
         return !isDead;
       });
@@ -428,6 +479,15 @@ function updateUI() {
 
   if (nerveVal) nerveVal.innerText = `${Math.floor(gameState.nerve)} / ${gameState.max_nerve}`;
   if (nerveBar) nerveBar.style.width = `${(gameState.nerve / gameState.max_nerve) * 100}%`;
+
+  // Dev Level & XP displays
+  const levelVal = document.getElementById("header-level-val");
+  const xpVal = document.getElementById("header-xp-val");
+  const xpBar = document.getElementById("header-xp-bar");
+
+  if (levelVal) levelVal.innerText = gameState.level;
+  if (xpVal) xpVal.innerText = `${Math.floor(gameState.xp)} / ${gameState.xp_needed} XP`;
+  if (xpBar) xpBar.style.width = `${Math.min(100, (gameState.xp / gameState.xp_needed) * 100)}%`;
 
   // Dashboard indicators
   const dbCompanyName = document.getElementById("db-company-name");
@@ -527,12 +587,22 @@ function updateUI() {
 
 // --- Training Actions (GYM) ---
 function trainSkill(skillName) {
+  if (gameState.xp < 15) {
+    showToast("Requires 15 XP to train!", "error");
+    return;
+  }
   if (gameState.energy < 10) {
     showToast("Insufficient energy. Take a rest!", "error");
     return;
   }
 
+  const skillLabel = skillName === "coding_skill" ? "Coding" : (skillName === "design_skill" ? "Design" : "Management");
+  if (!confirm(`Are you sure you want to train ${skillLabel}? Costs 10 Energy and 15 XP.`)) {
+    return;
+  }
+
   gameState.energy -= 10;
+  gameState.xp -= 15;
 
   // Random XP gains based on spec modifier
   let xp = Math.floor(Math.random() * 3) + 1; // 1-3
@@ -560,12 +630,27 @@ function runGig(gigId) {
   const gig = GIGS.find(g => g.id === gigId);
   if (!gig) return;
 
+  let xpCost = 3;
+  if (gigId === "crack_competitor") xpCost = 10;
+  else if (gigId === "ransomware") xpCost = 20;
+  else if (gigId === "ddos_rival") xpCost = 40;
+
+  if (gameState.xp < xpCost) {
+    showToast(`Insufficient XP! Performing this gig requires ${xpCost} XP.`, "error");
+    return;
+  }
+
   if (gameState.nerve < gig.nerveCost) {
     showToast("Not enough nerve! Wait for your focus to recharge.", "error");
     return;
   }
 
+  if (!confirm(`Are you sure you want to perform gig '${gig.name}'? Costs ${gig.nerveCost} Nerve and ${xpCost} XP.`)) {
+    return;
+  }
+
   gameState.nerve -= gig.nerveCost;
+  gameState.xp -= xpCost;
 
   // Calculate success probability based on relevant skill levels
   // High skill increases success rate slightly
@@ -580,14 +665,19 @@ function runGig(gigId) {
     const payout = Math.floor(Math.random() * (gig.rewardMax - gig.rewardMin + 1)) + gig.rewardMin;
     gameState.cash += payout;
 
-    // Add XP
+    // Add skill points
     gameState[gig.skillRequired] += gig.xpReward;
+
+    // Give some XP back on success!
+    const xpRewardGained = gig.xpReward * 6;
 
     // Play success SFX
     ChiptuneAudio.playSFX("success");
 
-    addLog(`SUCCESS: ${gig.name}`, `Earned $${payout} and gained +${gig.xpReward} in ${gig.skillRequired.replace("_skill", "")}.`);
+    addLog(`SUCCESS: ${gig.name}`, `Earned $${payout}, gained +${gig.xpReward} in ${gig.skillRequired.replace("_skill", "")}, and gained +${xpRewardGained} XP.`);
     showToast(`Gig Success! +$${payout}`, "success");
+    
+    gainXP(xpRewardGained);
   } else {
     // Failure / Penalty
     const penalty = Math.floor(gig.rewardMin * 0.50);
@@ -699,6 +789,10 @@ function buyOffice(tierKey) {
   const tier = OFFICE_TIERS[tierKey];
   if (!tier || gameState.cash < tier.cost) return;
 
+  if (!confirm(`Are you sure you want to upgrade office premises to '${tier.name}' for $${tier.cost.toLocaleString()}?`)) {
+    return;
+  }
+
   gameState.cash -= tier.cost;
   gameState.office_tier = tierKey;
 
@@ -721,6 +815,10 @@ function hireEmployee(empKey) {
 
   if (gameState.cash < emp.cost) {
     showToast("Cannot afford hiring fee!", "error");
+    return;
+  }
+
+  if (!confirm(`Are you sure you want to hire '${emp.name}' for a sign-on fee of $${emp.cost.toLocaleString()}?`)) {
     return;
   }
 
@@ -859,7 +957,22 @@ function createGameProject() {
     return;
   }
 
+  let xpCost = 10;
+  if (scale === "Medium") xpCost = 30;
+  else if (scale === "Large") xpCost = 80;
+  else if (scale === "AAA") xpCost = 200;
+
+  if (gameState.xp < xpCost) {
+    showToast(`Insufficient XP! Starting a ${scale} project requires ${xpCost} XP.`, "error");
+    return;
+  }
+
+  if (!confirm(`Are you sure you want to start developing '${name}'? Costs $${totalCost.toLocaleString()} and ${xpCost} XP.`)) {
+    return;
+  }
+
   gameState.cash -= totalCost;
+  gameState.xp -= xpCost;
   gameState.current_project = {
     name,
     genre,
@@ -1046,6 +1159,7 @@ function successMiniGame() {
     showToast(`Polished game! Removed -${bugsRemoved} Bugs`, "success");
   }
 
+  gainXP(5);
   saveGame();
   renderProjectProgress();
   updateUI();
@@ -1234,6 +1348,9 @@ function renderProjectProgress() {
       <button class="btn-primary" style="margin-top:10px; background:#39ff14; border-color:#39ff14; color:#000;" ${progressPercent < 90 ? "disabled" : ""} onclick="releaseGameProject()">
         🚀 Release & Sell Game
       </button>
+      <button class="btn-primary nuke-btn" style="margin-top:10px; background:rgba(255,23,68,0.15); border-color:#ff1744; color:#fff;" onclick="nukeGameProject()">
+        💥 Nuke Project (Cancel & Delete)
+      </button>
     </div>
   `;
 }
@@ -1323,6 +1440,16 @@ function releaseGameProject() {
   });
 
   // Save to active lists
+  let cap = 300; // default Small project cap
+  if (proj.scale === "Medium") cap = 1500;
+  else if (proj.scale === "Large") cap = 6000;
+  else if (proj.scale === "AAA") cap = 20000;
+
+  const gameNum = gameState.games_released;
+  if (gameNum === 0) cap = 0.50;
+  else if (gameNum === 1) cap = 3.00;
+  else if (gameNum === 2) cap = 10.00;
+
   const releasedGame = {
     name: proj.name,
     genre: proj.genre,
@@ -1333,7 +1460,8 @@ function releaseGameProject() {
     initialSalesRate,
     totalSold: 0,
     totalRevenue: 0,
-    age: 0
+    age: 0,
+    revenueCap: cap
   };
 
   gameState.active_games.push(releasedGame);
@@ -1341,8 +1469,23 @@ function releaseGameProject() {
   gameState.portfolio.push({ ...releasedGame });
   gameState.games_released += 1;
 
-  addLog("Game Released!", `'${proj.name}' was published! Shelf revenue generating. Expected volume: ${initialSalesRate}/tick.`);
+  // XP Gains
+  let baseXP = 20;
+  if (proj.scale === "Medium") baseXP = 45;
+  else if (proj.scale === "Large") baseXP = 100;
+  else if (proj.scale === "AAA") baseXP = 250;
+
+  let bonusXP = 0;
+  if (gameNum === 0) bonusXP = 80;
+  else if (gameNum === 1) bonusXP = 120;
+  else if (gameNum === 2) bonusXP = 150;
+
+  const totalXPGained = baseXP + bonusXP;
+
+  addLog("Game Released!", `'${proj.name}' was published! Shelf revenue generating (Max Revenue Cap: $${cap.toFixed(2)}). Gained +${totalXPGained} XP.`);
   showToast(`Released '${proj.name}'! Rating: ${rating.toFixed(1)}/10`, "success");
+  
+  gainXP(totalXPGained);
 
   // Move project to post-release reviews and patch board phase
   proj.phase = "post_release";
@@ -1447,6 +1590,10 @@ function buyItem(itemType) {
     return;
   }
 
+  if (!confirm(`Are you sure you want to purchase and consume ${label} for $${cost}?`)) {
+    return;
+  }
+
   gameState.cash -= cost;
   if (energyGain > 0) {
     gameState.energy = Math.min(gameState.max_energy, gameState.energy + energyGain);
@@ -1472,17 +1619,20 @@ function runMarketing(gameIndex, campaignType) {
   let multiplier = 1.0;
   let ageReduction = 0;
   let label = "";
+  let xpCost = 5;
 
   if (campaignType === "social") {
     cost = 200;
     multiplier = 1.25;
     ageReduction = 30; // Extend life by 30 ticks
     label = "Social Media Hype";
+    xpCost = 5;
   } else if (campaignType === "pr") {
     cost = 800;
     multiplier = 1.60;
     ageReduction = 80; // Extend life by 80 ticks
     label = "PR Blitz Campaign";
+    xpCost = 15;
   }
 
   if (gameState.cash < cost) {
@@ -1490,7 +1640,17 @@ function runMarketing(gameIndex, campaignType) {
     return;
   }
 
+  if (gameState.xp < xpCost) {
+    showToast(`Insufficient XP! Marketing campaign requires ${xpCost} XP.`, "error");
+    return;
+  }
+
+  if (!confirm(`Are you sure you want to launch ${label} for '${game.name}'? Costs $${cost} and ${xpCost} XP.`)) {
+    return;
+  }
+
   gameState.cash -= cost;
+  gameState.xp -= xpCost;
   game.initialSalesRate = Math.ceil(game.initialSalesRate * multiplier);
   game.age = Math.max(0, game.age - ageReduction);
 
@@ -1571,10 +1731,15 @@ function buyResearch(upgradeId) {
     return;
   }
 
+  const upgradeLabel = upgradeId.replace("unlocked_", "").replace("researched_", "").replace("_", " ").toUpperCase();
+  if (!confirm(`Are you sure you want to purchase research upgrade for ${upgradeLabel}? Costs ${cost} Research Points.`)) {
+    return;
+  }
+
   gameState.research_points -= cost;
   gameState[upgradeId] = true;
 
-  addLog("Research Completed", `Researched upgrade: ${upgradeId.replace("unlocked_", "").replace("researched_", "").replace("_", " ").toUpperCase()}.`);
+  addLog("Research Completed", `Researched upgrade: ${upgradeLabel}.`);
   showToast("Research Upgrade unlocked!", "success");
 
   saveGame();
@@ -1676,21 +1841,36 @@ function runActivity(activityType) {
     return;
   }
 
+  let xpCost = 0;
+  if (activityType === "pizza_party") xpCost = 10;
+  else if (activityType === "hackathon") xpCost = 25;
+  else if (activityType === "dev_con") xpCost = 50;
+
+  if (gameState.xp < xpCost) {
+    showToast(`Insufficient XP! Hosting this activity requires ${xpCost} XP.`, "error");
+    return;
+  }
+
+  if (!confirm(`Are you sure you want to start '${label}'? Costs $${cost} and ${xpCost} XP.`)) {
+    return;
+  }
+
   gameState.cash -= cost;
+  gameState.xp -= xpCost;
 
   if (activityType === "pizza_party") {
     gameState.energy = Math.min(gameState.max_energy, gameState.energy + energyGain);
-    addLog("Hosted Pizza Party", `Spent $${cost} to host a pizza party. Gained +35 Energy.`);
+    addLog("Hosted Pizza Party", `Spent $${cost} and 10 XP to host a pizza party. Gained +35 Energy.`);
     showToast("Wood-fired pizzas delivered! +35 Energy", "success");
   } else if (activityType === "hackathon") {
     gameState.research_points += researchGain;
-    addLog("Started Hackathon", `Spent $${cost} to organize a hackathon. Gained +15 Research Points.`);
+    addLog("Started Hackathon", `Spent $${cost} and 25 XP to organize a hackathon. Gained +15 Research Points.`);
     showToast("Hackathon complete! +15 RP", "success");
   } else if (activityType === "dev_con") {
     gameState.research_points += researchGain;
     gameState.coding_skill += skillGain;
     gameState.design_skill += skillGain;
-    addLog("Attended DevCon", `Spent $${cost} to attend DevCon. Gained +20 Research Points and +5 Coding & Design.`);
+    addLog("Attended DevCon", `Spent $${cost} and 50 XP to attend DevCon. Gained +20 Research Points and +5 Coding & Design.`);
     showToast("DevCon complete! +20 RP, +5 Skills", "success");
   } else if (activityType === "chairs") {
     gameState.ergonomic_chairs = true;
@@ -1887,9 +2067,14 @@ function renderPostReleaseDashboard() {
         </div>
       </div>
 
-      <button class="btn-primary" style="background:rgba(255,255,255,0.08); border-color:rgba(255,255,255,0.1); color:#fff; padding:12px; border-radius:8px;" onclick="concludeGameProject()">
-        💼 Conclude Project & Return to Studio
-      </button>
+      <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; width:100%;">
+        <button class="btn-primary" style="flex:2; min-width:200px; background:rgba(255,255,255,0.08); border-color:rgba(255,255,255,0.1); color:#fff; padding:12px; border-radius:8px;" onclick="concludeGameProject()">
+          💼 Conclude Project & Return to Studio
+        </button>
+        <button class="btn-primary nuke-btn" style="flex:1; min-width:120px; background:rgba(255,23,68,0.15); border-color:#ff1744; color:#fff; padding:12px; border-radius:8px;" onclick="nukeGameProject()">
+          💥 Nuke Game (Store Pull)
+        </button>
+      </div>
     </div>
   `;
 }
@@ -2037,6 +2222,10 @@ function supportActiveProject(actionType) {
       return;
     }
 
+    if (!confirm(`Are you sure you want to release a DLC Update for '${proj.name}'? Costs $${cashCost} and ${energyCost} Energy.`)) {
+      return;
+    }
+
     gameState.cash -= cashCost;
     gameState.energy -= energyCost;
     proj.rating = Math.min(10.0, proj.rating + 0.5);
@@ -2063,6 +2252,10 @@ function supportActiveProject(actionType) {
     }
     if (gameState.energy < energyCost) {
       showToast(`Requires ${energyCost} Energy!`, "error");
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to launch Hype Ads for '${proj.name}'? Costs $${cashCost} and ${energyCost} Energy.`)) {
       return;
     }
 
@@ -2266,6 +2459,126 @@ function toggleMusic() {
   }
 }
 
+const devNukeComments = [
+  "Wait, they canceled it? But I already bought the gamer socks from their merch store!",
+  "The code was probably just one giant 'if (false)' anyway. Saved us from a crash.",
+  "Typical vaporware. Devs probably ran away to Bali with the budget.",
+  "They took the money and ran! I'm calling my bank to chargeback the pre-order.",
+  "Good, the teaser trailer was already drop-frame at 15 FPS.",
+  "A tragedy. We lost another potential masterpiece of misaligned pixels.",
+  "I had a countdown timer on my desktop for this. Now I have to go outside.",
+  "I saw their github repo. The README was just a single crying emoji.",
+  "Deleting the game project is the ultimate refactoring technique.",
+  "But where am I going to find my daily supply of memory leaks now?"
+];
+
+const releaseNukeComments = [
+  "Did they just pull it from the store? Legendary rug pull!",
+  "Devs literally dropped database in production and called it 'creative direction'.",
+  "Gone like a fart in the wind. Glad I didn't buy the Season Pass.",
+  "Rest in spaghetti, never forgetti. I'm going back to Minesweeper.",
+  "The servers went offline faster than my laptop battery.",
+  "It's an ultra-rare collector's item now. Selling my hard drive for $5000.",
+  "They pulled a Flappy Bird! Devs are too pure for this world.",
+  "They deleted the game to avoid fixing the bugs. Honestly, respect.",
+  "I still had 14 unresolved bug tickets open. What a speedrun."
+];
+
+function nukeGameProject() {
+  if (!gameState.current_project) return;
+  
+  const proj = gameState.current_project;
+  const gameName = proj.name;
+  const wasReleased = proj.phase === "post_release";
+  
+  if (!confirm(`Are you sure you want to NUKE '${gameName}'? This will permanently cancel/pull the project and delete all progress!`)) {
+    return;
+  }
+  
+  // Stop active mini-games
+  if (miniGameTimer) {
+    clearInterval(miniGameTimer);
+    miniGameTimer = null;
+  }
+  activeMiniGame = null;
+  
+  // If it was post-release, remove from active games list so sales stop!
+  if (wasReleased) {
+    gameState.active_games = gameState.active_games.filter(g => g.name !== gameName);
+  }
+  
+  // Play failure sound
+  ChiptuneAudio.playSFX("fail");
+  
+  // Clear the active project
+  gameState.current_project = null;
+  
+  // Log the cancellation
+  addLog("PROJECT NUKED", `'${gameName}' was permanently incinerated and deleted.`);
+  
+  saveGame();
+  
+  // Show nuke modal with crowd reactions
+  showNukeModal(gameName, wasReleased);
+}
+
+function showNukeModal(gameName, wasReleased) {
+  const modal = document.getElementById("nuke-modal");
+  const titleEl = document.getElementById("nuke-game-title");
+  const metaEl = document.getElementById("nuke-game-meta");
+  const container = document.getElementById("nuke-reactions-container");
+  
+  if (!modal || !container) return;
+
+  if (titleEl) titleEl.innerText = `💥 ${gameName} Nuked!`;
+  if (metaEl) {
+    metaEl.innerText = wasReleased 
+      ? "Pulled from store! The internet is in absolute shambles."
+      : "Project canceled! Angry backers are demanding refunds.";
+  }
+
+  const sourceComments = wasReleased ? releaseNukeComments : devNukeComments;
+  
+  // Shuffle comments & users
+  const shuffledComments = [...sourceComments].sort(() => Math.random() - 0.5);
+  const users = ["alpha_coder", "indie_fan", "console_cowboy", "pixel_purist", "noob_slayer", "hype_beast", "db_nuker", "bug_hunter"];
+  const shuffledUsers = [...users].sort(() => Math.random() - 0.5);
+  const emojis = ["💀", "🤡", "💸", "😡", "😭", "🤦", "🔥", "💨"];
+  const shuffledEmojis = [...emojis].sort(() => Math.random() - 0.5);
+
+  container.innerHTML = "";
+  for (let i = 0; i < 3; i++) {
+    const commenter = shuffledUsers[i % shuffledUsers.length];
+    const text = shuffledComments[i % shuffledComments.length];
+    const emoji = shuffledEmojis[i % shuffledEmojis.length];
+
+    container.innerHTML += `
+      <div class="reviewer-card" style="border-color: rgba(255, 23, 68, 0.25); background: rgba(255, 23, 68, 0.02); margin-bottom: 0;">
+        <div class="reviewer-info">
+          <div class="reviewer-name" style="color: #ff1744; font-weight: 700;">@gamer_${commenter}</div>
+          <div class="reviewer-comment" style="color: var(--color-text-muted); font-style: italic;">"${text}"</div>
+        </div>
+        <div class="reviewer-score-badge" style="border-color: #ff1744; color: #ff1744; background: rgba(255, 23, 68, 0.1); box-shadow: 0 0 10px rgba(255, 23, 68, 0.2); font-size: 1.3rem;">
+          ${emoji}
+        </div>
+      </div>
+    `;
+  }
+
+  modal.style.display = "flex";
+}
+
+function closeNukeModal() {
+  const modal = document.getElementById("nuke-modal");
+  if (modal) {
+    modal.style.display = "none";
+  }
+  renderDevelopPanel();
+  updateUI();
+}
+
 window.toggleMusic = toggleMusic;
 window.ChiptuneAudio = ChiptuneAudio;
+window.nukeGameProject = nukeGameProject;
+window.closeNukeModal = closeNukeModal;
 
