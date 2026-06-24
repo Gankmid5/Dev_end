@@ -514,7 +514,45 @@ function randHudMorale() {
   return 34 + Math.floor(Math.random() * 40);
 }
 
+const CAPSTONE_PROJECT_NAME = "Dev End: The Web Game";
+
+function notifyMetaStepsCompleted(newly) {
+  if (!newly || !newly.length || !window.MetaProgression) return;
+  newly.forEach(stepId => {
+    const step = MetaProgression.META_STEPS.find(s => s.id === stepId);
+    if (step) {
+      showToast(`✓ Quest: ${step.label}`, "success", true);
+      addLog("Main Quest", `Completed: ${step.label}`, "quest");
+      spawnFloatText("QUEST!", "gold");
+    }
+  });
+  if (newly.includes("capstone_ready")) {
+    showToast("🌐 WEB-GAME COMPLETE — You shipped Dev End!", "success", true);
+    triggerScreenFlash(0, 229, 255);
+    spawnFloatText("NG+ UNLOCKED", "gold", true);
+  } else if (newly.includes("conclude_liveops")) {
+    showToast("🌐 Capstone unlocked: Greenlight Dev End — The Web Game!", "success", true);
+    triggerScreenFlash(180, 100, 255);
+  }
+  updateQuestTracker();
+}
+
+function fireMetaSync() {
+  if (!window.MetaProgression) return [];
+  const newly = MetaProgression.syncProgress(gameState);
+  notifyMetaStepsCompleted(newly);
+  return newly;
+}
+
+function fireMetaEvent(event, data) {
+  if (!window.MetaProgression) return [];
+  const newly = MetaProgression.onEvent(gameState, event, data);
+  notifyMetaStepsCompleted(newly);
+  return newly;
+}
+
 function getCurrentQuest() {
+  if (window.MetaProgression) return MetaProgression.getQuestDisplay(gameState);
   const proj = gameState.current_project;
   if (gameState.rentOverdue > 0) {
     return { main: "URGENT: Pay rent before landlord unlocks 'eviction cutscene'", sub: "Failure state: sleeping in car" };
@@ -527,24 +565,7 @@ function getCurrentQuest() {
       sub: bugs > 10 ? "Bonus: pretend playtesting happened" : "Bonus: add one more 'small' feature"
     };
   }
-  if (proj && proj.phase === "post_release") {
-    return { main: `LIVE OPS: Keep '${proj.name}' alive until players forget`, sub: "DLC idea: sell the crash as premium" };
-  }
-  if (gameState.cash < 300) {
-    return { main: "SIDE: Perform gigs without FBI noticing", sub: "Reward: ramen + plausible deniability" };
-  }
-  if (gameState.energy < 25) {
-    return { main: "SIDE: Restore caffeine reserves to playable levels", sub: "Visit store or touch grass (not recommended)" };
-  }
-  if (!proj) {
-    return { main: "MAIN: Start a project before investors ask for screenshots", sub: "Tutorial boss: the blank page" };
-  }
-  const mains = [
-    "MAIN: Expand studio without expanding accountability",
-    "SIDE: Train skills via legally distinct arcade machines",
-    "MAIN: Hit Imposter Tier " + (gameState.level + 1) + " for no extra pay"
-  ];
-  return { main: mains[hudFlavorTimer % mains.length], sub: QUEST_SUBTITLES[hudFlavorTimer % QUEST_SUBTITLES.length] };
+  return { main: "MAIN: Follow the zone arcades — they all connect", sub: "Ship something. Anything." };
 }
 
 function updateQuestTracker() {
@@ -552,19 +573,112 @@ function updateQuestTracker() {
   const mainEl = document.getElementById("quest-tracker-text");
   const subEl = document.getElementById("quest-tracker-sub");
   if (mainEl) mainEl.textContent = q.main;
-  if (subEl) subEl.textContent = q.sub;
+  if (subEl) {
+    let sub = q.sub || "";
+    if (q.progress) sub += ` · Full arc ${q.progress.pct}%`;
+    if (q.step?.zone && !q.complete) sub += ` · [Go: ${q.step.zone.toUpperCase()}]`;
+    subEl.textContent = sub;
+  }
+
+  const tracker = document.getElementById("quest-tracker");
+  if (tracker) {
+    tracker.classList.toggle("quest-urgent", !!q.urgent);
+    tracker.classList.toggle("quest-complete", !!q.complete);
+    tracker.classList.toggle("quest-capstone", !!q.capstone);
+  }
 
   const footerHint = document.getElementById("footer-quest-hint");
   if (footerHint && hudFlavorTimer % 9 === 0) {
-    const hints = [
-      "TIP: Click the logo 7 times. The game respects superstition.",
-      "TIP: 3x arcade combo triggers screen flash. Synergy is real.",
-      "TIP: Chaos panel buttons are 100% necessary. Probably.",
-      "TIP: Rent overdue unlocks passive-aggressive landlord mode.",
-      "TIP: Every zone warp includes unnecessary loading flavor text."
-    ];
+    const hints = q.step
+      ? [`TIP: Next quest step → ${q.step.hint || q.step.zone}. All zones feed the same arc.`]
+      : [
+        "TIP: Arcade sprints, zone games, and the shipped platformer all count toward the finale.",
+        "TIP: Legacy score boosts net worth — ship hits, DLC, and playtests stack.",
+        "TIP: 3× dev sprint combo unlocks Act V. Chain those arcade wins.",
+        "TIP: Capstone unlocks after Live Ops — ship Dev End: The Web Game."
+      ];
     footerHint.textContent = hints[Math.floor(Math.random() * hints.length)];
   }
+}
+
+function goToMetaZone(zone) {
+  const map = {
+    studio: "company",
+    company: "company",
+    develop: "develop",
+    gigs: "gigs",
+    staff: "staff",
+    research: "staff",
+    leaderboard: "leaderboard",
+    store: "gigs",
+    hud: activeTab || "gigs",
+    post_release: "develop"
+  };
+  const tab = map[zone] || zone;
+  switchTab(tab);
+  if (zone === "develop" && gameState.current_project?.phase === "post_release") {
+    renderPostReleaseDashboard();
+  }
+}
+
+function startCapstoneProject() {
+  if (!window.MetaProgression || !MetaProgression.isCapstoneUnlocked(gameState)) {
+    showToast("Complete the main arc first — conclude Live Ops on a shipped game!", "error");
+    return;
+  }
+  if (gameState.current_project) {
+    showToast("Finish or conclude your current project before the meta finale!", "error");
+    return;
+  }
+  if (!confirm("Greenlight the capstone: 'Dev End: The Web Game'?\nSimulation / Game Dev · AAA · The simulation about shipping this simulation.")) {
+    return;
+  }
+
+  const platformKey = "pc";
+  let scaleCost = 50000;
+  const platCost = PLATFORMS[platformKey].cost;
+  const totalCost = scaleCost + platCost;
+  if (gameState.cash < totalCost) {
+    showToast(`Capstone needs $${totalCost.toLocaleString()} in runway!`, "error");
+    return;
+  }
+
+  gameState.cash -= totalCost;
+  gameState.current_project = ensureProjectMeta({
+    name: CAPSTONE_PROJECT_NAME,
+    genre: "Simulation",
+    topic: "Game Dev",
+    platform: platformKey,
+    scale: "AAA",
+    isCapstone: true,
+    tech_points: 0,
+    design_points: 0,
+    bug_points: 0,
+    progress: 0,
+    phase: "coding",
+    devPhase: "concept",
+    miniGamesPlayed: 0,
+    miniGamesWon: 0,
+    miniGamesLost: 0,
+    techDebt: 0,
+    hypeMeter: 55,
+    scopeFeatures: 0,
+    milestonesHit: [],
+    devDiary: [],
+    focusGroupBonus: 0.25,
+    playtestsRun: 0
+  });
+  pushDevDiary(gameState.current_project, "concept", "Greenlit the meta capstone. You are now developing a game about developing this game. Recursion depth: alarming.");
+  gameState.metaProgress.capstoneStarted = true;
+  fireMetaEvent("capstone_start");
+  fireMetaEvent("project_start");
+  addLog("Capstone Greenlit", `'${CAPSTONE_PROJECT_NAME}' enters production. The web-game arc converges here.`, "quest");
+  showToast("🌐 Capstone greenlit! Ship the complete web-game.", "success", true);
+  triggerScreenFlash(0, 229, 255);
+  saveGame();
+  switchTab("develop");
+  renderDevelopPanel();
+  updateUI();
 }
 
 function updateRpgBars() {
@@ -665,6 +779,10 @@ window.addEventListener("DOMContentLoaded", async () => {
   }
 
   ensureStudioMeta();
+  if (window.MetaProgression) {
+    MetaProgression.ensureMeta(gameState);
+    MetaProgression.syncProgress(gameState);
+  }
 
   // Start the tick loops
   setInterval(gameTick, 1000);
@@ -923,10 +1041,13 @@ function gainXP(amount) {
 window.gainXP = gainXP;
 
 async function saveGame() {
-  // Compute Net Worth
+  // Compute Net Worth (legacy from shipped hits feeds studio valuation)
   let employeesValue = gameState.employees.reduce((acc, emp) => acc + (EMPLOYEES_INFO[emp.id]?.cost || 0) * 0.5, 0);
   let officeValue = OFFICE_TIERS[gameState.office_tier]?.cost || 0;
-  gameState.net_worth = gameState.cash + employeesValue + officeValue;
+  const legacyBonus = window.MetaProgression
+    ? MetaProgression.getLegacyNetWorthBonus(gameState)
+    : getStudioLegacyTotal() * 25;
+  gameState.net_worth = gameState.cash + employeesValue + officeValue + legacyBonus;
   gameState.employees_count = gameState.employees.length;
 
   const serialized = JSON.stringify(gameState);
@@ -1063,6 +1184,9 @@ function gameTick() {
       gameState.current_project.design_points += designGain;
       if (bugFix > 0) {
         gameState.current_project.bug_points = Math.max(0, gameState.current_project.bug_points - bugFix);
+      }
+      if (gameState.ai_behavior && Math.random() < 0.03) {
+        gameState.current_project.bug_points = Math.max(0, gameState.current_project.bug_points - 1);
       }
     }
   }
@@ -2439,10 +2563,15 @@ function getStudioPassiveIncome() {
 }
 
 function getStudioLegacyTotal() {
+  if (window.MetaProgression) return MetaProgression.getLegacyTotal(gameState);
   let total = 0;
   (gameState.portfolio || []).forEach(g => { total += g.legacyScore || Math.round((g.rating || 5) * 8); });
   if (gameState.current_project?.legacyScore) total += gameState.current_project.legacyScore;
   return total;
+}
+
+function getMetaArcHtml() {
+  return window.MetaProgression ? MetaProgression.renderMetaArcHtml(gameState) : "";
 }
 
 function getLeaseClause(tier) {
@@ -2546,6 +2675,8 @@ function renderStudioDashboard() {
 
       ${projectSnap}
 
+      ${getMetaArcHtml()}
+
       <div class="studio-pulse-grid">
         ${renderStudioMeter("Morale", gameState.studioMorale, "#b388ff")}
         ${renderStudioMeter("Reputation", Math.min(100, gameState.studioReputation), "#00e5ff")}
@@ -2638,6 +2769,7 @@ function runStudioAction(actionId) {
     addLog("Rent Paid", `Paid $${rent}. Morale restored slightly. Landlord respect: fabricated.`);
     showToast(`Rent paid! Morale +8`, "success");
     checkFunnyAchievements();
+    fireMetaSync();
   } else if (actionId === "investor_pitch") {
     if (gameState.nerve < 5) { showToast("Pitch needs 5 nerve!", "error"); return; }
     gameState.nerve -= 5;
@@ -2819,6 +2951,7 @@ function updateUI() {
   ensureStudioMeta();
 
   if (hudFlavorTimer % 2 === 0) refreshHudHumor();
+  updateQuestTracker();
 
   const companySection = document.getElementById("company-section");
   const companyVisible = companySection && companySection.style.display !== "none";
@@ -2866,6 +2999,19 @@ function updateZonePulse() {
   if (companyPulse) {
     companyPulse.classList.toggle("lit", gameState.active_games.length > 0 || gameState.rentOverdue > 0);
   }
+
+  const questTabMap = { studio: "company", research: "staff", store: "gigs", hud: null, post_release: "develop" };
+  let questTab = null;
+  if (window.MetaProgression) {
+    const next = MetaProgression.getNextStep(gameState);
+    if (next?.zone) questTab = questTabMap[next.zone] || next.zone;
+  }
+  document.querySelectorAll(".zone-node[data-tab]").forEach(node => {
+    node.classList.toggle("quest-target", !!questTab && node.dataset.tab === questTab);
+  });
+  document.querySelectorAll(".link-node[data-tab]").forEach(node => {
+    node.classList.toggle("quest-target", !!questTab && node.dataset.tab === questTab);
+  });
 }
 
 // --- Training Actions (GYM) ---
@@ -3141,6 +3287,7 @@ function hireEmployee(empKey) {
   addLog("Staff Hired", `Hired a ${emp.name} for a sign-on bonus of $${emp.cost}.`);
   showToast(`${emp.name} joined team!`, "success");
 
+  fireMetaSync();
   saveGame();
   renderStaffPanel();
   updateUI();
@@ -3237,13 +3384,16 @@ function renderDevelopPanel() {
         </div>
 
         <div class="dev-board-card dev-board-sidebar">
-          <h4 style="margin-bottom:10px; color:var(--color-purple); text-transform:uppercase; font-size:0.8rem; letter-spacing:1px;">Studio Pipeline Guide</h4>
+          ${getMetaArcHtml()}
+          <h4 style="margin-top:12px; margin-bottom:10px; color:var(--color-purple); text-transform:uppercase; font-size:0.8rem; letter-spacing:1px;">Act Checklist</h4>
+          <div class="meta-step-list">${window.MetaProgression ? MetaProgression.renderMetaStepList(gameState) : ""}</div>
+          <h4 style="margin-top:12px; margin-bottom:10px; color:var(--color-purple); text-transform:uppercase; font-size:0.8rem; letter-spacing:1px;">Studio Pipeline Guide</h4>
           <div class="dev-pipeline-guide">
             ${DEV_PHASES.map(p => `<div class="dev-guide-step"><span>${p.icon}</span><div><strong>${p.label}</strong><p>Unlocks at ${p.min}% progress. Each phase unlocks new diary drama.</p></div></div>`).join("")}
           </div>
           <div style="margin-top:14px; padding-top:14px; border-top:1px dashed rgba(255,255,255,0.08); font-size:0.78rem; color:var(--color-text-muted); line-height:1.45;">
             <strong style="color:var(--color-cyan);">Games shipped:</strong> ${portfolioCount}<br>
-            Ship at <strong>90%</strong> with <strong>≤8 bugs</strong>. Post-release live ops, DLC, sequels, and remasters unlock after launch.
+            Ship at <strong>90%</strong> with <strong>≤8 bugs</strong>. Arcade sprints → ship → Live Ops → legacy → capstone finale.
           </div>
         </div>
       </div>
@@ -3336,6 +3486,7 @@ function createGameProject() {
 
   addLog("Project Started", `Initiated development of '${name}' (${genre}/${topic}) on ${PLATFORMS[platformKey].name}. Budget spent: $${totalCost}. Synergy: ${synergy.label}.`);
   showToast("Development initialized!", "success");
+  fireMetaEvent("project_start");
 
   saveGame();
   renderDevelopPanel();
@@ -3491,12 +3642,15 @@ function launchZoneMiniGame(zoneId, gameId) {
     return;
   }
   if (energyCost > 0) gameState.energy -= energyCost;
+  let siteDuration = window.SiteMinigames.getDuration(gameId);
+  if (gameState.ai_behavior) siteDuration = Math.round(siteDuration * 1.2);
+
   activeMiniGame = {
     type: "site",
     siteGameId: gameId,
     zoneId,
     isZoneBonus: true,
-    duration: window.SiteMinigames.getDuration(gameId),
+    duration: siteDuration,
     elapsed: 0,
     timeLeft: 100,
     siteStarted: false
@@ -3573,6 +3727,11 @@ function finishZoneMiniGameReward(won, reason, zoneId, gameId) {
   if (won) {
     gameState.siteMiniGamesWon = (gameState.siteMiniGamesWon || 0) + 1;
     gameState.arcadeClears = (gameState.arcadeClears || 0) + 1;
+    if (window.MetaProgression) {
+      MetaProgression.ensureMeta(gameState);
+      gameState.arcadeStats.siteWins = (gameState.arcadeStats.siteWins || 0) + 1;
+    }
+    fireMetaEvent("site_win");
     const xpGain = randInt(4, 10);
     const cashGain = randInt(15, 65);
     gameState.xp += xpGain;
@@ -3639,9 +3798,10 @@ function startMiniGame(type, isTraining = false) {
   const arcadeId = window.ArcadeMinigames
     ? window.ArcadeMinigames.pickForCategory(type)
     : "snake";
-  const arcadeDuration = window.ArcadeMinigames
+  let arcadeDuration = window.ArcadeMinigames
     ? window.ArcadeMinigames.getDuration(arcadeId)
     : 55000;
+  if (gameState.ai_behavior) arcadeDuration = Math.round(arcadeDuration * 1.25);
 
   activeMiniGame = {
     type: "arcade",
@@ -3845,6 +4005,7 @@ function successMiniGame() {
     }
     gainXP(10);
     spawnFloatText(`+${skillGain} ${skillLabel.toUpperCase()}`, "cyan");
+    fireMetaEvent("training_win");
     saveGame();
     renderTrainingGym();
     updateUI();
@@ -3859,6 +4020,10 @@ function successMiniGame() {
   const target = getTargetPointsForScale(gameState.current_project.scale);
   miniGameCombo++;
   gameState.arcadeClears = (gameState.arcadeClears || 0) + 1;
+  if (window.MetaProgression) {
+    MetaProgression.ensureMeta(gameState);
+    gameState.arcadeStats.arcadeWins = (gameState.arcadeStats.arcadeWins || 0) + 1;
+  }
   const comboMult = Math.min(1.8, 1 + (miniGameCombo - 1) * 0.12);
   updateHudCombo(miniGameCombo);
   checkFunnyAchievements();
@@ -3909,6 +4074,7 @@ function successMiniGame() {
   proj.techDebt = Math.max(0, (proj.techDebt || 0) - 1);
   if (Math.random() < 0.35) pushDevDiary(proj, proj.devPhase);
   checkDevMilestones(proj);
+  fireMetaEvent("sprint_win", { combo: miniGameCombo });
   saveGame();
   renderProjectProgress();
   updateUI();
@@ -4140,6 +4306,8 @@ function renderProjectProgress() {
         <div class="dev-synergy-badge" style="border-color:${synergy.color}; color:${synergy.color};">${synergy.label}</div>
       </div>
 
+      ${proj.isCapstone ? `<div class="meta-capstone-banner">🌐 <strong>CAPSTONE PROJECT</strong> — Every zone arcade, dev sprint, and shipped platformer led here. Ship to complete the web-game.</div>` : ""}
+
       ${renderDevPhasePipeline(progressPercent)}
 
       <div class="dev-stats-grid">
@@ -4196,6 +4364,7 @@ function renderProjectProgress() {
         </div>
 
         <div class="dev-board-sidebar">
+          <div class="meta-step-list compact">${window.MetaProgression ? MetaProgression.renderMetaStepList(gameState) : ""}</div>
           <h4 class="dev-section-label">📓 Dev Diary</h4>
           <div class="dev-diary-feed">${diaryHtml}</div>
           <h4 class="dev-section-label" style="margin-top:12px;">👥 Staff / Tick</h4>
@@ -4203,7 +4372,7 @@ function renderProjectProgress() {
             Each second staff adds ~${staff.tech.toFixed(1)} tech, ~${staff.design.toFixed(1)} design
             ${staff.bugFix < 0 ? `, fixes ~${Math.abs(staff.bugFix).toFixed(1)} bugs` : ""} while this project is active.
           </p>
-          <p class="dev-section-hint">Sprints won: ${proj.miniGamesWon || 0}/${proj.miniGamesPlayed || 0} · Playtests: ${proj.playtestsRun || 0}</p>
+          <p class="dev-section-hint">Sprints won: ${proj.miniGamesWon || 0}/${proj.miniGamesPlayed || 0} · Playtests: ${proj.playtestsRun || 0}${gameState.ai_behavior ? " · AI research: +25% sprint time, passive bug scrub" : ""}</p>
         </div>
       </div>
 
@@ -4388,6 +4557,19 @@ function releaseGameProject() {
   proj.appleIndex = Math.floor(Math.random() * 16);
   proj.legacyScore = Math.round(rating * 10 + (proj.hypeMeter || 0) * 0.2);
   initPostReleaseState(proj);
+
+  if (proj.isCapstone) {
+    fireMetaEvent("capstone_ship");
+    pushStudioDiary("Shipped the capstone. The web-game arc is complete. Investors ask if this is NFT-able.");
+    addLog("WEB-GAME COMPLETE", `'${proj.name}' shipped. Every zone, mini-game, and engine converged here.`, "quest");
+    showToast("🌐 COMPLETE WEB-GAME SHIPPED — Dev End is Dev End!", "success", true);
+    triggerScreenFlash(255, 215, 0);
+    spawnFloatText("THE END?", "gold", true);
+  } else {
+    fireMetaEvent("ship");
+    fireMetaEvent("post_release");
+  }
+  fireMetaSync();
 
   saveGame();
   renderDevelopPanel();
@@ -4663,6 +4845,7 @@ function buyResearch(upgradeId) {
   addLog("Research Completed", `Researched upgrade: ${upgradeLabel}.`);
   showToast("Research Upgrade unlocked!", "success");
 
+  fireMetaSync();
   saveGame();
   renderResearchLab();
   updateUI();
@@ -4914,6 +5097,7 @@ function startShippedGameSession() {
     shippedGameStarted = true;
     const badge = document.querySelector(".play-game-badge");
     if (badge) badge.textContent = "LIVE";
+    fireMetaEvent("platformer_play");
     mountShippedPlatformer();
   };
   setTimeout(tick, 650);
@@ -4944,14 +5128,27 @@ function onShippedGameEnd(result, stats, failReason) {
   proj.playerReviews.unshift(review);
   if (proj.playerReviews.length > 6) proj.playerReviews.pop();
 
+  const activeGame = gameState.active_games.find(g => g.name === proj.name);
+  const portItem = (gameState.portfolio || []).find(p => p.name === proj.name);
+
   if (result === "win") {
     proj.legacyScore = (proj.legacyScore || 0) + 2;
     if (stats.collected >= stats.totalFeatures) proj.hypeMeter = Math.min(100, (proj.hypeMeter || 0) + 8);
+    if (activeGame) {
+      activeGame.initialSalesRate = Math.ceil(activeGame.initialSalesRate * 1.08);
+      activeGame.rating = Math.min(10, activeGame.rating + 0.15);
+    }
+    if (portItem) {
+      if (activeGame) portItem.initialSalesRate = activeGame.initialSalesRate;
+      portItem.rating = activeGame ? activeGame.rating : portItem.rating;
+    }
+    proj.playerSentiment = Math.min(100, (proj.playerSentiment || 50) + 12);
     spawnFloatText("SHIPPED!", "gold", true);
     spawnFloatText(`+${score} SCORE`, "cyan");
-    addLog("Playtest Victory", `You beat '${proj.name}' (the game inside the game). Score: ${score}. Community pretends to notice.`);
-    pushDevDiary(proj, "post_release", `Studio founder cleared the in-game platformer. ${review.user} left a ${review.score}/10 review. Ego restored.`);
-    showToast(`You shipped it again! Score: ${score}`, "success");
+    addLog("Playtest Victory", `You beat '${proj.name}' (the game inside the game). Score: ${score}. Live ops sales +8%.`);
+    pushDevDiary(proj, "post_release", `Studio founder cleared the in-game platformer. ${review.user} left a ${review.score}/10 review. Sales tick up.`);
+    showToast(`Platformer cleared! Live ops +8% sales · Score: ${score}`, "success");
+    fireMetaEvent("platformer_win");
     if (proj.cachedTweets) {
       proj.cachedTweets.unshift({
         user: review.user,
@@ -4964,6 +5161,7 @@ function onShippedGameEnd(result, stats, failReason) {
     addLog("Playtest Failure", failReason || "You died in your own game. The irony writes itself.");
     pushDevDiary(proj, "post_release", `Founder died in '${proj.name}' platformer section. ${failReason || "Skill issue logged."}`);
     showToast(failReason || "You died in your own game.", "error");
+    fireMetaEvent("platformer_play");
   }
 
   if (window.SynthwaveAudio) SynthwaveAudio.playSFX(result === "win" ? "cash" : "fail");
@@ -5433,6 +5631,7 @@ function applyDayOnePatch() {
 
   addLog("Day-One Patch Released!", `Metacritic rating for '${proj.name}' improved from ${oldRating.toFixed(1)} to ${proj.rating.toFixed(1)}! Sales rate boosted.`);
   showToast("Patch released! Rating boosted +1.0!", "success");
+  fireMetaEvent("day_one_patch");
   
   saveGame();
   renderPostReleaseDashboard();
@@ -5568,6 +5767,8 @@ function concludeGameProject() {
   proj.legacyScore = (proj.legacyScore || 0) + Math.round((proj.rating || 5) * 2);
   addLog("Project Concluded", `Finalized '${proj.name}'. Legacy score: ${proj.legacyScore}. Studio catalog updated.`);
   showToast(`Concluded '${proj.name}'! Legacy +${proj.legacyScore}`, "info");
+  fireMetaEvent("conclude");
+  fireMetaSync();
   
   gameState.current_project = null;
   
@@ -6367,6 +6568,7 @@ function finishGig(gigId, wasSuccess) {
 
     gameState.gigsCompleted = (gameState.gigsCompleted || 0) + 1;
     checkFunnyAchievements();
+    fireMetaEvent("gig_win");
     gainXP(xpRewardGained);
   } else {
     const penalty = Math.floor(gig.rewardMin * (0.25 + (1 - gig.successRate) * 0.45));
@@ -6402,6 +6604,8 @@ window.launchZoneMiniGame = launchZoneMiniGame;
 window.launchZoneMiniGameRandom = launchZoneMiniGameRandom;
 window.launchHudMiniGame = launchHudMiniGame;
 window.startSiteMiniGameSession = startSiteMiniGameSession;
+window.goToMetaZone = goToMetaZone;
+window.startCapstoneProject = startCapstoneProject;
 window.stopCoffeePour = stopCoffeePour;
 window.stopGigSlider = stopGigSlider;
 window.clickGigBinary = clickGigBinary;

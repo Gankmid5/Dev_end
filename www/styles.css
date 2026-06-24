@@ -2052,6 +2052,164 @@ h1.logo-title span {
 
 .studio-dashboard-hub { display: flex; flex-direction: column; gap: 14px; }
 
+/* ═══ META PROGRESSION — Complete Web-Game Arc ═══ */
+.meta-arc-hub {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.06), rgba(0, 229, 255, 0.05));
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  box-shadow: inset 0 0 24px rgba(255, 215, 0, 0.04);
+}
+
+.meta-arc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.meta-arc-header .dev-section-label { margin: 0; }
+
+.meta-arc-pct {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.5rem;
+  color: #ffd700;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+}
+
+.meta-act-pipeline {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.meta-act-pip {
+  flex: 1;
+  min-width: 52px;
+  text-align: center;
+  padding: 6px 4px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.25);
+  font-size: 0.65rem;
+}
+
+.meta-act-pip span {
+  display: block;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.meta-act-pip small { color: var(--color-text-muted); opacity: 0.8; }
+
+.meta-act-current {
+  border-color: rgba(0, 229, 255, 0.5);
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.2);
+}
+
+.meta-act-current span { color: var(--color-cyan); }
+
+.meta-act-done {
+  border-color: rgba(57, 255, 20, 0.35);
+  background: rgba(57, 255, 20, 0.06);
+}
+
+.meta-act-done span { color: #39ff14; }
+
+.meta-engine-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  margin-bottom: 8px;
+}
+
+.meta-engine-row span { opacity: 0.65; }
+
+.meta-engine-on {
+  opacity: 1 !important;
+  color: var(--color-cyan) !important;
+  text-shadow: 0 0 6px rgba(0, 229, 255, 0.4);
+}
+
+.meta-arc-next {
+  font-size: 0.78rem;
+  color: var(--color-light-grey);
+  margin: 0 0 8px;
+  line-height: 1.4;
+}
+
+.meta-arc-actions { margin-bottom: 4px; }
+
+.meta-goto-btn { font-size: 0.72rem !important; }
+
+.meta-capstone-cta {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, rgba(179, 136, 255, 0.12), rgba(0, 229, 255, 0.08));
+  border: 1px dashed rgba(179, 136, 255, 0.45);
+}
+
+.meta-capstone-cta p {
+  font-size: 0.78rem;
+  margin: 0 0 8px;
+  line-height: 1.45;
+}
+
+.meta-capstone-banner {
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  background: linear-gradient(90deg, rgba(179, 136, 255, 0.15), rgba(255, 215, 0, 0.08));
+  border: 1px solid rgba(179, 136, 255, 0.4);
+  color: var(--color-light-grey);
+}
+
+.meta-step-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.meta-step-list.compact { font-size: 0.72rem; }
+
+.meta-step-line {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+}
+
+.meta-step-line.done { color: rgba(57, 255, 20, 0.85); }
+
+.quest-tracker.quest-urgent {
+  border-color: rgba(255, 23, 68, 0.5);
+  background: linear-gradient(90deg, rgba(255, 23, 68, 0.1), rgba(255, 215, 0, 0.04));
+}
+
+.quest-tracker.quest-capstone {
+  border-color: rgba(179, 136, 255, 0.5);
+  background: linear-gradient(90deg, rgba(179, 136, 255, 0.1), rgba(0, 229, 255, 0.05));
+}
+
+.quest-tracker.quest-complete {
+  border-color: rgba(57, 255, 20, 0.45);
+  background: linear-gradient(90deg, rgba(57, 255, 20, 0.08), rgba(255, 215, 0, 0.06));
+}
+
+.zone-node.quest-target,
+.link-node.quest-target {
+  box-shadow: 0 0 14px rgba(255, 215, 0, 0.45), inset 0 0 8px rgba(255, 215, 0, 0.15);
+  border-color: rgba(255, 215, 0, 0.6) !important;
+}
+
 .studio-dash-header {
   display: flex;
   justify-content: space-between;
@@ -4017,6 +4175,10 @@ h1.logo-title {
   font-style: italic;
   padding-left: 2px;
 }
+
+.quest-tracker.quest-urgent .quest-tracker-label { color: #ff1744; }
+.quest-tracker.quest-capstone .quest-tracker-label { color: #b388ff; }
+.quest-tracker.quest-complete .quest-tracker-label { color: #39ff14; }
 
 .hud-rpg-row {
   display: grid;
