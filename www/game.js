@@ -1708,6 +1708,9 @@ function ensureProjectMeta(proj) {
   proj.platformerPlayed = proj.platformerPlayed ?? false;
   proj.bestPlatformerScore = proj.bestPlatformerScore ?? 0;
   proj.playerReviews = proj.playerReviews ?? [];
+  proj.uselessFeatures = proj.uselessFeatures ?? {};
+  proj.postReleasePokes = proj.postReleasePokes ?? {};
+  proj.serverStatusFine = proj.serverStatusFine ?? true;
   return proj;
 }
 
@@ -1735,18 +1738,104 @@ const CEO_HOT_TAKES = [
 
 const SPEEDRUN_FAKE_NAMES = ["xXPatchNotesXx", "AnyPercentAndy", "LagWizard", "SkipCutsceneSue", "BufferOverflowBen", "RNG_Prayer"];
 
+const USELESS_LIVE_FEATURES = [
+  { id: "bloom_bloom", emoji: "✨", label: "Bloom² Pass", blurb: "Applies bloom to the bloom shader until everything is holy light." },
+  { id: "pet_loader", emoji: "🐾", label: "Pet Loader", blurb: "Loading bar purrs when idle. Performance -3%, morale +7% (unmeasured)." },
+  { id: "invert_sky", emoji: "🙃", label: "Invert Skybox", blurb: "Sky is now below. Gravity filed a complaint." },
+  { id: "ceo_commentary", emoji: "🎙️", label: "CEO Commentary", blurb: "Unskippable audio about synergies during every loading screen." },
+  { id: "deck_verified", emoji: "🎮", label: "Deck Verified*", blurb: "*Self-certified by intern. Runs at 3 FPS on a toaster." },
+  { id: "rng_sacrifice", emoji: "🕯️", label: "RNG Sacrifice", blurb: "Burn 2GB RAM for +0.001% legendary drop rate." },
+  { id: "tutorial_harder", emoji: "📚", label: "Tutorial+", blurb: "Adds 3 tutorial levels after the tutorial about the tutorial." },
+  { id: "feelings_prod", emoji: "💾", label: "Feelings→Prod", blurb: "Deploy emotions directly to production without staging." }
+];
+
+const TELEMETRY_BREAKDOWNS = [
+  (proj, val) => ({
+    title: "Crash Rate Forensics",
+    meta: `Incident bucket · ${val} · Source: Excel + prayer`,
+    body: `<div class="detail-card"><strong>Top crash signatures</strong><ul class="detail-list">
+      <li><span>Alt+Tab to taxes</span><strong>31%</strong></li>
+      <li><span>GPU driver judging your life choices</span><strong>22%</strong></li>
+      <li><span>Player opened settings and panicked</span><strong>18%</strong></li>
+      <li><span>NullReferenceException in '${proj.name}' feelings module</span><strong>14%</strong></li>
+      <li><span>Cosmic rays (official stance)</span><strong>15%</strong></li>
+    </ul><p class="detail-footnote">Recommended fix: add crash screen with inspirational quote from CEO.</p></div>`
+  }),
+  (proj, val) => ({
+    title: "Tutorial Trap Analytics",
+    meta: `Funnel leak · ${val} never escape onboarding`,
+    body: `<div class="detail-card"><strong>Where players get stuck</strong><ul class="detail-list">
+      <li><span>Reading the lore plaque (irreversible)</span><strong>41%</strong></li>
+      <li><span>Trying to close the tutorial</span><strong>27%</strong></li>
+      <li><span>Looking for the 'real game'</span><strong>19%</strong></li>
+      <li><span>Waiting for skip button DLC</span><strong>13%</strong></li>
+    </ul><p class="detail-footnote">Product suggestion: sell tutorial exit as premium content.</p></div>`
+  }),
+  (_proj, val) => ({
+    title: "Session Length Study",
+    meta: `Avg session · ${val} · methodology: vibes`,
+    body: `<div class="detail-card"><strong>Session end triggers</strong><ul class="detail-list">
+      <li><span>Guilt about unpaid bills</span><strong>34%</strong></li>
+      <li><span>Partner asked 'are you coming to bed'</span><strong>28%</strong></li>
+      <li><span>Game politely crashed</span><strong>21%</strong></li>
+      <li><span>Player achieved enlightenment</span><strong>2%</strong></li>
+      <li><span>Still playing (send help)</span><strong>15%</strong></li>
+    </ul></div>`
+  }),
+  (proj, val) => ({
+    title: "Completion Rate Autopsy",
+    meta: `Finishers · ${val} · '${proj.name}' ending is optional`,
+    body: `<div class="detail-card"><strong>Why players quit before credits</strong><ul class="detail-list">
+      <li><span>Credits are just a Slack invite link</span><strong>38%</strong></li>
+      <li><span>Final boss is a PDF</span><strong>24%</strong></li>
+      <li><span>Heard sequel is in dev hell</span><strong>22%</strong></li>
+      <li><span>Completed game in their dreams</span><strong>16%</strong></li>
+    </ul></div>`
+  }),
+  (proj, val) => ({
+    title: "Dev Playtest Ledger",
+    meta: `Internal QA count · ${val}`,
+    body: `<div class="detail-card"><strong>Playtest roster</strong><ul class="detail-list">
+      <li><span>Studio founder (you)</span><strong>${val} runs</strong></li>
+      <li><span>CEO (watched trailer only)</span><strong>0 runs</strong></li>
+      <li><span>QA department</span><strong>Does not exist</strong></li>
+      <li><span>Discord alpha testers</span><strong>Banned for honesty</strong></li>
+    </ul><p class="detail-footnote">Certified playable by management optimism.</p></div>`
+  }),
+  (_proj, val) => ({
+    title: "Wishlist Conversion Witchcraft",
+    meta: `Conversion · ${val} · margin of error: yes`,
+    body: `<div class="detail-card"><strong>Wishlist sources</strong><ul class="detail-list">
+      <li><span>Actual humans</span><strong>38%</strong></li>
+      <li><span>Bots with feelings</span><strong>31%</strong></li>
+      <li><span>Your alt accounts</span><strong>19%</strong></li>
+      <li><span>Accidental misclick</span><strong>12%</strong></li>
+    </ul></div>`
+  })
+];
+
 function getPostReleaseTelemetry(proj) {
   if (proj.telemetrySnapshot) return proj.telemetrySnapshot;
   const rating = proj.rating || 5;
   const plays = proj.playCount || 0;
-  proj.telemetrySnapshot = [
-    { label: "Crash rate", value: `${(42 - rating * 3 + randInt(0, 8)).toFixed(1)}%`, note: "Mostly when alt-tabbing to reality" },
-    { label: "Stuck in tutorial", value: `${randInt(61, 94)}%`, note: "Tutorial has no exit door" },
-    { label: "Avg session", value: `${randInt(4, 47)} min`, note: "Or until guilt kicks in" },
-    { label: "Players who finished", value: `${randInt(3, 18)}%`, note: "Rest are 'exploring the menu'" },
-    { label: "Dev playtests", value: `${plays}`, note: plays ? "You are the QA department now" : "Ship first, play never" },
-    { label: "Wishlist conversions", value: `${randInt(12, 38)}%`, note: "Other 62% were bots with feelings" }
+  const values = [
+    `${(42 - rating * 3 + randInt(0, 8)).toFixed(1)}%`,
+    `${randInt(61, 94)}%`,
+    `${randInt(4, 47)} min`,
+    `${randInt(3, 18)}%`,
+    `${plays}`,
+    `${randInt(12, 38)}%`
   ];
+  const notes = [
+    "Mostly when alt-tabbing to reality",
+    "Tutorial has no exit door",
+    "Or until guilt kicks in",
+    "Rest are 'exploring the menu'",
+    plays ? "You are the QA department now" : "Ship first, play never",
+    "Other 62% were bots with feelings"
+  ];
+  const labels = ["Crash rate", "Stuck in tutorial", "Avg session", "Players who finished", "Dev playtests", "Wishlist conversions"];
+  proj.telemetrySnapshot = labels.map((label, i) => ({ id: i, label, value: values[i], note: notes[i] }));
   return proj.telemetrySnapshot;
 }
 
@@ -1754,10 +1843,32 @@ function randInt(lo, hi) {
   return Math.floor(Math.random() * (hi - lo + 1)) + lo;
 }
 
-function getKnownIssuesList(proj) {
+function ensureKnownIssuesSnapshot(proj) {
+  if (proj.knownIssuesSnapshot) return proj.knownIssuesSnapshot;
   const shuffled = [...POST_RELEASE_KNOWN_ISSUES].sort(() => Math.random() - 0.5);
   const count = proj.rating >= 7 ? 3 : proj.rating < 5 ? 5 : 4;
-  return shuffled.slice(0, count);
+  const assignees = ["Unassigned", "Intern Dave", "CEO (busy)", "The codebase itself", "Community workaround"];
+  const priorities = ["P0 — existential", "P2 — vibes only", "P3 — someday", "P4 — never", "P5 — feature"];
+  proj.knownIssuesSnapshot = shuffled.slice(0, count).map((text, i) => ({
+    id: i,
+    text,
+    ticketId: `LIVE-${randInt(1000, 9999)}`,
+    priority: priorities[randInt(0, priorities.length - 1)],
+    assignee: assignees[randInt(0, assignees.length - 1)],
+    repro: [
+      "Launch game with hope",
+      "Attempt to enjoy product",
+      "Observe reality",
+      "File ticket emotionally"
+    ],
+    workaround: "Turn off monitor. Problem becomes philosophical.",
+    devComment: ["Working as intended.", "Will fix in sequel.", "Added to battle pass.", "Cannot reproduce on CEO's Mac."][randInt(0, 3)]
+  }));
+  return proj.knownIssuesSnapshot;
+}
+
+function getKnownIssuesList(proj) {
+  return ensureKnownIssuesSnapshot(proj);
 }
 
 function getCeoHotTake(proj) {
@@ -1765,14 +1876,31 @@ function getCeoHotTake(proj) {
   return `${base} — regarding '${proj.name}', obviously.`;
 }
 
-function getFakeSpeedrunLeaderboard(proj) {
-  const times = ["1:04:22", "58:07", "42:15", "39:88", "37:02", "0:04:20"];
-  return SPEEDRUN_FAKE_NAMES.map((name, i) => ({
+function ensureSpeedrunSnapshot(proj) {
+  if (proj.speedrunSnapshot) return proj.speedrunSnapshot;
+  const times = ["1:04:22", "58:07", "42:15", "39:88"];
+  const notes = ["Any% (menu glitch)", "Glitchless* (*lies)", "NG+ (narrative gaslighting)", "TAS — dev build"];
+  proj.speedrunSnapshot = SPEEDRUN_FAKE_NAMES.slice(0, 4).map((name, i) => ({
+    id: i,
     rank: i + 1,
     name,
     time: times[i],
-    note: i === 0 ? "Any% (menu glitch)" : i === 5 ? "TAS — dev build" : "Glitchless* (*lies)"
-  })).slice(0, 4);
+    note: notes[i],
+    splits: [
+      { label: "Tutorial trap", time: "12:44" },
+      { label: "Boss PDF", time: "28:10" },
+      { label: "Credits Slack invite", time: "55:02" },
+      { label: "Post-credit ARG", time: "skipped" }
+    ],
+    gear: ["Wooting 60HE", "CRT monitor", "Luck", "Prayer", "Banned macro"][randInt(0, 4)],
+    vodTitle: `${proj.name} WR attempt (gone wrong)`,
+    chatQuote: ["LAG", "SKILL ISSUE", "PATCH WHEN?", "MENU% VALID", "DEV BUILD?"][randInt(0, 4)]
+  }));
+  return proj.speedrunSnapshot;
+}
+
+function getFakeSpeedrunLeaderboard(proj) {
+  return ensureSpeedrunSnapshot(proj);
 }
 
 function generatePlayerReview(proj, stats, won) {
@@ -1790,6 +1918,331 @@ function generatePlayerReview(proj, stats, won) {
     text = `${name} platformer section harder than the real game's netcode. Respect. 5/10.`;
   }
   return { user, text, score: won ? randInt(7, 10) : randInt(4, 7), playedAt: new Date().toLocaleTimeString().split(" ")[0] };
+}
+
+function showPostReleaseDetailModal(title, meta, bodyHtml) {
+  const modal = document.getElementById("post-release-detail-modal");
+  const titleEl = document.getElementById("post-release-detail-title");
+  const metaEl = document.getElementById("post-release-detail-meta");
+  const bodyEl = document.getElementById("post-release-detail-body");
+  if (!modal || !titleEl || !metaEl || !bodyEl) return;
+  titleEl.innerText = title;
+  metaEl.innerText = meta;
+  bodyEl.innerHTML = bodyHtml;
+  modal.style.display = "flex";
+}
+
+function closePostReleaseDetailModal() {
+  const modal = document.getElementById("post-release-detail-modal");
+  if (modal) modal.style.display = "none";
+}
+
+function openPostReleaseDetail(category, key) {
+  if (!gameState.current_project || gameState.current_project.phase !== "post_release") return;
+  const proj = ensureProjectMeta(gameState.current_project);
+  const idx = parseInt(key, 10);
+
+  if (category === "telemetry") {
+    const row = getPostReleaseTelemetry(proj)[idx];
+    const gen = TELEMETRY_BREAKDOWNS[idx];
+    if (!row || !gen) return;
+    const detail = gen(proj, row.value);
+    showPostReleaseDetailModal(detail.title, detail.meta, detail.body);
+    return;
+  }
+
+  if (category === "issue") {
+    const issue = ensureKnownIssuesSnapshot(proj)[idx];
+    if (!issue) return;
+    showPostReleaseDetailModal(
+      `Ticket ${issue.ticketId}`,
+      `${issue.priority} · Assignee: ${issue.assignee}`,
+      `<div class="detail-card"><strong>${issue.text}</strong>
+        <p class="detail-label">Repro steps</p><ol class="detail-ol">${issue.repro.map(s => `<li>${s}</li>`).join("")}</ol>
+        <p class="detail-label">Workaround</p><p>${issue.workaround}</p>
+        <p class="detail-label">Dev response</p><p class="detail-quote">"${issue.devComment}"</p>
+        <p class="detail-footnote">Status: Won't fix (documented as feature in patch notes 1.0.3)</p></div>`
+    );
+    return;
+  }
+
+  if (category === "speedrun") {
+    const run = ensureSpeedrunSnapshot(proj)[idx];
+    if (!run) return;
+    showPostReleaseDetailModal(
+      `${run.name} — ${run.time}`,
+      `${run.note} · Gear: ${run.gear}`,
+      `<div class="detail-card"><p class="detail-label">VOD title</p><p>${run.vodTitle}</p>
+        <p class="detail-label">Splits</p><ul class="detail-list">${run.splits.map(s => `<li><span>${s.label}</span><strong>${s.time}</strong></li>`).join("")}</ul>
+        <p class="detail-label">Twitch chat at finish</p><p class="detail-quote">"${run.chatQuote}"</p></div>`
+    );
+    return;
+  }
+
+  if (category === "critic") {
+    const rev = proj.reviewers[idx];
+    if (!rev) return;
+    const displayName = rev.name === "Metacritic rating" ? "Metacritic" : rev.name;
+    const comment = rev.comments ? (rev.comments[proj.commentIndex] || rev.comments[0]) : "No comment.";
+    const pros = ["Neon garage aesthetic", "Runs on spite", "Menus have personality", "Loading screens teach patience"];
+    const cons = ["Bugs have union representation", "Tutorial is a novel", "Multiplayer is a mood", "Credits are a Slack link"];
+    showPostReleaseDetailModal(
+      `${displayName} — Full Review`,
+      `Pull quote syndicated to 4,000 content farms`,
+      `<div class="detail-card"><p class="detail-quote">"${comment}"</p>
+        <p class="detail-label">Pros</p><ul class="detail-ol">${pros.slice(0, randInt(2, 4)).map(p => `<li>${p}</li>`).join("")}</ul>
+        <p class="detail-label">Cons</p><ul class="detail-ol">${cons.slice(0, randInt(2, 4)).map(c => `<li>${c}</li>`).join("")}</ul>
+        <p class="detail-footnote">Reviewer played ${randInt(12, 90)} minutes before forming this opinion.</p></div>`
+    );
+    return;
+  }
+
+  if (category === "tweet") {
+    const tweet = proj.cachedTweets[idx];
+    if (!tweet) return;
+    const replies = [
+      "@gamer_patch_when: patch when",
+      "@gamer_skill_issue: skill issue",
+      "@gamer_dev_blog: we are investigating (forever)",
+      "@gamer_mom: proud of you sweetie"
+    ];
+    showPostReleaseDetailModal(
+      `Thread — @gamer_${tweet.user}`,
+      "12 replies · 3 quote tweets · 1 blocked dev account",
+      `<div class="detail-card"><p class="detail-quote">"${tweet.text}"</p>
+        <p class="detail-label">Replies</p><ul class="detail-ol">${replies.map(r => `<li>${r}</li>`).join("")}</ul></div>`
+    );
+    return;
+  }
+
+  if (category === "diary") {
+    const entry = (proj.devDiary || [])[idx];
+    if (!entry) return;
+    showPostReleaseDetailModal(
+      `Dev Blog — ${entry.time}`,
+      "Unlisted draft · 14 min read · 0 helpful",
+      `<div class="detail-card"><p>${entry.text}</p>
+        <p class="detail-label">Extended post</p>
+        <p>We hear the community. We also hear the servers screaming. Today we shipped hope as a service. Metrics are green if you squint. Remember: every bug is a player-driven narrative event.</p>
+        <p class="detail-footnote">Tags: #liveops #grit #pleaseclap</p></div>`
+    );
+    return;
+  }
+
+  if (category === "sales") {
+    const lines = {
+      status: { title: "Shelf Status Memo", body: `<p>Legal says the game is 'commercially present.' Marketing says it is 'culturally inevitable.' Finance says 'please stop clicking this.'</p>` },
+      velocity: { title: "Revenue Velocity Explainer", body: `<p>+$${getGameIncomePerTick(gameState.active_games.find(g => g.name === proj.name) || { rating: proj.rating, totalSold: 0 })}/s comes from wishlists, bots, and one guy rebuying the soundtrack.</p>` },
+      copies: { title: "Copy Count Audit", body: `<p>Includes 12% family-share fraud, 8% review key resellers, and 3 copies bought by the CEO and never launched.</p>` },
+      revenue: { title: "Earnings Call Snippet", body: `<p><em>"We are pleased with engagement in the feelings segment."</em> — CEO, while game crashes on slide 2.</p>` },
+      season: { title: "Season Pass Terms", body: `<p>Tier 1: hats. Tier 47: lore PDF. Tier 90: sincere apology video (rendering).</p>` }
+    };
+    const block = lines[key];
+    if (!block) return;
+    showPostReleaseDetailModal(block.title, `'${proj.name}' · Q${randInt(1, 4)} disclosure`, `<div class="detail-card">${block.body}</div>`);
+    return;
+  }
+
+  if (category === "review") {
+    const rev = (proj.playerReviews || [])[idx];
+    if (!rev) return;
+    showPostReleaseDetailModal(
+      `Verify Purchase — @${rev.user}`,
+      `Score ${rev.score}/10 · played ${rev.playedAt || "recently"}`,
+      `<div class="detail-card"><p class="detail-quote">"${rev.text}"</p>
+        <p class="detail-label">Steam verification</p><p>✓ Owns base game · ✓ Owns soundtrack · ✗ Owns shame DLC</p>
+        <p class="detail-footnote">Helpful vote ratio: ${randInt(12, 89)}% found this review funny.</p></div>`
+    );
+    return;
+  }
+
+  if (category === "roadmap") {
+    const item = (proj.roadmap || [])[idx];
+    if (!item) return;
+    const notes = [
+      "Sprint goal: look busy. Stretch goal: be busy.",
+      "Blocked by: dependencies, destiny, and Dave.",
+      "Estimate: 2 days (lie). Actual: emotional season.",
+      "Stakeholder feedback: 'make it pop more'."
+    ];
+    showPostReleaseDetailModal(
+      `Roadmap — ${item.label}`,
+      item.done ? "Status: done (allegedly)" : "Status: eternally next sprint",
+      `<div class="detail-card"><ul class="detail-ol">${notes.map(n => `<li>${n}</li>`).join("")}</ul>
+        <p class="detail-footnote">Jira epic contains ${randInt(12, 140)} subtasks and one gif.</p></div>`
+    );
+    return;
+  }
+
+  if (category === "award") {
+    const award = (proj.awards || [])[idx];
+    if (!award) return;
+    showPostReleaseDetailModal(
+      `Trophy — ${award}`,
+      "Engraved on plastic. Spiritually hollow.",
+      `<div class="detail-card"><p>Awarded for outstanding achievement in the field of looking like you tried.</p>
+        <p class="detail-label">Acceptance speech draft</p>
+        <p class="detail-quote">"We'd like to thank caffeine, scope creep, and everyone who didn't playtest."</p>
+        <p class="detail-footnote">Display case located in CEO's Zoom background.</p></div>`
+    );
+  }
+}
+
+function pokePostReleaseBadge(badgeId) {
+  if (!gameState.current_project || gameState.current_project.phase !== "post_release") return;
+  const proj = ensureProjectMeta(gameState.current_project);
+  proj.postReleasePokes[badgeId] = (proj.postReleasePokes[badgeId] || 0) + 1;
+  const pokes = proj.postReleasePokes[badgeId];
+
+  if (badgeId === "rating") {
+    showPostReleaseDetailModal(
+      "Metacritic Algorithm Revealed",
+      `Score ${proj.rating.toFixed(1)} · poke #${pokes}`,
+      `<div class="detail-card"><p class="detail-formula">final = (hype × 0.2) + (bugs × -0.1) + (CEO confidence × 2.5) + (random())</p>
+        <ul class="detail-list">
+          <li><span>IGNion weight</span><strong>33% spite</strong></li>
+          <li><span>User score</span><strong>Ignored until dramatic</strong></li>
+          <li><span>Developer pleading</span><strong>+0.3 pity</strong></li>
+        </ul>
+        <p class="detail-footnote">Poke again to unlock 'controversy' badge (cosmetic).</p></div>`
+    );
+    if (pokes === 3) spawnFloatText("ALGORITHM", "purple");
+    return;
+  }
+
+  if (badgeId === "sentiment") {
+    const sentiment = getCommunitySentiment(proj);
+    showPostReleaseDetailModal(
+      "Community Sentiment Engine v0.3",
+      `${sentiment}% positive · trained on Discord caps-lock`,
+      `<div class="detail-card"><ul class="detail-list">
+        <li><span>Patch shipped</span><strong>+8%</strong></li>
+        <li><span>Open tickets</span><strong>-${proj.supportTickets.filter(t => !t.resolved).length * 5}%</strong></li>
+        <li><span>DLC drops</span><strong>+${(proj.dlcCount || 0) * 4}%</strong></li>
+        <li><span>CEO tweet</span><strong>-12% always</strong></li>
+      </ul><p class="detail-footnote">Spin sentiment wheel for ±0 actual change.</p></div>`
+    );
+    return;
+  }
+
+  if (badgeId === "liveops") {
+    showPostReleaseDetailModal(
+      "LIVE OPS Mode Activated",
+      "You unlocked the part of the game where the game never ends",
+      `<div class="detail-card"><p>Congratulations. '${proj.name}' is now a live service organism feeding on roadmaps, hotfixes, and seasonal FOMO.</p>
+        <p class="detail-label">Hidden objective</p><p>Find every useless toggle below. Management calls it 'player engagement.'</p></div>`
+    );
+    spawnFloatText("LIVE OPS", "cyan");
+  }
+}
+
+function toggleUselessFeature(featureId) {
+  if (!gameState.current_project || gameState.current_project.phase !== "post_release") return;
+  const proj = ensureProjectMeta(gameState.current_project);
+  const feat = USELESS_LIVE_FEATURES.find(f => f.id === featureId);
+  if (!feat) return;
+
+  const nowOn = !proj.uselessFeatures[featureId];
+  proj.uselessFeatures[featureId] = nowOn;
+
+  const statusLine = nowOn
+    ? `<p class="detail-label">Deployed to production</p><p>Players are confused. Engagement metrics rose 0.4%. Success?</p>`
+    : `<p class="detail-label">Rolled back</p><p>Rollback note: 'temporary disablement due to too much fun.'</p>`;
+
+  showPostReleaseDetailModal(
+    `${feat.emoji} ${feat.label} — ${nowOn ? "ENABLED" : "DISABLED"}`,
+    feat.blurb,
+    `<div class="detail-card">${statusLine}
+      <ul class="detail-list">
+        <li><span>Player tickets filed</span><strong>+${randInt(1, 47)}</strong></li>
+        <li><span>Performance impact</span><strong>${nowOn ? "Yes" : "Still yes"}</strong></li>
+        <li><span>CEO approval</span><strong>Enthusiastic</strong></li>
+      </ul></div>`
+  );
+
+  const quips = {
+    bloom_bloom: nowOn ? "Retinas filed a class action." : "Bloom withdrawn. Darkness returns.",
+    pet_loader: nowOn ? "Loader purrs. CPU fan joins chorus." : "Loader silenced. It stares at you.",
+    invert_sky: nowOn ? "Skybox inverted. Birds confused." : "Gravity restored. Mostly.",
+    ceo_commentary: nowOn ? "CEO voice now mandatory." : "Brief silence before next synergy.",
+    deck_verified: nowOn ? "Verified* sticker applied." : "Verification revoked by facts.",
+    rng_sacrifice: nowOn ? "RAM sacrificed. Loot unchanged." : "RNG gods demand more RAM.",
+    tutorial_harder: nowOn ? "Tutorial extended infinitely." : "Tutorial still too long.",
+    feelings_prod: nowOn ? "Feelings deployed. No rollback." : "Feelings archived in Jira."
+  };
+  showToast(quips[featureId] || (nowOn ? "Feature enabled for no reason." : "Feature disabled theatrically."), nowOn ? "warning" : "info");
+  pushDevDiary(proj, "post_release", `${nowOn ? "Enabled" : "Disabled"} useless feature: ${feat.label}. Players noticed in ${randInt(2, 9)} minutes.`);
+  if (nowOn) spawnFloatText(feat.label.toUpperCase(), "purple");
+  saveGame();
+  renderPostReleaseDashboard();
+}
+
+function pokeMysteryDesk(itemId) {
+  if (!gameState.current_project || gameState.current_project.phase !== "post_release") return;
+  const proj = ensureProjectMeta(gameState.current_project);
+
+  if (itemId === "rec") {
+    showPostReleaseDetailModal(
+      "REC — Internal Playtest Footage",
+      "Legal says do not distribute",
+      `<div class="detail-card"><p>00:14 — Dev walks into wall</p><p>00:42 — 'that's a feature'</p><p>01:03 — CEO asks if game is Fortnite</p><p>01:55 — Someone says 'ship it' off-camera</p></div>`
+    );
+    showToast("📼 Footage archived to /dev/null", "info");
+    return;
+  }
+
+  if (itemId === "server") {
+    proj.serverStatusFine = !proj.serverStatusFine;
+    const fine = proj.serverStatusFine;
+    showPostReleaseDetailModal(
+      fine ? "Server Status: Probably Fine™" : "Server Status: Ceremonial Fire",
+      fine ? "3 of 4 regions responding" : "Players forming support groups on Discord",
+      `<div class="detail-card"><ul class="detail-list">
+        <li><span>Login queue</span><strong>${fine ? "12 min" : "∞"}</strong></li>
+        <li><span>Database</span><strong>${fine ? "Mostly there" : "Vibes only"}</strong></li>
+        <li><span>On-call engineer</span><strong>Asleep (aesthetic)</strong></li>
+      </ul><p class="detail-footnote">Click again to toggle between coping and crisis.</p></div>`
+    );
+    showToast(fine ? "🟢 Servers probably fine" : "🔥 Servers are a metaphor now", fine ? "success" : "error");
+    saveGame();
+    renderPostReleaseDashboard();
+    return;
+  }
+
+  if (itemId === "inbox") {
+    showPostReleaseDetailModal(
+      "Unread — Mom",
+      "Subject: RE: RE: is the game done yet",
+      `<div class="detail-card"><p>Hi honey,</p><p>Proud of you. Is the game making money yet? Dad says he found a bug in the tutorial. He was playing Solitaire.</p><p>Love, Mom</p><p class="detail-footnote">Reply-all disabled by IT policy.</p></div>`
+    );
+    spawnFloatText("+1 MOM", "gold");
+    return;
+  }
+
+  if (itemId === "sentiment_spin") {
+    const spin = randInt(0, 100);
+    showPostReleaseDetailModal(
+      "Sentiment Wheel of Fortune",
+      `Spun: ${spin}% (cosmetic only)`,
+      `<div class="detail-card"><p>The wheel landed on '${spin}%'. Community mood unchanged because math is optional in live ops.</p>
+        <p class="detail-footnote">Spin again for identical emotional damage.</p></div>`
+    );
+    spawnFloatText(`${spin}%`, spin > 50 ? "cyan" : "red");
+  }
+}
+
+function rerollCeoHotTake() {
+  if (!gameState.current_project || gameState.current_project.phase !== "post_release") return;
+  const proj = ensureProjectMeta(gameState.current_project);
+  proj.ceoHotTakeCache = getCeoHotTake(proj);
+  showPostReleaseDetailModal(
+    "Emergency Board Meeting",
+    "Duration: 6 minutes · Outcome: new buzzwords",
+    `<div class="detail-card"><p class="detail-quote">"${proj.ceoHotTakeCache}"</p>
+      <p class="detail-footnote">Action items: none. Confidence: infinite.</p></div>`
+  );
+  showToast("🧠 CEO emitted another thought", "info");
+  renderPostReleaseDashboard();
 }
 
 function getDevPhaseId(progressPercent) {
@@ -4366,50 +4819,69 @@ function renderPostReleaseDashboard() {
     </div>
   `).join("");
 
-  const roadmapHtml = (proj.roadmap || []).map(r => `
-    <div class="roadmap-item ${r.done ? "done" : ""}"><span>${r.done ? "✓" : "○"}</span> ${r.label}</div>
+  const roadmapHtml = (proj.roadmap || []).map((r, ri) => `
+    <button type="button" class="roadmap-item clickable-detail-row ${r.done ? "done" : ""}" onclick="openPostReleaseDetail('roadmap', ${ri})"><span>${r.done ? "✓" : "○"}</span> ${r.label} <span class="click-hint">sprint notes ↗</span></button>
   `).join("");
 
   const awardsHtml = (proj.awards || []).length
-    ? proj.awards.map(a => `<span class="award-chip">🏆 ${a}</span>`).join("")
-    : `<span style="font-size:0.75rem; color:var(--color-text-muted); font-style:italic;">No awards yet. Host an AMA or ship DLC to impress the industry.</span>`;
+    ? proj.awards.map((a, ai) => `<button type="button" class="award-chip clickable-detail-row" onclick="openPostReleaseDetail('award', ${ai})">🏆 ${a} ↗</button>`).join("")
+    : `<button type="button" class="award-chip-empty clickable-detail-row" onclick="pokeMysteryDesk('inbox')" title="Maybe mom knows someone">No awards yet. Click for consolation email.</button>`;
 
-  const diaryHtml = (proj.devDiary || []).slice(0, 4).map(d => `
-    <div class="dev-diary-entry"><span class="dev-diary-time">[${d.time}]</span> ${d.text}</div>
+  const diaryHtml = (proj.devDiary || []).slice(0, 4).map((d, i) => `
+    <button type="button" class="dev-diary-entry clickable-detail-row" onclick="openPostReleaseDetail('diary', ${i})"><span class="dev-diary-time">[${d.time}]</span> ${d.text} <span class="click-hint">read more ↗</span></button>
   `).join("");
 
   const telemetry = getPostReleaseTelemetry(proj);
   const telemetryHtml = telemetry.map(t => `
-    <div class="telemetry-row">
-      <span class="telemetry-label">${t.label}</span>
+    <button type="button" class="telemetry-row clickable-detail-row" onclick="openPostReleaseDetail('telemetry', ${t.id})" title="Click for classified breakdown">
+      <span class="telemetry-label">${t.label} <span class="click-hint">↗</span></span>
       <strong class="telemetry-value">${t.value}</strong>
       <span class="telemetry-note">${t.note}</span>
-    </div>
+    </button>
   `).join("");
 
-  const knownIssuesHtml = getKnownIssuesList(proj).map(issue => `
-    <div class="known-issue-line">🐛 ${issue} <span class="known-issue-status">Won't fix (feature)</span></div>
+  const knownIssues = getKnownIssuesList(proj);
+  const knownIssuesHtml = knownIssues.map(issue => `
+    <button type="button" class="known-issue-line clickable-detail-row" onclick="openPostReleaseDetail('issue', ${issue.id})" title="Open JIRA ticket">
+      🐛 ${issue.text} <span class="known-issue-status">${issue.ticketId} · Won't fix</span>
+    </button>
   `).join("");
 
   const speedrunBoard = getFakeSpeedrunLeaderboard(proj);
   const speedrunHtml = speedrunBoard.map(r => `
-    <div class="speedrun-row">
+    <button type="button" class="speedrun-row clickable-detail-row" onclick="openPostReleaseDetail('speedrun', ${r.id})" title="View run details">
       <span class="speedrun-rank">#${r.rank}</span>
       <span class="speedrun-name">${r.name}</span>
       <span class="speedrun-time">${r.time}</span>
-      <span class="speedrun-note">${r.note}</span>
-    </div>
+      <span class="speedrun-note">${r.note} ↗</span>
+    </button>
   `).join("");
 
   const playerReviewsHtml = (proj.playerReviews || []).length
-    ? proj.playerReviews.slice(0, 4).map(r => `
-      <div class="player-review-line">
+    ? proj.playerReviews.slice(0, 4).map((r, i) => `
+      <button type="button" class="player-review-line clickable-detail-row" onclick="openPostReleaseDetail('review', ${i})">
         <strong>@${r.user}</strong> <span class="player-review-score">${r.score}/10</span>
         <p>"${r.text}"</p>
-        <span class="player-review-time">played ${r.playedAt || "recently"}</span>
-      </div>
+        <span class="player-review-time">played ${r.playedAt || "recently"} · verify ↗</span>
+      </button>
     `).join("")
     : `<p class="dev-section-hint">No player reviews yet. Hit <strong>Play Game</strong> to generate organic-ish feedback from yourself.</p>`;
+
+  if (!proj.ceoHotTakeCache) proj.ceoHotTakeCache = getCeoHotTake(proj);
+  const ceoTake = proj.ceoHotTakeCache;
+
+  const uselessFeaturesHtml = USELESS_LIVE_FEATURES.map(f => {
+    const on = !!proj.uselessFeatures[f.id];
+    return `
+      <button type="button" class="useless-feature-btn ${on ? "useless-feature-on" : ""}" onclick="toggleUselessFeature('${f.id}')" title="${f.blurb}">
+        <span class="useless-feature-emoji">${f.emoji}</span>
+        <span class="useless-feature-label">${f.label}</span>
+        <span class="useless-feature-state">${on ? "ON" : "OFF"}</span>
+      </button>
+    `;
+  }).join("");
+
+  const serverFine = proj.serverStatusFine !== false;
 
   const playFlavor = window.ShippedPlatformer ? window.ShippedPlatformer.getFlavor(proj) : { tagline: "The game you shipped. Now playable. Unfortunately." };
   const bestScore = proj.bestPlatformerScore || 0;
@@ -4419,13 +4891,21 @@ function renderPostReleaseDashboard() {
     <div class="develop-progress-card post-release-hub">
       <div class="dev-board-header post-release-header">
         <div>
-          <h3 class="dev-board-title">${proj.name} <span class="post-release-tag">LIVE OPS</span></h3>
+          <h3 class="dev-board-title">${proj.name} <button type="button" class="post-release-tag post-release-tag-btn" onclick="pokePostReleaseBadge('liveops')" title="What is LIVE OPS?">LIVE OPS</button></h3>
           <span class="dev-board-subtitle">${proj.scale} · ${proj.genre}/${proj.topic} · Legacy ${proj.legacyScore || 0} · DLC×${proj.dlcCount || 0} · Plays×${playCount}</span>
         </div>
         <div class="post-release-badges">
-          <div class="reviewer-score-badge" style="width:52px; height:52px; border-color:${badgeColor}; color:${badgeColor}; background:${badgeBg};">${proj.rating.toFixed(1)}</div>
-          <div class="sentiment-badge" style="border-color:${sentimentColor}; color:${sentimentColor};">${sentiment}%<small>sentiment</small></div>
+          <button type="button" class="reviewer-score-badge post-release-badge-btn" style="width:52px; height:52px; border-color:${badgeColor}; color:${badgeColor}; background:${badgeBg};" onclick="pokePostReleaseBadge('rating')" title="Reveal Metacritic math">${proj.rating.toFixed(1)}</button>
+          <button type="button" class="sentiment-badge post-release-badge-btn" style="border-color:${sentimentColor}; color:${sentimentColor};" onclick="pokePostReleaseBadge('sentiment')" title="Inspect sentiment engine">${sentiment}%<small>sentiment</small></button>
         </div>
+      </div>
+
+      <div class="mystery-desk-bar">
+        <button type="button" class="mystery-desk-chip mystery-rec" onclick="pokeMysteryDesk('rec')" title="Internal footage">● REC</button>
+        <button type="button" class="mystery-desk-chip ${serverFine ? "mystery-ok" : "mystery-fire"}" onclick="pokeMysteryDesk('server')" title="Toggle server truth">${serverFine ? "🟢 Probably fine" : "🔥 On fire"}</button>
+        <button type="button" class="mystery-desk-chip mystery-inbox" onclick="pokeMysteryDesk('inbox')" title="Mom emailed">📬 1 unread</button>
+        <button type="button" class="mystery-desk-chip mystery-spin" onclick="pokeMysteryDesk('sentiment_spin')" title="Spin the wheel">🎰 Spin sentiment</button>
+        <span class="mystery-desk-hint">None of this affects sales. All of it is clickable.</span>
       </div>
 
       <div class="play-game-hub">
@@ -4443,8 +4923,11 @@ function renderPostReleaseDashboard() {
           <div class="telemetry-list">${telemetryHtml}</div>
         </div>
         <div class="dev-board-card compact">
-          <h4 class="dev-section-label">🧠 CEO Hot Take</h4>
-          <p class="ceo-hot-take">"${getCeoHotTake(proj)}"</p>
+          <div class="detail-card-header-row">
+            <h4 class="dev-section-label">🧠 CEO Hot Take</h4>
+            <button type="button" class="btn-secondary detail-micro-btn" onclick="rerollCeoHotTake()">Summon meeting</button>
+          </div>
+          <button type="button" class="ceo-hot-take clickable-detail-row" onclick="rerollCeoHotTake()" title="Schedule emergency board meeting">"${ceoTake}"</button>
         </div>
         <div class="dev-board-card compact">
           <h4 class="dev-section-label">🏁 Speedrun Board</h4>
@@ -4456,14 +4939,14 @@ function renderPostReleaseDashboard() {
         <div class="post-release-col">
           <div class="dev-board-card compact">
             <h4 class="dev-section-label">📰 Critic Desk</h4>
-            ${proj.reviewers.map(rev => {
+            ${proj.reviewers.map((rev, ri) => {
               let revNameColor = "#fff";
               if (rev.name === "IGNion") revNameColor = "#ff1744";
               else if (rev.name === "GameSpotter") revNameColor = "#ffd700";
               else if (rev.name === "Metacritic rating" || rev.name === "Metacritic") revNameColor = "#39ff14";
               const displayRevName = rev.name === "Metacritic rating" ? "Metacritic" : rev.name;
               const commentText = rev.comments ? (rev.comments[proj.commentIndex] || rev.comments[0] || "No comment.") : "No comment.";
-              return `<p class="critic-line"><strong style="color:${revNameColor}">${displayRevName}</strong>: "${commentText}"</p>`;
+              return `<button type="button" class="critic-line clickable-detail-row" onclick="openPostReleaseDetail('critic', ${ri})"><strong style="color:${revNameColor}">${displayRevName}</strong>: "${commentText}" <span class="click-hint">full review ↗</span></button>`;
             }).join("")}
           </div>
 
@@ -4473,7 +4956,7 @@ function renderPostReleaseDashboard() {
               <button class="btn-secondary" style="padding:4px 10px; font-size:0.65rem;" onclick="refreshSocialFeed()">Refresh ($25)</button>
             </div>
             <div class="social-feed-scroll">
-              ${proj.cachedTweets.map(t => `<div class="social-line"><strong>@gamer_${t.user}</strong> "${t.text}"</div>`).join("")}
+              ${proj.cachedTweets.map((t, i) => `<button type="button" class="social-line clickable-detail-row" onclick="openPostReleaseDetail('tweet', ${i})"><strong>@gamer_${t.user}</strong> "${t.text}" <span class="click-hint">thread ↗</span></button>`).join("")}
             </div>
           </div>
 
@@ -4492,11 +4975,11 @@ function renderPostReleaseDashboard() {
           <div class="dev-board-card compact">
             <h4 class="dev-section-label">💰 Sales Pulse</h4>
             <div class="sales-stat-list">
-              <div><span>Status</span><strong style="color:${isSelling ? "#39ff14" : "var(--color-text-muted)"}">${isSelling ? "On shelves" : "Catalog concluded"}</strong></div>
-              <div><span>Velocity</span><strong style="color:#39ff14">+$${curIncome.toFixed(1)}/s</strong></div>
-              <div><span>Copies</span><strong>${parseInt(totalSold).toLocaleString()}</strong></div>
-              <div><span>Revenue</span><strong style="color:#39ff14">$${parseFloat(totalRevenue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
-              <div><span>Season Pass</span><strong>${proj.seasonPassActive ? "ACTIVE" : "Inactive"}</strong></div>
+              <button type="button" class="sales-stat-row clickable-detail-row" onclick="openPostReleaseDetail('sales', 'status')"><span>Status</span><strong style="color:${isSelling ? "#39ff14" : "var(--color-text-muted)"}">${isSelling ? "On shelves" : "Catalog concluded"} ↗</strong></button>
+              <button type="button" class="sales-stat-row clickable-detail-row" onclick="openPostReleaseDetail('sales', 'velocity')"><span>Velocity</span><strong style="color:#39ff14">+$${curIncome.toFixed(1)}/s ↗</strong></button>
+              <button type="button" class="sales-stat-row clickable-detail-row" onclick="openPostReleaseDetail('sales', 'copies')"><span>Copies</span><strong>${parseInt(totalSold).toLocaleString()} ↗</strong></button>
+              <button type="button" class="sales-stat-row clickable-detail-row" onclick="openPostReleaseDetail('sales', 'revenue')"><span>Revenue</span><strong style="color:#39ff14">$${parseFloat(totalRevenue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ↗</strong></button>
+              <button type="button" class="sales-stat-row clickable-detail-row" onclick="openPostReleaseDetail('sales', 'season')"><span>Season Pass</span><strong>${proj.seasonPassActive ? "ACTIVE" : "Inactive"} ↗</strong></button>
             </div>
           </div>
 
@@ -4522,6 +5005,12 @@ function renderPostReleaseDashboard() {
             <div class="known-issues-list">${knownIssuesHtml}</div>
           </div>
         </div>
+      </div>
+
+      <div class="useless-features-hub">
+        <h4 class="dev-section-label">🧪 Useless Features (Shipped Anyway)</h4>
+        <p class="dev-section-hint">Toggles do nothing useful. Each opens a spec sheet with uncomfortable detail.</p>
+        <div class="useless-feature-grid">${uselessFeaturesHtml}</div>
       </div>
 
       <div class="live-ops-hub">
@@ -5633,6 +6122,12 @@ window.startArcadeSession = startArcadeSession;
 window.launchShippedGame = launchShippedGame;
 window.exitShippedGame = exitShippedGame;
 window.startShippedGameSession = startShippedGameSession;
+window.openPostReleaseDetail = openPostReleaseDetail;
+window.closePostReleaseDetailModal = closePostReleaseDetailModal;
+window.pokePostReleaseBadge = pokePostReleaseBadge;
+window.toggleUselessFeature = toggleUselessFeature;
+window.pokeMysteryDesk = pokeMysteryDesk;
+window.rerollCeoHotTake = rerollCeoHotTake;
 window.stopCoffeePour = stopCoffeePour;
 window.stopGigSlider = stopGigSlider;
 window.clickGigBinary = clickGigBinary;

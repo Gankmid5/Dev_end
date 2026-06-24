@@ -1441,6 +1441,15 @@ h1.logo-title span {
   color: #ffd700;
 }
 
+.award-chip-empty {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+  background: transparent;
+  border: none;
+  padding: 4px 0;
+}
+
 .live-ops-hub {
   padding: 14px;
   border-radius: 12px;
@@ -1669,6 +1678,270 @@ h1.logo-title span {
   color: rgba(255, 255, 255, 0.35);
 }
 
+/* ═══ POST-RELEASE CLICKABLE CHAOS ═══ */
+.clickable-detail-row {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s ease, transform 0.12s ease;
+  border-radius: 6px;
+}
+
+.clickable-detail-row:hover {
+  background: rgba(0, 229, 255, 0.06);
+  transform: translateX(2px);
+}
+
+.click-hint {
+  font-size: 0.62rem;
+  color: var(--color-cyan);
+  opacity: 0.65;
+  font-style: normal;
+}
+
+.post-release-badge-btn,
+.post-release-tag-btn {
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.post-release-badge-btn:hover,
+.post-release-tag-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.2);
+}
+
+.post-release-tag-btn {
+  font-size: 0.65rem;
+  color: #39ff14;
+  border: 1px solid rgba(57, 255, 20, 0.35);
+  padding: 2px 6px;
+  border-radius: 4px;
+  vertical-align: middle;
+  margin-left: 6px;
+  background: rgba(57, 255, 20, 0.06);
+  font-weight: 700;
+}
+
+.mystery-desk-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px dashed rgba(179, 136, 255, 0.25);
+}
+
+.mystery-desk-chip {
+  font-size: 0.68rem;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mystery-desk-chip:hover {
+  border-color: rgba(0, 229, 255, 0.35);
+  color: var(--color-cyan);
+}
+
+.mystery-rec { color: #ff1744; animation: mystery-rec-blink 1.4s step-end infinite; }
+.mystery-ok { color: #39ff14; }
+.mystery-fire { color: #ff9100; border-color: rgba(255, 145, 0, 0.35); }
+.mystery-inbox { color: var(--color-gold); }
+.mystery-spin { color: var(--color-purple); }
+
+@keyframes mystery-rec-blink {
+  50% { opacity: 0.35; }
+}
+
+.mystery-desk-hint {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.35);
+  font-style: italic;
+  margin-left: auto;
+}
+
+.useless-features-hub {
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(255, 23, 68, 0.04);
+  border: 1px solid rgba(255, 23, 68, 0.15);
+}
+
+.useless-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.useless-feature-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+
+.useless-feature-btn:hover {
+  border-color: rgba(179, 136, 255, 0.35);
+  background: rgba(179, 136, 255, 0.08);
+}
+
+.useless-feature-on {
+  border-color: rgba(57, 255, 20, 0.35);
+  background: rgba(57, 255, 20, 0.06);
+}
+
+.useless-feature-emoji { font-size: 1.1rem; }
+.useless-feature-label { font-size: 0.72rem; font-weight: 700; color: var(--color-text-muted); }
+.useless-feature-state { font-size: 0.62rem; color: var(--color-cyan); font-weight: 800; letter-spacing: 1px; }
+
+.detail-card-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.detail-micro-btn {
+  padding: 3px 8px !important;
+  font-size: 0.62rem !important;
+}
+
+.sales-stat-row {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.post-release-detail-body {
+  max-height: 50vh;
+  overflow-y: auto;
+  margin: 12px 0 16px;
+  text-align: left;
+}
+
+.post-release-detail-modal { max-width: 520px; }
+
+.detail-card {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.detail-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.detail-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.detail-list strong { color: var(--color-cyan); white-space: nowrap; }
+
+.detail-ol {
+  margin: 6px 0 10px;
+  padding-left: 18px;
+  color: var(--color-text-muted);
+}
+
+.detail-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--color-cyan);
+  margin: 10px 0 4px;
+  font-weight: 700;
+}
+
+.detail-quote {
+  font-style: italic;
+  color: var(--color-gold);
+  margin: 0 0 8px;
+}
+
+.detail-formula {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: var(--color-purple);
+  background: rgba(0, 0, 0, 0.35);
+  padding: 8px;
+  border-radius: 6px;
+}
+
+.detail-footnote {
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.35);
+  font-style: italic;
+  margin-top: 10px;
+}
+
+.telemetry-row.clickable-detail-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 10px;
+  padding: 4px 6px;
+  margin-bottom: 2px;
+}
+
+.player-review-line.clickable-detail-row {
+  padding: 4px 6px;
+}
+
+.critic-line.clickable-detail-row,
+.social-line.clickable-detail-row,
+.dev-diary-entry.clickable-detail-row,
+.known-issue-line.clickable-detail-row {
+  padding: 6px;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.speedrun-row.clickable-detail-row {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: 4px 8px;
+  padding: 4px 6px;
+  align-items: center;
+}
+
+.roadmap-item.clickable-detail-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 6px;
+  font-size: 0.75rem;
+}
+
 @media (max-width: 900px) {
   .dev-board-grid, .post-release-grid { grid-template-columns: 1fr; }
   .post-release-telemetry-hub { grid-template-columns: 1fr; }
@@ -1676,6 +1949,8 @@ h1.logo-title span {
   .live-ops-grid { grid-template-columns: repeat(2, 1fr); }
   .dev-action-grid { grid-template-columns: repeat(2, 1fr); }
   .play-game-launch-btn { width: 100%; }
+  .useless-feature-grid { grid-template-columns: repeat(2, 1fr); }
+  .mystery-desk-hint { width: 100%; margin-left: 0; }
 }
 
 /* ═══ STUDIO DASHBOARD ═══ */
