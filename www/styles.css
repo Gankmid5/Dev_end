@@ -941,7 +941,7 @@ h1.logo-title span {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 3000;
   animation: fadeIn 0.3s ease;
 }
 
@@ -1097,4 +1097,25 @@ h1.logo-title {
 .status-bar-fill.nerve {
   background: linear-gradient(90deg, #ff1744, #ff007f) !important;
   box-shadow: 0 0 10px rgba(255, 23, 68, 0.5);
+}
+
+/* 3D WebGL overrides */
+#canvas-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1;
+  background: #000;
+}
+
+.app-wrapper {
+  display: none !important;
+}
+
+body {
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
 }

@@ -182,8 +182,12 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   // URL check for tabs
   const params = new URLSearchParams(window.location.search);
-  const activeTab = params.get("tab") || "gigs";
+  activeTab = params.get("tab") || "gigs";
   switchTab(activeTab);
+
+  if (window.init3DScene) {
+    window.init3DScene();
+  }
 });
 
 // --- Tab System ---
@@ -204,6 +208,8 @@ function initTabs() {
 }
 
 function switchTab(tabName) {
+  activeTab = tabName;
+
   // Hide all main layout containers
   document.querySelectorAll("main.main-layout").forEach(main => {
     main.style.display = "none";
@@ -394,9 +400,19 @@ async function saveGame() {
 
 // --- Console Log Helper (System Bot Announcements) ---
 function addLog(title, desc) {
-  const time = new Date().toLocaleTimeString();
-  consoleLogs.push({ time, title, desc });
-  if (consoleLogs.length > 50) consoleLogs.shift();
+  const time = new Date().toLocaleTimeString().split(' ')[0];
+  consoleLogs.push({
+    time: time,
+    user: "STUDIO_BOT",
+    text: `${title} — ${desc}`,
+    color: "#00e5ff",
+    badge: "🤖 BOT"
+  });
+  if (consoleLogs.length > 60) consoleLogs.shift();
+
+  if (window.drawAuxScreen) {
+    window.drawAuxScreen();
+  }
 
   const consoleEl = document.getElementById("terminal-console");
   if (consoleEl) {
@@ -411,7 +427,7 @@ function addLog(title, desc) {
     trmLine.style.lineHeight = "1.35";
     
     trmLine.innerHTML = `
-      <span class="timestamp" style="font-size:0.72rem; color:var(--color-text-muted); margin-right:6px;">[${time.split(' ')[0]}]</span>
+      <span class="timestamp" style="font-size:0.72rem; color:var(--color-text-muted); margin-right:6px;">[${time}]</span>
       <span style="font-size:0.65rem; font-weight:800; padding:2px 5px; border-radius:4px; margin-right:6px; border:1px solid var(--color-cyan); color:var(--color-cyan); background:rgba(0,229,255,0.15);">🤖 BOT</span>
       <strong style="color:var(--color-cyan); margin-right:5px;">[STUDIO_BOT]:</strong>
       <span style="color:var(--color-light-grey); font-weight:500;">${title}</span> — 
@@ -679,6 +695,13 @@ function updateUI() {
   if (chairsBtn && gameState.ergonomic_chairs) {
     chairsBtn.disabled = true;
     chairsBtn.innerText = "Purchased";
+  }
+
+  if (window.drawMainScreen) {
+    window.drawMainScreen();
+  }
+  if (window.drawAuxScreen) {
+    window.drawAuxScreen();
   }
 }
 
@@ -1905,26 +1928,27 @@ async function loadLeaderboard() {
   try {
     const list = await TycoonAPI.getLeaderboards();
     if (list.length === 0) {
-      // Simulate local AI competitors if empty
       const localUsername = localStorage.getItem("tycoon_active_username") || "Guest Dev";
       const simulated = [
         { username: localUsername, company_name: gameState.company_name, color: userColor, net_worth: gameState.net_worth, games_released: gameState.games_released, office_tier: gameState.office_tier },
-        { username: "CodeMaster99", company_name: "Byte Studios", color: "#d500f9", net_worth: 15000.00, games_released: 8, office_tier: "IndieStudio" },
+        { username: "CodeMaster99", company_name: "Byte Studios", color: "#d500f9", metalness: 0.9, net_worth: 15000.00, games_released: 8, office_tier: "IndieStudio" },
         { username: "IndieGamerX", company_name: "Solo Garage", color: "#ffd700", net_worth: 3500.00, games_released: 3, office_tier: "CoWorking" },
         { username: "NerveBreaker", company_name: "Torn Games LLC", color: "#ff1744", net_worth: 89000.00, games_released: 14, office_tier: "MegaCampus" }
       ];
 
-      // Insert current player stats if not exist
       if (!simulated.find(s => s.username === localUsername)) {
         simulated.push({ username: localUsername, company_name: gameState.company_name, color: userColor, net_worth: gameState.net_worth, games_released: gameState.games_released, office_tier: gameState.office_tier });
       }
 
       simulated.sort((a, b) => b.net_worth - a.net_worth);
+      window.leaderboardCache = simulated;
+      if (window.drawLeaderboardWallPoster) window.drawLeaderboardWallPoster();
       renderLeaderboardRows(container, simulated);
       return;
     }
 
-    // Render returned DB rows
+    window.leaderboardCache = list;
+    if (window.drawLeaderboardWallPoster) window.drawLeaderboardWallPoster();
     renderLeaderboardRows(container, list);
   } catch (err) {
     container.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#ff1744; padding:24px 0;">Failed to fetch leaderboards. Offline.</td></tr>`;
@@ -2978,9 +3002,7 @@ window.nukeGameProject = nukeGameProject;
 window.closeNukeModal = closeNukeModal;
 
 function generateLiveChatMessage() {
-  const time = new Date().toLocaleTimeString();
-  const consoleEl = document.getElementById("terminal-console");
-  if (!consoleEl) return;
+  const time = new Date().toLocaleTimeString().split(' ')[0];
 
   const users = [
     "Speedrunner99", "NoobSlayer_xX", "KappaLord", "GamerGirl3000", "PixelPerfect",
@@ -3004,10 +3026,10 @@ function generateLiveChatMessage() {
   const username = users[Math.floor(Math.random() * users.length)];
   const userColor = userColors[Math.floor(Math.random() * userColors.length)];
   
-  let badgeHtml = "";
+  let badgeText = "";
   if (Math.random() < 0.3) {
     const badge = badges[Math.floor(Math.random() * badges.length)];
-    badgeHtml = `<span style="font-size:0.65rem; font-weight:800; padding:2px 5px; border-radius:4px; margin-right:5px; border:1px solid ${badge.color}; color:${badge.color}; background:${badge.bg};">${badge.text}</span>`;
+    badgeText = badge.text;
   }
 
   let comments = [];
@@ -3069,27 +3091,50 @@ function generateLiveChatMessage() {
 
   const commentText = comments[Math.floor(Math.random() * comments.length)];
 
-  const chatLine = document.createElement("div");
-  chatLine.className = "terminal-line";
-  chatLine.style.display = "flex";
-  chatLine.style.alignItems = "center";
-  chatLine.style.flexWrap = "wrap";
-  chatLine.style.padding = "2px 0";
+  // Push to consoleLogs for WebGL Auxiliary screen
+  consoleLogs.push({
+    time: time,
+    user: "@" + username,
+    text: `"${commentText}"`,
+    color: userColor,
+    badge: badgeText
+  });
+  if (consoleLogs.length > 60) consoleLogs.shift();
 
-  chatLine.innerHTML = `
-    <span class="timestamp" style="font-size:0.72rem; color:var(--color-text-muted); margin-right:6px;">[${time.split(' ')[0]}]</span>
-    ${badgeHtml}
-    <strong style="color:${userColor}; margin-right:6px; cursor:pointer;">@${username}:</strong>
-    <span style="color:#fff;">"${commentText}"</span>
-  `;
-
-  consoleEl.appendChild(chatLine);
-
-  while (consoleEl.children.length > 60) {
-    consoleEl.removeChild(consoleEl.firstChild);
+  if (window.drawAuxScreen) {
+    window.drawAuxScreen();
   }
 
-  consoleEl.scrollTop = consoleEl.scrollHeight;
+  const consoleEl = document.getElementById("terminal-console");
+  if (consoleEl) {
+    let badgeHtml = "";
+    if (badgeText) {
+      const matchBadge = badges.find(b => b.text === badgeText);
+      badgeHtml = `<span style="font-size:0.65rem; font-weight:800; padding:2px 5px; border-radius:4px; margin-right:5px; border:1px solid ${matchBadge.color}; color:${matchBadge.color}; background:${matchBadge.bg};">${matchBadge.text}</span>`;
+    }
+
+    const chatLine = document.createElement("div");
+    chatLine.className = "terminal-line";
+    chatLine.style.display = "flex";
+    chatLine.style.alignItems = "center";
+    chatLine.style.flexWrap = "wrap";
+    chatLine.style.padding = "2px 0";
+
+    chatLine.innerHTML = `
+      <span class="timestamp" style="font-size:0.72rem; color:var(--color-text-muted); margin-right:6px;">[${time}]</span>
+      ${badgeHtml}
+      <strong style="color:${userColor}; margin-right:6px; cursor:pointer;">@${username}:</strong>
+      <span style="color:#fff;">"${commentText}"</span>
+    `;
+
+    consoleEl.appendChild(chatLine);
+
+    while (consoleEl.children.length > 60) {
+      consoleEl.removeChild(consoleEl.firstChild);
+    }
+
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+  }
 }
 
 window.generateLiveChatMessage = generateLiveChatMessage;
@@ -3472,6 +3517,7 @@ function clickGigMatrix(num) {
       successMiniGame();
     } else {
       renderGigsBoard();
+      if (window.drawMainScreen) drawMainScreen();
     }
   } else {
     if (miniGameTimer) clearInterval(miniGameTimer);
@@ -3488,6 +3534,7 @@ function clickGigPing() {
     successMiniGame();
   } else {
     renderGigsBoard();
+    if (window.drawMainScreen) drawMainScreen();
   }
 }
 
@@ -3528,4 +3575,1716 @@ window.clickGigMatrix = clickGigMatrix;
 window.clickGigPing = clickGigPing;
 window.renderDeveloperStore = renderDeveloperStore;
 window.renderGigsBoard = renderGigsBoard;
+
+// ═══════════════════════════════════════════════
+// --- THREEJS 3D ARCADE ROOM & SCREEN TEXTURES ---
+// ═══════════════════════════════════════════════
+
+/* global THREE */
+
+let mainScreenCanvas, mainScreenCtx, mainScreenTexture;
+let auxScreenCanvas, auxScreenCtx, auxScreenTexture;
+let leaderboardCanvas, leaderboardCtx, leaderboardTexture;
+let scene3D, camera3D, renderer3D;
+let cameraTargetPos, cameraTargetLookAt;
+let currentCameraPos, currentCameraLookAt;
+let mainScreenMesh, auxScreenMesh, coffeeMugMesh, serverRackMesh, leaderboardMesh;
+
+let activeTab = "gigs"; // Default tab
+let focusedInputField = null; // 'username' or 'password'
+let profileUsernameText = "";
+let profilePasswordText = "";
+
+let draftProjectName = "CSS Div Alignment Pro";
+let draftGenre = "RPG";
+let draftTopic = "Cyberpunk";
+let draftPlatform = "pc";
+let draftScale = "Small";
+let draftMultiplayer = false;
+
+const RANDOM_GAME_NAMES = [
+  "Div Align Tycoon", "CSS Centering Quest", "Noodle Compiler", "Stack Overflow Simulator",
+  "Git Push Force AAA", "Lukewarm Drip Coffee 3D", "Smart Toaster DDoS", "ChatGPT Prompter",
+  "Memory Leak Legends", "Segfault Survivor", "Callback Hell 2026"
+];
+
+function init3DScene() {
+  const container = document.getElementById("canvas-container");
+  if (!container) return;
+
+  // Create canvas drawing buffers
+  mainScreenCanvas = document.createElement("canvas");
+  mainScreenCanvas.width = 1024;
+  mainScreenCanvas.height = 1024;
+  mainScreenCtx = mainScreenCanvas.getContext("2d");
+
+  auxScreenCanvas = document.createElement("canvas");
+  auxScreenCanvas.width = 512;
+  auxScreenCanvas.height = 512;
+  auxScreenCtx = auxScreenCanvas.getContext("2d");
+
+  leaderboardCanvas = document.createElement("canvas");
+  leaderboardCanvas.width = 512;
+  leaderboardCanvas.height = 512;
+  leaderboardCtx = leaderboardCanvas.getContext("2d");
+
+  // Create WebGL textures
+  mainScreenTexture = new THREE.CanvasTexture(mainScreenCanvas);
+  auxScreenTexture = new THREE.CanvasTexture(auxScreenCanvas);
+  leaderboardTexture = new THREE.CanvasTexture(leaderboardCanvas);
+
+  // Scene setup
+  scene3D = new THREE.Scene();
+  scene3D.background = new THREE.Color(0x050508);
+
+  camera3D = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+  
+  // Dynamic camera animation values
+  cameraTargetPos = new THREE.Vector3(0, 12, 22);
+  cameraTargetLookAt = new THREE.Vector3(0, 6, 0);
+
+  currentCameraPos = new THREE.Vector3().copy(cameraTargetPos);
+  currentCameraLookAt = new THREE.Vector3().copy(cameraTargetLookAt);
+
+  camera3D.position.copy(currentCameraPos);
+  camera3D.lookAt(currentCameraLookAt);
+
+  renderer3D = new THREE.WebGLRenderer({ antialias: true });
+  renderer3D.setSize(window.innerWidth, window.innerHeight);
+  renderer3D.shadowMap.enabled = true;
+  container.appendChild(renderer3D.domElement);
+
+  // Setup room lighting
+  const ambientLight = new THREE.AmbientLight(0x181822, 1.2);
+  scene3D.add(ambientLight);
+
+  const deskLight = new THREE.SpotLight(0xffb3ff, 5, 30, Math.PI / 4, 0.5, 1);
+  deskLight.position.set(0, 18, 5);
+  deskLight.target.position.set(0, 4, 0);
+  scene3D.add(deskLight);
+  scene3D.add(deskLight.target);
+
+  const screenLight = new THREE.PointLight(0x00e5ff, 2.5, 8);
+  screenLight.position.set(-2, 7, 3);
+  scene3D.add(screenLight);
+
+  const auxLight = new THREE.PointLight(0xb388ff, 2, 6);
+  auxLight.position.set(5, 7, 3);
+  scene3D.add(auxLight);
+
+  // Desk Assembly Group
+  const deskGroup = new THREE.Group();
+
+  const deskGeo = new THREE.BoxGeometry(24, 0.8, 9);
+  const deskMat = new THREE.MeshStandardMaterial({ color: 0x2b1b10, roughness: 0.85 });
+  const deskMesh = new THREE.Mesh(deskGeo, deskMat);
+  deskMesh.position.set(0, 4, 0);
+  deskGroup.add(deskMesh);
+
+  const legGeo = new THREE.BoxGeometry(0.8, 4, 0.8);
+  const legMat = new THREE.MeshStandardMaterial({ color: 0x151518, metalness: 0.8, roughness: 0.2 });
+  const leg1 = new THREE.Mesh(legGeo, legMat);
+  leg1.position.set(-11.5, 2, -4);
+  const leg2 = leg1.clone(); leg2.position.set(11.5, 2, -4);
+  const leg3 = leg1.clone(); leg3.position.set(-11.5, 2, 4);
+  const leg4 = leg1.clone(); leg4.position.set(11.5, 2, 4);
+  deskGroup.add(leg1, leg2, leg3, leg4);
+
+  // Main CRT Monitor Setup
+  const monitorGeo = new THREE.BoxGeometry(7, 5.5, 5);
+  const monitorMat = new THREE.MeshStandardMaterial({ color: 0x1d1d21, roughness: 0.6 });
+  const monitorMesh = new THREE.Mesh(monitorGeo, monitorMat);
+  monitorMesh.position.set(-2, 7.2, 0);
+  deskGroup.add(monitorMesh);
+
+  const screenGeo = new THREE.PlaneGeometry(6.4, 4.8);
+  const screenMat = new THREE.MeshBasicMaterial({ map: mainScreenTexture });
+  mainScreenMesh = new THREE.Mesh(screenGeo, screenMat);
+  mainScreenMesh.position.set(-2, 7.25, 2.51);
+  deskGroup.add(mainScreenMesh);
+
+  // Auxiliary CRT Monitor Setup
+  const auxMonitorGeo = new THREE.BoxGeometry(4.5, 4.5, 4.2);
+  const auxMonitorMesh = new THREE.Mesh(auxMonitorGeo, monitorMat);
+  auxMonitorMesh.position.set(5.5, 6.5, 0.5);
+  auxMonitorMesh.rotation.y = -0.3;
+  deskGroup.add(auxMonitorMesh);
+
+  const auxScreenGeo = new THREE.PlaneGeometry(3.9, 3.9);
+  const auxScreenMat = new THREE.MeshBasicMaterial({ map: auxScreenTexture });
+  auxScreenMesh = new THREE.Mesh(auxScreenGeo, auxScreenMat);
+  auxScreenMesh.position.set(5.1, 6.5, 2.45);
+  auxScreenMesh.rotation.y = -0.3;
+  deskGroup.add(auxScreenMesh);
+
+  // Red Coffee Mug
+  const mugGroup = new THREE.Group();
+  const mugGeo = new THREE.CylinderGeometry(0.7, 0.7, 1.6, 16);
+  const mugMat = new THREE.MeshStandardMaterial({ color: 0xff1744, roughness: 0.1 });
+  const mugBody = new THREE.Mesh(mugGeo, mugMat);
+  mugBody.position.set(0, 0.8, 0);
+  
+  const handleGeo = new THREE.TorusGeometry(0.5, 0.15, 8, 16, Math.PI);
+  const handleMesh = new THREE.Mesh(handleGeo, mugMat);
+  handleMesh.position.set(0.6, 0.8, 0);
+  handleMesh.rotation.z = -Math.PI / 2;
+  mugGroup.add(mugBody, handleMesh);
+  
+  mugGroup.position.set(-7, 4.4, 2);
+  coffeeMugMesh = mugBody;
+  deskGroup.add(mugGroup);
+
+  // Server Stack
+  const serverGroup = new THREE.Group();
+  const rackBoxGeo = new THREE.BoxGeometry(4, 1.2, 5);
+  const rackBoxMat = new THREE.MeshStandardMaterial({ color: 0x08080a, metalness: 0.9, roughness: 0.1 });
+  
+  for (let i = 0; i < 3; i++) {
+    const rack = new THREE.Mesh(rackBoxGeo, rackBoxMat);
+    rack.position.set(0, i * 1.3 + 0.6, 0);
+    
+    const ledGeo = new THREE.SphereGeometry(0.06, 8, 8);
+    const ledMat = new THREE.MeshBasicMaterial({ color: 0x39ff14 });
+    const led = new THREE.Mesh(ledGeo, ledMat);
+    led.position.set(-1.6, i * 1.3 + 0.6, 2.52);
+    serverGroup.add(rack, led);
+  }
+  serverGroup.position.set(-4, 0, -2);
+  serverRackMesh = serverGroup;
+  deskGroup.add(serverGroup);
+
+  // Wall High Score Billboard Poster
+  const billboardGeo = new THREE.PlaneGeometry(9, 9);
+  const billboardMat = new THREE.MeshBasicMaterial({ map: leaderboardTexture });
+  leaderboardMesh = new THREE.Mesh(billboardGeo, billboardMat);
+  leaderboardMesh.position.set(11.8, 9, -1.5);
+  leaderboardMesh.rotation.y = -Math.PI / 2;
+  scene3D.add(leaderboardMesh);
+
+  scene3D.add(deskGroup);
+
+  // Environment elements
+  const floorGeo = new THREE.PlaneGeometry(50, 50);
+  const floorMat = new THREE.MeshStandardMaterial({ color: 0x0c0c0f, roughness: 0.9 });
+  const floor = new THREE.Mesh(floorGeo, floorMat);
+  floor.rotation.x = -Math.PI / 2;
+  scene3D.add(floor);
+
+  const backWallGeo = new THREE.PlaneGeometry(50, 25);
+  const backWallMat = new THREE.MeshStandardMaterial({ color: 0x060608, roughness: 0.95 });
+  const backWall = new THREE.Mesh(backWallGeo, backWallMat);
+  backWall.position.set(0, 12, -5);
+  scene3D.add(backWall);
+
+  // Sync tab state from URL if not already set during boot
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("tab")) activeTab = params.get("tab");
+
+  // Global listeners
+  window.addEventListener("mousedown", onDocumentMouseDown, false);
+  window.addEventListener("resize", onWindowResize, false);
+  window.addEventListener("keydown", onDocumentKeyDown, false);
+
+  drawMainScreen();
+  drawAuxScreen();
+  drawLeaderboardWallPoster();
+
+  animate();
+}
+
+function onWindowResize() {
+  if (camera3D && renderer3D) {
+    camera3D.aspect = window.innerWidth / window.innerHeight;
+    camera3D.updateProjectionMatrix();
+    renderer3D.setSize(window.innerWidth, window.innerHeight);
+  }
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+
+  // Smooth LERP glide transitions
+  currentCameraPos.lerp(cameraTargetPos, 0.08);
+  currentCameraLookAt.lerp(cameraTargetLookAt, 0.08);
+
+  camera3D.position.copy(currentCameraPos);
+  camera3D.lookAt(currentCameraLookAt);
+
+  if (mainScreenCtx) {
+    drawMainScreen();
+    drawAuxScreen();
+  }
+
+  renderer3D.render(scene3D, camera3D);
+}
+
+function zoomCameraTo(pos, lookAt) {
+  cameraTargetPos.copy(pos);
+  cameraTargetLookAt.copy(lookAt);
+}
+
+function resetCameraView() {
+  cameraTargetPos.set(0, 12, 22);
+  cameraTargetLookAt.set(0, 6, 0);
+}
+
+function isDescendantOf(obj, parent) {
+  if (!obj || !parent) return false;
+  let curr = obj.parent;
+  while (curr) {
+    if (curr === parent) return true;
+    curr = curr.parent;
+  }
+  return false;
+}
+
+function onDocumentMouseDown(event) {
+  if (event.button !== 0) return;
+
+  const mouse = new THREE.Vector2();
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+  const raycaster = new THREE.Raycaster();
+  raycaster.setFromCamera(mouse, camera3D);
+
+  const intersects = raycaster.intersectObjects(scene3D.children, true);
+  
+  if (intersects.length > 0) {
+    let hitObject = intersects[0].object;
+    let hitUv = intersects[0].uv;
+
+    // 1. Raycast Main Screen plane
+    if (hitObject === mainScreenMesh && hitUv) {
+      const cx = hitUv.x * 1024;
+      const cy = (1 - hitUv.y) * 1024;
+      handleMainScreenClick(cx, cy);
+      return;
+    }
+
+    // 2. Click Mug — focus store panel (coffee brewing mini-game)
+    if (hitObject === coffeeMugMesh || isDescendantOf(hitObject, coffeeMugMesh.parent)) {
+      zoomCameraTo(new THREE.Vector3(-4, 7, 7), new THREE.Vector3(-7, 5, 2));
+      activeTab = "gigs";
+      switchTab("gigs");
+      drawMainScreen();
+      return;
+    }
+
+    // 2b. Click Aux Terminal — community live feed
+    if (hitObject === auxScreenMesh && hitUv) {
+      zoomCameraTo(new THREE.Vector3(5.5, 7.5, 9), new THREE.Vector3(5.1, 6.5, 2.45));
+      activeTab = "company";
+      switchTab("company");
+      drawMainScreen();
+      return;
+    }
+
+    // 3. Click Server
+    if (hitObject === serverRackMesh || isDescendantOf(hitObject, serverRackMesh)) {
+      zoomCameraTo(new THREE.Vector3(-4, 6.5, 8.5), new THREE.Vector3(-4, 2, -2));
+      activeTab = "gigs";
+      switchTab("gigs");
+      return;
+    }
+
+    // 4. Click Leaderboard
+    if (hitObject === leaderboardMesh) {
+      zoomCameraTo(new THREE.Vector3(7.5, 9, 3.5), new THREE.Vector3(11.8, 9, -1.5));
+      activeTab = "leaderboard";
+      switchTab("leaderboard");
+      return;
+    }
+
+    // 5. Zoom in to screen if monitor casing is clicked
+    if (hitObject.geometry && hitObject.geometry.type === "BoxGeometry" && hitObject.position.x === -2 && hitObject.position.y === 7.2) {
+      zoomCameraTo(new THREE.Vector3(-2, 8, 10.5), new THREE.Vector3(-2, 7.25, 2.51));
+      return;
+    }
+  }
+
+  // Click background tabletop or floor to zoom out
+  resetCameraView();
+}
+
+function onDocumentKeyDown(event) {
+  if (!activeMiniGame && !focusedInputField) return;
+
+  // Capture keystrokes for Syntax Striker
+  if (activeMiniGame && activeMiniGame.type === 'code') {
+    event.preventDefault();
+    const key = event.key;
+    const target = activeMiniGame.target;
+    const currentTyped = activeMiniGame.inputText || "";
+    
+    const nextChar = target.charAt(currentTyped.length);
+    if (key === nextChar) {
+      activeMiniGame.inputText = currentTyped + key;
+      if (activeMiniGame.inputText === target) {
+        if (miniGameTimer) clearInterval(miniGameTimer);
+        successMiniGame();
+      } else {
+        drawMainScreen();
+      }
+    }
+    return;
+  }
+
+  // Captures credentials keyboard typings
+  if (focusedInputField) {
+    if (event.key === "Backspace") {
+      event.preventDefault();
+      if (focusedInputField === 'username') {
+        profileUsernameText = profileUsernameText.slice(0, -1);
+      } else {
+        profilePasswordText = profilePasswordText.slice(0, -1);
+      }
+      drawMainScreen();
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      focusedInputField = null;
+      drawMainScreen();
+    } else if (event.key.length === 1) {
+      event.preventDefault();
+      if (focusedInputField === 'username') {
+        if (profileUsernameText.length < 15) {
+          profileUsernameText += event.key;
+        }
+      } else {
+        if (profilePasswordText.length < 15) {
+          profilePasswordText += event.key;
+        }
+      }
+      drawMainScreen();
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════
+// --- 3D SCREEN CLICK ROUTING & INTERACTION ---
+// ═══════════════════════════════════════════════
+
+function isPointInRect(cx, cy, x, y, w, h) {
+  return cx >= x && cx <= x + w && cy >= y && cy <= y + h;
+}
+
+function handleMainScreenClick(cx, cy) {
+  if (isPointInRect(cx, cy, 400, 930, 224, 50)) {
+    resetCameraView();
+    focusedInputField = null;
+    drawMainScreen();
+    return;
+  }
+
+  const tabIds = ["company", "develop", "gigs", "staff", "leaderboard", "profile"];
+  for (let i = 0; i < tabIds.length; i++) {
+    if (isPointInRect(cx, cy, 20 + i * 162, 80, 150, 40)) {
+      activeTab = tabIds[i];
+      switchTab(tabIds[i]);
+      if (tabIds[i] === "leaderboard") {
+        zoomCameraTo(new THREE.Vector3(7.5, 9, 3.5), new THREE.Vector3(11.8, 9, -1.5));
+        loadLeaderboard().then(() => drawLeaderboardWallPoster());
+      } else {
+        zoomCameraTo(new THREE.Vector3(-2, 8, 10.5), new THREE.Vector3(-2, 7.25, 2.51));
+      }
+      drawMainScreen();
+      return;
+    }
+  }
+
+  if (activeMiniGame) {
+    const devMiniGame = activeTab === "develop" && !activeMiniGame.isGig && !activeMiniGame.isStore && !activeMiniGame.isTraining;
+    const yBase = devMiniGame ? 500 : 220;
+    if (handleMiniGameClick(cx, cy, yBase)) return;
+  }
+
+  if (activeTab === "develop") {
+    handleDevelopTabClick(cx, cy);
+  } else if (activeTab === "gigs" && !activeMiniGame) {
+    handleGigsTabClick(cx, cy);
+  } else if (activeTab === "staff") {
+    handleStaffTabClick(cx, cy);
+  } else if (activeTab === "profile") {
+    handleProfileTabClick(cx, cy);
+  }
+}
+
+function handleMiniGameClick(cx, cy, yBase) {
+  if (!activeMiniGame) return false;
+
+  if (activeMiniGame.type === "slider") {
+    if (isPointInRect(cx, cy, 70, yBase + 195, 420, 50)) {
+      stopGigSlider();
+      return true;
+    }
+    if (isPointInRect(cx, cy, 534, yBase + 195, 420, 50)) {
+      cancelMiniGame();
+      return true;
+    }
+    return true;
+  }
+
+  if (activeMiniGame.type === "binary") {
+    activeMiniGame.options.forEach((opt, idx) => {
+      const y = yBase + 165 + idx * 52;
+      if (isPointInRect(cx, cy, 70, y, 884, 42)) {
+        clickGigBinary(opt);
+      }
+    });
+    if (isPointInRect(cx, cy, 70, yBase + 350, 884, 25)) {
+      cancelMiniGame();
+    }
+    return true;
+  }
+
+  if (activeMiniGame.type === "trace") {
+    activeMiniGame.coords.forEach(coord => {
+      if (coord.num < activeMiniGame.currentNumber) return;
+      const pxX = 70 + (coord.left / 100) * 884;
+      const pxY = yBase + 100 + (coord.top / 100) * 240;
+      if (Math.hypot(cx - pxX, cy - pxY) <= 28) {
+        clickGigMatrix(coord.num);
+      }
+    });
+    if (isPointInRect(cx, cy, 70, yBase + 375, 884, 35)) {
+      cancelMiniGame();
+    }
+    return true;
+  }
+
+  if (activeMiniGame.type === "ping") {
+    if (isPointInRect(cx, cy, 70, yBase + 165, 884, 80)) {
+      clickGigPing();
+      return true;
+    }
+    if (isPointInRect(cx, cy, 70, yBase + 285, 884, 35)) {
+      cancelMiniGame();
+      return true;
+    }
+    return true;
+  }
+
+  if (activeMiniGame.type === "pour") {
+    if (isPointInRect(cx, cy, 70, yBase + 195, 420, 50)) {
+      stopCoffeePour();
+      return true;
+    }
+    if (isPointInRect(cx, cy, 534, yBase + 195, 420, 50)) {
+      cancelMiniGame();
+      return true;
+    }
+    return true;
+  }
+
+  if (activeMiniGame.type === "code") {
+    if (isPointInRect(cx, cy, 50, yBase + 280, 924, 40)) {
+      cancelMiniGame();
+      return true;
+    }
+    return true;
+  }
+
+  if (activeMiniGame.type === "design") {
+    activeMiniGame.buttons.forEach((btn, idx) => {
+      const x = 50 + idx * 310;
+      if (isPointInRect(cx, cy, x, yBase + 150, 280, 50)) {
+        selectDesignColor(btn.name);
+      }
+    });
+    if (isPointInRect(cx, cy, 50, yBase + 280, 924, 40)) {
+      cancelMiniGame();
+    }
+    return true;
+  }
+
+  if (activeMiniGame.type === "polish") {
+    [0, 1, 2, 3].forEach(i => {
+      const col = i % 2;
+      const row = Math.floor(i / 2);
+      const x = 50 + col * 470;
+      const y = yBase + 130 + row * 70;
+      if (isPointInRect(cx, cy, x, y, 440, 55)) {
+        clickBugButton(i);
+      }
+    });
+    if (isPointInRect(cx, cy, 50, yBase + 280, 924, 40)) {
+      cancelMiniGame();
+    }
+    return true;
+  }
+
+  return false;
+}
+
+function handleDevelopTabClick(cx, cy) {
+  if (!gameState.current_project) {
+    if (isPointInRect(cx, cy, 450, 215, 200, 35)) {
+      draftProjectName = RANDOM_GAME_NAMES[Math.floor(Math.random() * RANDOM_GAME_NAMES.length)];
+      drawMainScreen();
+      return;
+    }
+
+    const genres = ["RPG", "Action", "Strategy", "Adventure", "Simulation"];
+    genres.forEach((g, idx) => {
+      if (isPointInRect(cx, cy, 200 + idx * 140, 280, 130, 35)) draftGenre = g;
+    });
+
+    const topics = ["Cyberpunk", "Fantasy", "Space", "Zombie", "Farming", "Game Dev"];
+    topics.forEach((t, idx) => {
+      const x = 200 + (idx % 3) * 230;
+      const y = 350 + Math.floor(idx / 3) * 45;
+      if (isPointInRect(cx, cy, x, y, 220, 35)) draftTopic = t;
+    });
+
+    const platforms = ["pc", "console", "mobile"];
+    platforms.forEach((p, idx) => {
+      if (isPointInRect(cx, cy, 200 + idx * 230, 460, 210, 35)) draftPlatform = p;
+    });
+
+    const scales = ["Small", "Medium", "Large"];
+    scales.forEach((s, idx) => {
+      if (isPointInRect(cx, cy, 200 + idx * 160, 540, 150, 35)) draftScale = s;
+    });
+
+    if (isPointInRect(cx, cy, 200, 620, 160, 35)) {
+      draftMultiplayer = !draftMultiplayer;
+      drawMainScreen();
+      return;
+    }
+
+    if (isPointInRect(cx, cy, 300, 720, 420, 70)) {
+      createGameProjectFromDraft();
+    } else {
+      drawMainScreen();
+    }
+    return;
+  }
+
+  const proj = gameState.current_project;
+  const target = getTargetPointsForScale(proj.scale);
+  const totalPoints = proj.tech_points + proj.design_points;
+  const progressPercent = Math.min(100, (totalPoints / (target * 2)) * 100);
+
+  if (!activeMiniGame) {
+    if (isPointInRect(cx, cy, 50, 560, 280, 60)) startMiniGame("code");
+    if (isPointInRect(cx, cy, 360, 560, 280, 60)) startMiniGame("design");
+    if (isPointInRect(cx, cy, 670, 560, 280, 60)) startMiniGame("polish");
+    if (isPointInRect(cx, cy, 300, 670, 420, 60) && progressPercent >= 100 && proj.bug_points === 0) {
+      releaseGameProject();
+    }
+  }
+}
+
+function handleGigsTabClick(cx, cy) {
+  if (isPointInRect(cx, cy, 50, 285, 280, 45)) trainSkill("coding_skill");
+  if (isPointInRect(cx, cy, 50, 370, 280, 45)) trainSkill("design_skill");
+  if (isPointInRect(cx, cy, 50, 455, 280, 45)) trainSkill("management_skill");
+
+  if (isPointInRect(cx, cy, 380, 285, 280, 45)) buyItem("coffee");
+  if (isPointInRect(cx, cy, 380, 370, 280, 45)) buyItem("energy_drink");
+  if (isPointInRect(cx, cy, 380, 455, 280, 45)) buyItem("nootropic");
+
+  if (isPointInRect(cx, cy, 710, 285, 260, 45)) runGig("freelance_html");
+  if (isPointInRect(cx, cy, 710, 370, 260, 45)) runGig("crack_competitor");
+  if (isPointInRect(cx, cy, 710, 455, 260, 45)) runGig("ransomware");
+  if (isPointInRect(cx, cy, 710, 540, 260, 45)) runGig("ddos_rival");
+}
+
+function handleStaffTabClick(cx, cy) {
+  const officeKeys = Object.keys(OFFICE_TIERS);
+  officeKeys.forEach((tierKey, idx) => {
+    const y = 300 + idx * 55;
+    if (isPointInRect(cx, cy, 50, y + 10, 400, 36) && gameState.office_tier !== tierKey) {
+      buyOffice(tierKey);
+    }
+  });
+
+  const recruitTypes = ["junior_dev", "junior_artist", "senior_dev", "senior_artist"];
+  recruitTypes.forEach((id, idx) => {
+    const y = 560 + idx * 58;
+    if (isPointInRect(cx, cy, 50, y + 8, 380, 36)) hireEmployee(id);
+  });
+
+  const researchTypes = ["unlocked_console", "researched_multiplayer", "ai_behavior"];
+  researchTypes.forEach((id, idx) => {
+    const y = 560 + idx * 75;
+    if (isPointInRect(cx, cy, 520, y + 8, 420, 38) && !gameState[id]) buyResearch(id);
+  });
+
+  let xOffset = 50;
+  gameState.employees.forEach((emp, idx) => {
+    if (idx < 4 && isPointInRect(cx, cy, xOffset, 642, 190, 35)) fireEmployee(idx);
+    xOffset += 220;
+  });
+}
+
+function handleProfileTabClick(cx, cy) {
+  if (isUserLoggedIn) {
+    if (isPointInRect(cx, cy, 200, 400, 420, 50)) handleProfileLogout();
+    return;
+  }
+
+  if (isPointInRect(cx, cy, 200, 305, 400, 35)) {
+    focusedInputField = "username";
+    drawMainScreen();
+    return;
+  }
+  if (isPointInRect(cx, cy, 200, 365, 400, 35)) {
+    focusedInputField = "password";
+    drawMainScreen();
+    return;
+  }
+  if (isPointInRect(cx, cy, 200, 430, 400, 45)) {
+    handleProfileSubmit();
+    return;
+  }
+  if (isPointInRect(cx, cy, 200, 490, 400, 45)) {
+    handleFastGuestLogin();
+  }
+}
+
+function createGameProjectFromDraft() {
+  const name = draftProjectName.trim();
+  if (!name) {
+    showToast("Please enter a project name!", "error");
+    return;
+  }
+
+  if (draftPlatform === "console" && !gameState.unlocked_console) {
+    showToast("You must research '3D Graphics Engine' first to target Console platforms!", "error");
+    return;
+  }
+
+  let scaleCost = 0;
+  if (draftScale === "Medium") scaleCost = 1000;
+  if (draftScale === "Large") scaleCost = 10000;
+  if (draftScale === "AAA") scaleCost = 50000;
+
+  const totalCost = scaleCost + PLATFORMS[draftPlatform].cost;
+  if (gameState.cash < totalCost) {
+    showToast(`Insufficient cash reserves! Required: $${totalCost.toLocaleString()}`, "error");
+    return;
+  }
+
+  let xpCost = 10;
+  if (draftScale === "Medium") xpCost = 30;
+  else if (draftScale === "Large") xpCost = 80;
+  else if (draftScale === "AAA") xpCost = 200;
+  if (gameState.level === 1 && draftScale === "Small") xpCost = 0;
+
+  if (gameState.xp < xpCost) {
+    showToast(`Insufficient XP! Starting a ${draftScale} project requires ${xpCost} XP.`, "error");
+    return;
+  }
+
+  if (!confirm(`Are you sure you want to start developing '${name}'? Costs $${totalCost.toLocaleString()} and ${xpCost} XP.`)) {
+    return;
+  }
+
+  gameState.cash -= totalCost;
+  gameState.xp -= xpCost;
+  gameState.current_project = {
+    name,
+    genre: draftGenre,
+    topic: draftTopic,
+    platform: draftPlatform,
+    scale: draftScale,
+    tech_points: 0,
+    design_points: 0,
+    bug_points: 0,
+    progress: 0,
+    phase: "coding",
+    miniGamesPlayed: 0,
+    miniGamesWon: 0,
+    miniGamesLost: 0
+  };
+
+  addLog("Project Started", `Initiated development of '${name}' (${draftGenre}/${draftTopic}) on ${PLATFORMS[draftPlatform].name}. Budget spent: $${totalCost}.`);
+  showToast("Development initialized!", "success");
+  saveGame();
+  activeTab = "develop";
+  switchTab("develop");
+  updateUI();
+}
+
+async function handleProfileSubmit() {
+  if (!profileUsernameText || !profilePasswordText) {
+    showToast("Enter username and password on the Profile Terminal.", "error");
+    return;
+  }
+  const email = profileUsernameText.includes("@")
+    ? profileUsernameText
+    : `${profileUsernameText.toLowerCase().replace(/\s+/g, "")}@devend.local`;
+
+  try {
+    const result = await TycoonAPI.loginWithEmail(email, profilePasswordText);
+    isUserLoggedIn = true;
+    if (result.profile) {
+      localStorage.setItem("tycoon_active_username", result.profile.username || profileUsernameText);
+      localStorage.setItem("tycoon_color", result.profile.color || "#00e5ff");
+    }
+    await loadProfileFromServer();
+    focusedInputField = null;
+    profileUsernameText = "";
+    profilePasswordText = "";
+    showToast("Profile synchronized!", "success");
+    updateUI();
+  } catch (err) {
+    showToast(err.message || "Login failed. Try Fast Guest Login or visit signup.html.", "error");
+  }
+}
+
+function handleFastGuestLogin() {
+  const guestName = `Guest${Math.floor(Math.random() * 9000) + 1000}`;
+  localStorage.setItem("tycoon_active_username", guestName);
+  localStorage.setItem("tycoon_color", "#39ff14");
+  isUserLoggedIn = false;
+  loadProfileFromLocal();
+  focusedInputField = null;
+  profileUsernameText = "";
+  profilePasswordText = "";
+  showToast(`Playing as ${guestName}`, "success");
+  updateUI();
+}
+
+async function handleProfileLogout() {
+  try {
+    await TycoonAPI.logout();
+  } catch (e) {
+    console.warn("Logout error:", e);
+  }
+  isUserLoggedIn = false;
+  loadProfileFromLocal();
+  focusedInputField = null;
+  showToast("Logged out. Local guest mode active.", "info");
+  updateUI();
+}
+
+// ═══════════════════════════════════════════════
+// --- CANVAS TEXTURE DRAWER PROCEDURAL CALLS ---
+// ═══════════════════════════════════════════════
+
+function drawPixelButton(ctx, x, y, w, h, text, isPressed, color = "#00e5ff", font = "12px 'Press Start 2P'") {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3;
+  ctx.fillStyle = isPressed ? "rgba(0, 229, 255, 0.15)" : "#0c0c10";
+  
+  ctx.strokeRect(x, y, w, h);
+  ctx.fillRect(x + 2, y + 2, w - 4, h - 4);
+  
+  ctx.fillStyle = color;
+  ctx.font = font;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, x + w / 2, y + h / 2);
+  ctx.restore();
+}
+
+function drawHeaderBar(ctx, w) {
+  ctx.fillStyle = "#0c0d12";
+  ctx.fillRect(0, 0, w, 70);
+  ctx.strokeStyle = "rgba(255,255,255,0.08)";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(0, 0, w, 70);
+
+  ctx.fillStyle = "#39ff14";
+  ctx.font = "bold 26px 'VT323', monospace";
+  ctx.fillText(`CASH: $${parseFloat(gameState.cash).toLocaleString(undefined, { minimumFractionDigits: 2 })}`, 20, 42);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "14px 'VT323', monospace";
+  ctx.fillText("⚡ ENERGY", 300, 26);
+  ctx.fillStyle = "#222";
+  ctx.fillRect(300, 34, 150, 14);
+  ctx.fillStyle = "#ffd700";
+  ctx.fillRect(300, 34, (gameState.energy / gameState.max_energy) * 150, 14);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.fillText("🎯 FOCUS", 480, 26);
+  ctx.fillStyle = "#222";
+  ctx.fillRect(480, 34, 150, 14);
+  ctx.fillStyle = "#ff1744";
+  ctx.fillRect(480, 34, (gameState.nerve / gameState.max_nerve) * 150, 14);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.fillText(`✨ LEVEL ${gameState.level}`, 660, 26);
+  ctx.fillStyle = "#222";
+  ctx.fillRect(660, 34, 150, 14);
+  ctx.fillStyle = "#39ff14";
+  ctx.fillRect(660, 34, (gameState.xp / gameState.xp_needed) * 150, 14);
+  
+  ctx.fillStyle = "rgba(255,255,255,0.7)";
+  ctx.font = "12px 'VT323', monospace";
+  ctx.fillText(`${Math.floor(gameState.energy)}/${gameState.max_energy}`, 360, 60);
+  ctx.fillText(`${Math.floor(gameState.nerve)}/${gameState.max_nerve}`, 540, 60);
+  ctx.fillText(`${Math.floor(gameState.xp)}/${gameState.xp_needed} XP`, 710, 60);
+}
+
+function drawNavTabs(ctx, w) {
+  const tabs = [
+    { id: "company", label: "COMPANY" },
+    { id: "develop", label: "DEVELOP" },
+    { id: "gigs", label: "GIGS/GYM" },
+    { id: "staff", label: "STAFF" },
+    { id: "leaderboard", label: "SCORES" },
+    { id: "profile", label: "PROFILE" }
+  ];
+
+  ctx.fillStyle = "#060608";
+  ctx.fillRect(0, 70, w, 60);
+
+  tabs.forEach((tab, index) => {
+    const x = 20 + index * 162;
+    const y = 80;
+    const isActive = activeTab === tab.id;
+    drawPixelButton(ctx, x, y, 150, 40, tab.label, isActive, isActive ? "#39ff14" : "#00e5ff", "11px 'Press Start 2P'");
+  });
+}
+
+function drawMainScreen() {
+  if (!mainScreenCtx) return;
+  const ctx = mainScreenCtx;
+  const w = 1024;
+  const h = 1024;
+  
+  ctx.fillStyle = "#030305";
+  ctx.fillRect(0, 0, w, h);
+  
+  ctx.fillStyle = "rgba(255, 255, 255, 0.015)";
+  for (let y = 0; y < h; y += 4) {
+    ctx.fillRect(0, y, w, 2);
+  }
+  
+  drawHeaderBar(ctx, w);
+  drawNavTabs(ctx, w);
+  
+  if (activeTab === "company") {
+    drawCompanyTab(ctx, w);
+  } else if (activeTab === "develop") {
+    drawDevelopTab(ctx, w);
+  } else if (activeTab === "gigs") {
+    drawGigsTab(ctx, w);
+  } else if (activeTab === "staff") {
+    drawStaffTab(ctx, w);
+  } else if (activeTab === "leaderboard") {
+    drawLeaderboardTab(ctx, w);
+  } else if (activeTab === "profile") {
+    drawProfileTab(ctx, w);
+  }
+  
+  if (mainScreenTexture) {
+    mainScreenTexture.needsUpdate = true;
+  }
+}
+
+function drawCompanyTab(ctx, w) {
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 22px 'Press Start 2P', monospace";
+  ctx.fillText("STUDIO PROFILE", 50, 190);
+
+  ctx.fillStyle = "rgba(255,255,255,0.7)";
+  ctx.font = "20px 'VT323', monospace";
+  ctx.fillText(`Studio Name: ${gameState.company_name}`, 50, 240);
+  ctx.fillText(`Office Space: ${gameState.office_tier}`, 50, 270);
+  ctx.fillText(`Net Worth: $${parseFloat(gameState.net_worth).toLocaleString(undefined, { minimumFractionDigits: 2 })}`, 50, 300);
+  ctx.fillText(`Games Published: ${gameState.games_released}`, 50, 330);
+  ctx.fillText(`Total Copies Sold: ${parseInt(gameState.games_sold).toLocaleString()}`, 50, 360);
+  
+  ctx.fillStyle = "rgba(0, 229, 255, 0.05)";
+  ctx.strokeStyle = "rgba(0, 229, 255, 0.2)";
+  ctx.lineWidth = 2;
+  ctx.fillRect(50, 400, 924, 180);
+  ctx.strokeRect(50, 400, 924, 180);
+  
+  ctx.fillStyle = "#00e5ff";
+  ctx.font = "14px 'Press Start 2P', monospace";
+  ctx.fillText("📜 Basement Co-Sign Lease Agreement (Section 4.2)", 70, 435);
+  
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "18px 'VT323', monospace";
+  ctx.fillText("Morale clause: Empty pizza box tower height must not exceed 4 boxes.", 70, 475);
+  ctx.fillText("Crying loudly after DB drops is strictly prohibited between 10 PM and 7 AM.", 70, 505);
+  ctx.fillText("The landlord reserves the right to confiscate desk chairs if laundry is ignored.", 70, 535);
+
+  ctx.fillStyle = "#ffd700";
+  ctx.font = "bold 16px 'Press Start 2P', monospace";
+  ctx.fillText("ACTIVE PRODUCT SALES", 50, 630);
+  
+  let yOffset = 680;
+  if (gameState.active_games.length === 0) {
+    ctx.fillStyle = "rgba(255,255,255,0.4)";
+    ctx.font = "18px 'VT323', monospace";
+    ctx.fillText("No active products generating sales.", 50, yOffset);
+  } else {
+    gameState.active_games.forEach(game => {
+      const remainingTicks = Math.max(0, 240 - game.age);
+      const curIncome = (game.initialSalesRate * Math.exp(-game.age / 90) * game.price * 0.70);
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 20px 'VT323', monospace";
+      ctx.fillText(`${game.name} (${game.genre})`, 50, yOffset);
+      ctx.fillStyle = "#39ff14";
+      ctx.fillText(`+ $${curIncome.toFixed(2)}/s`, 400, yOffset);
+      ctx.fillStyle = "rgba(255,255,255,0.4)";
+      ctx.fillText(`Rating: ${game.rating.toFixed(1)}/10 | Sold: ${game.totalSold} copies (${remainingTicks}s left)`, 50, yOffset + 22);
+      yOffset += 60;
+    });
+  }
+
+  drawPixelButton(ctx, 400, 930, 224, 50, "ZOOM OUT", false, "#ff1744", "12px 'Press Start 2P'");
+}
+
+function drawDevelopTab(ctx, w) {
+  if (!gameState.current_project) {
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 20px 'Press Start 2P', monospace";
+    ctx.fillText("NEW PROJECT CREATION", 50, 190);
+
+    ctx.font = "20px 'VT323', monospace";
+    ctx.fillText(`PROJECT NAME: ${draftProjectName}`, 50, 240);
+    drawPixelButton(ctx, 450, 215, 200, 35, "RANDOMIZE", false, "#ffd700", "10px 'Press Start 2P'");
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText("SELECT GENRE:", 50, 300);
+    const genres = ["RPG", "Action", "Strategy", "Adventure", "Simulation"];
+    genres.forEach((g, idx) => {
+      const active = draftGenre === g;
+      drawPixelButton(ctx, 200 + idx * 140, 280, 130, 35, g, active, active ? "#39ff14" : "#00e5ff", "9px 'Press Start 2P'");
+    });
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText("SELECT TOPIC:", 50, 380);
+    const topics = ["Cyberpunk", "Fantasy", "Space", "Zombie", "Farming", "Game Dev"];
+    topics.forEach((t, idx) => {
+      const active = draftTopic === t;
+      const x = 200 + (idx % 3) * 230;
+      const y = 350 + Math.floor(idx / 3) * 45;
+      drawPixelButton(ctx, x, y, 220, 35, t, active, active ? "#39ff14" : "#00e5ff", "9px 'Press Start 2P'");
+    });
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText("PLATFORM:", 50, 480);
+    const platforms = [
+      { id: "pc", label: "PC ($100)" },
+      { id: "console", label: "PEAR 5 ($500)" },
+      { id: "mobile", label: "MOBILE ($50)" }
+    ];
+    platforms.forEach((p, idx) => {
+      const active = draftPlatform === p.id;
+      drawPixelButton(ctx, 200 + idx * 230, 460, 210, 35, p.label, active, active ? "#39ff14" : "#00e5ff", "9px 'Press Start 2P'");
+    });
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText("PROJECT SCALE:", 50, 560);
+    const scales = ["Small", "Medium", "Large"];
+    scales.forEach((s, idx) => {
+      const active = draftScale === s;
+      drawPixelButton(ctx, 200 + idx * 160, 540, 150, 35, s, active, active ? "#39ff14" : "#00e5ff", "9px 'Press Start 2P'");
+    });
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText("MULTIPLAYER:", 50, 640);
+    drawPixelButton(ctx, 200, 620, 160, 35, draftMultiplayer ? "[X] ENABLED" : "[ ] DISABLED", draftMultiplayer, draftMultiplayer ? "#39ff14" : "#00e5ff", "9px 'Press Start 2P'");
+
+    let cost = draftPlatform === "mobile" ? 50 : (draftPlatform === "console" ? 500 : 100);
+    let scaleXp = draftScale === "Medium" ? 100 : (draftScale === "Large" ? 400 : 10);
+    if (gameState.level === 1 && draftScale === "Small") scaleXp = 0;
+    drawPixelButton(ctx, 300, 720, 420, 70, `START DEVELOPMENT (-$${cost}, -${scaleXp} XP)`, false, "#ffd700", "11px 'Press Start 2P'");
+
+  } else {
+    const proj = gameState.current_project;
+    const target = getTargetPointsForScale(proj.scale);
+    const totalPoints = proj.tech_points + proj.design_points;
+    const progressPercent = Math.min(100, (totalPoints / (target * 2)) * 100);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 20px 'Press Start 2P', monospace";
+    ctx.fillText(`CURRENT PROJECT: ${proj.name.toUpperCase()}`, 50, 190);
+    
+    ctx.font = "20px 'VT323', monospace";
+    ctx.fillStyle = "rgba(255,255,255,0.5)";
+    ctx.fillText(`Scale: ${proj.scale} | Genre: ${proj.genre} | Topic: ${proj.topic}`, 50, 230);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(`Tech points: ${proj.tech_points} / ${target}`, 50, 280);
+    ctx.fillStyle = "#222";
+    ctx.fillRect(50, 294, 400, 18);
+    ctx.fillStyle = "#00e5ff";
+    ctx.fillRect(50, 294, Math.min(1, proj.tech_points / target) * 400, 18);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(`Design points: ${proj.design_points} / ${target}`, 524, 280);
+    ctx.fillStyle = "#222";
+    ctx.fillRect(524, 294, 400, 18);
+    ctx.fillStyle = "#b388ff";
+    ctx.fillRect(524, 294, Math.min(1, proj.design_points / target) * 400, 18);
+
+    ctx.fillStyle = proj.bug_points > 0 ? "#ff1744" : "#39ff14";
+    ctx.fillText(`Bugs to Squash: ${proj.bug_points}`, 50, 360);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(`Overall Progress: ${progressPercent.toFixed(1)}%`, 50, 420);
+    ctx.fillStyle = "#222";
+    ctx.fillRect(50, 434, 874, 24);
+    ctx.fillStyle = "#39ff14";
+    ctx.fillRect(50, 434, (progressPercent / 100) * 874, 24);
+
+    if (activeMiniGame) {
+      drawProjectMiniGame(ctx, w);
+    } else {
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 16px 'Press Start 2P', monospace";
+      ctx.fillText("DEV OPERATIONS", 50, 530);
+
+      drawPixelButton(ctx, 50, 560, 280, 60, "[CODE] STRIKER", false, "#00e5ff", "10px 'Press Start 2P'");
+      drawPixelButton(ctx, 360, 560, 280, 60, "[DESIGN] COLOR", false, "#b388ff", "10px 'Press Start 2P'");
+      drawPixelButton(ctx, 670, 560, 280, 60, "[POLISH] DEBUG", false, "#ffd700", "10px 'Press Start 2P'");
+
+      const readyToRelease = progressPercent >= 100 && proj.bug_points === 0;
+      drawPixelButton(ctx, 300, 670, 420, 60, readyToRelease ? "🚀 RELEASE GAME NOW" : "LOCK SPRINT (100% & 0 BUGS)", !readyToRelease, readyToRelease ? "#39ff14" : "#444", "11px 'Press Start 2P'");
+    }
+  }
+
+  drawPixelButton(ctx, 400, 930, 224, 50, "ZOOM OUT", false, "#ff1744", "12px 'Press Start 2P'");
+}
+
+function drawMiniGamePanel(ctx, w, yBase) {
+  if (!activeMiniGame) return;
+
+  if (activeMiniGame.type === "code") {
+    ctx.fillStyle = "rgba(0, 229, 255, 0.05)";
+    ctx.strokeStyle = "#00e5ff";
+    ctx.lineWidth = 2;
+    ctx.fillRect(50, yBase, 924, 330);
+    ctx.strokeRect(50, yBase, 924, 330);
+
+    ctx.fillStyle = "#00e5ff";
+    ctx.font = "bold 14px 'Press Start 2P', monospace";
+    ctx.fillText("SYNTAX STRIKER", 70, yBase + 40);
+
+    ctx.fillStyle = "#ffd700";
+    ctx.font = "16px 'VT323', monospace";
+    ctx.fillText(activeMiniGame.target, 70, yBase + 90);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "18px 'VT323', monospace";
+    ctx.fillText(`> ${activeMiniGame.inputText || ""}_`, 70, yBase + 140);
+
+    ctx.fillStyle = "#222";
+    ctx.fillRect(70, yBase + 220, 884, 10);
+    ctx.fillStyle = "#00e5ff";
+    ctx.fillRect(70, yBase + 220, ((activeMiniGame.timeLeft || 100) / 100) * 884, 10);
+
+    drawPixelButton(ctx, 50, yBase + 280, 924, 40, "CANCEL MINI-GAME", false, "#ff1744", "10px 'Press Start 2P'");
+    return;
+  }
+
+  if (activeMiniGame.type === "design") {
+    ctx.fillStyle = "rgba(179, 136, 255, 0.05)";
+    ctx.strokeStyle = "#b388ff";
+    ctx.lineWidth = 2;
+    ctx.fillRect(50, yBase, 924, 330);
+    ctx.strokeRect(50, yBase, 924, 330);
+
+    ctx.fillStyle = "#b388ff";
+    ctx.font = "bold 14px 'Press Start 2P', monospace";
+    ctx.fillText("COLOR MATCHER", 70, yBase + 40);
+
+    ctx.fillStyle = activeMiniGame.targetColor.hex;
+    ctx.font = "bold 22px 'Press Start 2P', monospace";
+    ctx.fillText(activeMiniGame.targetColor.name, 70, yBase + 100);
+
+    activeMiniGame.buttons.forEach((btn, idx) => {
+      drawPixelButton(ctx, 50 + idx * 310, yBase + 150, 280, 50, btn.name, false, btn.hex, "10px 'Press Start 2P'");
+    });
+
+    ctx.fillStyle = "#222";
+    ctx.fillRect(70, yBase + 230, 884, 10);
+    ctx.fillStyle = "#b388ff";
+    ctx.fillRect(70, yBase + 230, ((activeMiniGame.timeLeft || 100) / 100) * 884, 10);
+
+    drawPixelButton(ctx, 50, yBase + 280, 924, 40, "CANCEL MINI-GAME", false, "#ff1744", "10px 'Press Start 2P'");
+    return;
+  }
+
+  if (activeMiniGame.type === "polish") {
+    ctx.fillStyle = "rgba(255, 215, 0, 0.05)";
+    ctx.strokeStyle = "#ffd700";
+    ctx.lineWidth = 2;
+    ctx.fillRect(50, yBase, 924, 330);
+    ctx.strokeRect(50, yBase, 924, 330);
+
+    ctx.fillStyle = "#ffd700";
+    ctx.font = "bold 14px 'Press Start 2P', monospace";
+    ctx.fillText("BUG SQUASHER", 70, yBase + 40);
+
+    [0, 1, 2, 3].forEach(i => {
+      const col = i % 2;
+      const row = Math.floor(i / 2);
+      const label = i === activeMiniGame.bugIndex ? "BUG" : "CLEAN";
+      drawPixelButton(ctx, 50 + col * 470, yBase + 130 + row * 70, 440, 55, label, false, i === activeMiniGame.bugIndex ? "#ff1744" : "#444", "10px 'Press Start 2P'");
+    });
+
+    ctx.fillStyle = "#222";
+    ctx.fillRect(70, yBase + 230, 884, 10);
+    ctx.fillStyle = "#ffd700";
+    ctx.fillRect(70, yBase + 230, ((activeMiniGame.timeLeft || 100) / 100) * 884, 10);
+
+    drawPixelButton(ctx, 50, yBase + 280, 924, 40, "CANCEL MINI-GAME", false, "#ff1744", "10px 'Press Start 2P'");
+    return;
+  }
+
+  if (activeMiniGame.type === "slider") {
+    ctx.fillStyle = "rgba(0, 229, 255, 0.05)";
+      ctx.strokeStyle = "#00e5ff";
+      ctx.lineWidth = 2;
+      ctx.fillRect(50, yBase, 924, 300);
+      ctx.strokeRect(50, yBase, 924, 300);
+
+      ctx.fillStyle = "#00e5ff";
+      ctx.font = "bold 16px 'Press Start 2P', monospace";
+      ctx.fillText("📐 Slider Centering: CSS Alignment", 70, yBase + 45);
+      
+      ctx.fillStyle = "rgba(255,255,255,0.7)";
+      ctx.font = "18px 'VT323', monospace";
+      ctx.fillText("Centering Luigi's Pizzeria image! Lock the needle inside the green zone.", 70, yBase + 85);
+
+      ctx.fillStyle = "#222";
+      ctx.fillRect(70, yBase + 120, 884, 40);
+      
+      const startX = 70 + (activeMiniGame.greenZoneStart / 100) * 884;
+      const widthX = ((activeMiniGame.greenZoneEnd - activeMiniGame.greenZoneStart) / 100) * 884;
+      ctx.fillStyle = "#39ff14";
+      ctx.fillRect(startX, yBase + 120, widthX, 40);
+
+      const needleX = 70 + (activeMiniGame.needlePosition / 100) * 884;
+      ctx.fillStyle = "#ff1744";
+      ctx.fillRect(needleX - 4, yBase + 115, 8, 50);
+
+      drawPixelButton(ctx, 70, yBase + 195, 420, 50, "LOCK ALIGNMENT", false, "#39ff14", "12px 'Press Start 2P'");
+      drawPixelButton(ctx, 534, 195 + yBase, 420, 50, "ABORT GIG", false, "#ff1744", "12px 'Press Start 2P'");
+
+      ctx.fillStyle = "#222";
+      ctx.fillRect(70, yBase + 265, 884, 8);
+      ctx.fillStyle = "#00e5ff";
+      ctx.fillRect(70, yBase + 265, (activeMiniGame.timeLeft / 100) * 884, 8);
+    return;
+  }
+
+  if (activeMiniGame.type === "binary") {
+      ctx.fillStyle = "rgba(179, 136, 255, 0.05)";
+      ctx.strokeStyle = "#b388ff";
+      ctx.lineWidth = 2;
+      ctx.fillRect(50, yBase, 924, 380);
+      ctx.strokeRect(50, yBase, 924, 380);
+
+      ctx.fillStyle = "#b388ff";
+      ctx.font = "bold 16px 'Press Start 2P', monospace";
+      ctx.fillText("💾 DRM Crack: Binary Matcher", 70, yBase + 45);
+      
+      ctx.fillStyle = "rgba(255,255,255,0.7)";
+      ctx.font = "18px 'VT323', monospace";
+      ctx.fillText("Cracking DRM binary security signatures! Match the encryption sequence key:", 70, yBase + 85);
+
+      ctx.fillStyle = "#ffd700";
+      ctx.font = "bold 20px 'Press Start 2P', monospace";
+      ctx.fillText(`TARGET: ${activeMiniGame.targetSequence}`, 70, yBase + 135);
+
+      activeMiniGame.options.forEach((opt, idx) => {
+        const y = yBase + 165 + idx * 52;
+        drawPixelButton(ctx, 70, y, 884, 42, opt, false, "#b388ff", "12px 'Press Start 2P'");
+      });
+
+      ctx.fillStyle = "#222";
+      ctx.fillRect(70, yBase + 335, 884, 8);
+      ctx.fillStyle = "#b388ff";
+      ctx.fillRect(70, yBase + 335, (activeMiniGame.timeLeft / 100) * 884, 8);
+
+      drawPixelButton(ctx, 70, yBase + 350, 884, 25, "ABORT", false, "#ff1744", "10px 'Press Start 2P'");
+    return;
+  }
+
+  if (activeMiniGame.type === "trace") {
+      ctx.fillStyle = "rgba(255, 23, 68, 0.05)";
+      ctx.strokeStyle = "#ff1744";
+      ctx.lineWidth = 2;
+      ctx.fillRect(50, yBase, 924, 420);
+      ctx.strokeRect(50, yBase, 924, 420);
+
+      ctx.fillStyle = "#ff1744";
+      ctx.font = "bold 16px 'Press Start 2P', monospace";
+      ctx.fillText("🎯 Ransomware: Trace Evader", 70, yBase + 45);
+      ctx.fillStyle = "rgba(255,255,255,0.7)";
+      ctx.font = "18px 'VT323', monospace";
+      ctx.fillText(`Click wobbly server nodes 1, 2, 3, 4 in ascending order. (Targeting: ${activeMiniGame.currentNumber})`, 70, yBase + 80);
+
+      ctx.fillStyle = "#0c0d12";
+      ctx.fillRect(70, yBase + 100, 884, 240);
+      ctx.strokeStyle = "#ff1744";
+      ctx.strokeRect(70, yBase + 100, 884, 240);
+
+      activeMiniGame.coords.forEach(coord => {
+        const isNext = coord.num === activeMiniGame.currentNumber;
+        const isClicked = coord.num < activeMiniGame.currentNumber;
+        
+        ctx.save();
+        ctx.strokeStyle = isNext ? "#39ff14" : (isClicked ? "rgba(255,255,255,0.1)" : "#ff1744");
+        ctx.fillStyle = isClicked ? "rgba(255,255,255,0.02)" : "#0c0c10";
+        ctx.lineWidth = 3;
+        
+        const pxX = 70 + (coord.left / 100) * 884;
+        const pxY = yBase + 100 + (coord.top / 100) * 240;
+        
+        ctx.beginPath();
+        ctx.arc(pxX, pxY, 24, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        
+        ctx.fillStyle = isNext ? "#39ff14" : (isClicked ? "rgba(255,255,255,0.2)" : "#ff1744");
+        ctx.font = "bold 14px 'Press Start 2P'";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(coord.num, pxX, pxY);
+        ctx.restore();
+      });
+
+      ctx.fillStyle = "#222";
+      ctx.fillRect(70, yBase + 355, 884, 8);
+      ctx.fillStyle = "#ff1744";
+      ctx.fillRect(70, yBase + 355, (activeMiniGame.timeLeft / 100) * 884, 8);
+
+      drawPixelButton(ctx, 70, yBase + 375, 884, 35, "ABORT HACKING", false, "#ff1744", "10px 'Press Start 2P'");
+    return;
+  }
+
+  if (activeMiniGame.type === "ping") {
+      ctx.fillStyle = "rgba(255, 215, 0, 0.05)";
+      ctx.strokeStyle = "#ffd700";
+      ctx.lineWidth = 2;
+      ctx.fillRect(50, yBase, 924, 340);
+      ctx.strokeRect(50, yBase, 924, 340);
+
+      ctx.fillStyle = "#ffd700";
+      ctx.font = "bold 16px 'Press Start 2P', monospace";
+      ctx.fillText("⚡ DDoS Platform: Ping Spammer", 70, yBase + 45);
+      
+      ctx.fillStyle = "rgba(255,255,255,0.7)";
+      ctx.font = "18px 'VT323', monospace";
+      ctx.fillText(`Overwhelm their server! Spam click the button ${activeMiniGame.targetClicks} times!`, 70, yBase + 85);
+
+      ctx.fillStyle = "#ffd700";
+      ctx.font = "bold 26px 'Press Start 2P', monospace";
+      ctx.fillText(`${activeMiniGame.clicksCount} / ${activeMiniGame.targetClicks}`, 70, yBase + 135);
+
+      drawPixelButton(ctx, 70, yBase + 165, 884, 80, "💥 PING!", false, "#ffd700", "18px 'Press Start 2P'");
+
+      ctx.fillStyle = "#222";
+      ctx.fillRect(70, yBase + 265, 884, 8);
+      ctx.fillStyle = "#ffd700";
+      ctx.fillRect(70, yBase + 265, (activeMiniGame.timeLeft / 100) * 884, 8);
+
+      drawPixelButton(ctx, 70, yBase + 285, 884, 35, "ABORT DDOS", false, "#ff1744", "10px 'Press Start 2P'");
+    return;
+  }
+
+  if (activeMiniGame.type === "pour") {
+      ctx.fillStyle = "rgba(255, 215, 0, 0.05)";
+      ctx.strokeStyle = "#ffd700";
+      ctx.lineWidth = 2;
+      ctx.fillRect(50, yBase, 924, 300);
+      ctx.strokeRect(50, yBase, 924, 300);
+
+      ctx.fillStyle = "#ffd700";
+      ctx.font = "bold 16px 'Press Start 2P', monospace";
+      ctx.fillText("☕ Pouring Mini-game: Caffeine Brew", 70, yBase + 45);
+      ctx.fillStyle = "rgba(255,255,255,0.7)";
+      ctx.font = "18px 'VT323', monospace";
+      ctx.fillText("Pour drink now! Lock the pointer inside the green target zone for 2x benefits.", 70, yBase + 85);
+
+      ctx.fillStyle = "#222";
+      ctx.fillRect(70, yBase + 120, 884, 40);
+
+      const startX = 70 + (activeMiniGame.greenZoneStart / 100) * 884;
+      const widthX = ((activeMiniGame.greenZoneEnd - activeMiniGame.greenZoneStart) / 100) * 884;
+      ctx.fillStyle = "#39ff14";
+      ctx.fillRect(startX, yBase + 120, widthX, 40);
+
+      const needleX = 70 + (activeMiniGame.pointerPosition / 100) * 884;
+      ctx.fillStyle = "#ff1744";
+      ctx.fillRect(needleX - 4, yBase + 115, 8, 50);
+
+      drawPixelButton(ctx, 70, yBase + 195, 420, 50, "POUR / BREW", false, "#39ff14", "12px 'Press Start 2P'");
+      drawPixelButton(ctx, 534, yBase + 195, 420, 50, "ABORT BREW", false, "#ff1744", "12px 'Press Start 2P'");
+
+      ctx.fillStyle = "#222";
+      ctx.fillRect(70, yBase + 265, 884, 8);
+      ctx.fillStyle = "#ffd700";
+      ctx.fillRect(70, yBase + 265, (activeMiniGame.timeLeft / 100) * 884, 8);
+    return;
+  }
+}
+
+function drawProjectMiniGame(ctx, w) {
+  drawMiniGamePanel(ctx, w, 500);
+}
+
+function drawGigsTab(ctx, w) {
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 20px 'Press Start 2P', monospace";
+  ctx.fillText("DEVELOPER WORKOUT & GIGS", 50, 190);
+
+  if (activeMiniGame) {
+    drawMiniGamePanel(ctx, w, 220);
+  } else {
+    ctx.fillStyle = "#ffd700";
+    ctx.font = "bold 14px 'Press Start 2P', monospace";
+    ctx.fillText("1. TRAINING GYM", 50, 240);
+
+    const xpCostText = gameState.level > 1 ? "-15 XP" : "FREE";
+    
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 16px 'VT323', monospace";
+    ctx.fillText("Code Class (-10 Energy)", 50, 275);
+    drawPixelButton(ctx, 50, 285, 280, 45, `TRAIN CODE (${xpCostText})`, false, "#00e5ff", "10px 'Press Start 2P'");
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText("Design Class (-10 Energy)", 50, 360);
+    drawPixelButton(ctx, 50, 370, 280, 45, `TRAIN DESIGN (${xpCostText})`, false, "#b388ff", "10px 'Press Start 2P'");
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText("Agile Seminar (-10 Energy)", 50, 445);
+    drawPixelButton(ctx, 50, 455, 280, 45, `TRAIN AGILE (${xpCostText})`, false, "#ffd700", "10px 'Press Start 2P'");
+
+    // Store Column
+    ctx.fillStyle = "#39ff14";
+    ctx.font = "bold 14px 'Press Start 2P', monospace";
+    ctx.fillText("2. STORE ITEMS", 380, 240);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 16px 'VT323', monospace";
+    ctx.fillText("Lukewarm Drip Coffee ($20)", 380, 275);
+    drawPixelButton(ctx, 380, 285, 280, 45, "BUY COFFEE (+10⚡)", false, "#39ff14", "9px 'Press Start 2P'");
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText("Java Volt Battery Acid ($50)", 380, 360);
+    drawPixelButton(ctx, 380, 370, 280, 45, "BUY ENERGY (+25⚡)", false, "#39ff14", "9px 'Press Start 2P'");
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText("Nootropic Focus Pill ($100)", 380, 445);
+    drawPixelButton(ctx, 380, 455, 280, 45, "BUY NOOTROPIC (+5🎯)", false, "#39ff14", "9px 'Press Start 2P'");
+
+    // Gigs Column
+    ctx.fillStyle = "#ff1744";
+    ctx.font = "bold 14px 'Press Start 2P', monospace";
+    ctx.fillText("3. GIGS BOARD", 710, 240);
+
+    const getXpCost = (id) => {
+      if (id === "freelance_html") return gameState.level === 1 ? 0 : 3;
+      if (id === "crack_competitor") return 10;
+      if (id === "ransomware") return 20;
+      if (id === "ddos_rival") return 40;
+      return 0;
+    };
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 16px 'VT323', monospace";
+    ctx.fillText(`CSS Div Align (Cost: 2🎯, ${getXpCost("freelance_html")} XP)`, 710, 275);
+    drawPixelButton(ctx, 710, 285, 260, 45, "RUN DIV ALIGN ($50)", false, "#ff1744", "8px 'Press Start 2P'");
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(`Crack DRM (Cost: 4🎯, 10 XP)`, 710, 360);
+    drawPixelButton(ctx, 710, 370, 260, 45, "RUN CRACK DRM ($200)", false, "#ff1744", "8px 'Press Start 2P'");
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(`Ransomware Fridge (Cost: 6🎯, 20 XP)`, 710, 445);
+    drawPixelButton(ctx, 710, 455, 260, 45, "RUN RANSOMWARE ($800)", false, "#ff1744", "8px 'Press Start 2P'");
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(`Toaster DDoS (Cost: 8🎯, 40 XP)`, 710, 530);
+    drawPixelButton(ctx, 710, 540, 260, 45, "RUN DDoS PLAT ($3000)", false, "#ff1744", "8px 'Press Start 2P'");
+  }
+
+  drawPixelButton(ctx, 400, 930, 224, 50, "ZOOM OUT", false, "#ff1744", "12px 'Press Start 2P'");
+}
+
+function drawStaffTab(ctx, w) {
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 20px 'Press Start 2P', monospace";
+  ctx.fillText("STAFF & RESEARCH LAB", 50, 190);
+
+  ctx.font = "20px 'VT323', monospace";
+  ctx.fillStyle = "rgba(255,255,255,0.5)";
+  ctx.fillText(`Hired Personnel: ${gameState.employees.length} / ${OFFICE_TIERS[gameState.office_tier]?.capacity || 0}`, 50, 225);
+
+  ctx.fillStyle = "#b388ff";
+  ctx.font = "bold 14px 'Press Start 2P', monospace";
+  ctx.fillText("OFFICE EXPANSION", 50, 270);
+
+  Object.keys(OFFICE_TIERS).forEach((tierKey, idx) => {
+    const tier = OFFICE_TIERS[tierKey];
+    const y = 300 + idx * 55;
+    const isOwned = gameState.office_tier === tierKey;
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 15px 'VT323', monospace";
+    ctx.fillText(`${tier.name} — Cap: ${tier.capacity}`, 50, y);
+    drawPixelButton(ctx, 50, y + 10, 400, 36, isOwned ? "CURRENT OFFICE" : `UPGRADE $${tier.cost}`, isOwned, isOwned ? "#39ff14" : "#b388ff", "8px 'Press Start 2P'");
+  });
+
+  ctx.fillStyle = "#00e5ff";
+  ctx.font = "bold 14px 'Press Start 2P', monospace";
+  ctx.fillText("RECRUITMENT BOARD", 50, 540);
+  
+  const recruitTypes = [
+    { id: "junior_dev", name: "ChatGPT Prompter", cost: 1000, salary: 50 },
+    { id: "junior_artist", name: "MS Paint Artist", cost: 1000, salary: 50 },
+    { id: "senior_dev", name: "Archmage coder", cost: 5000, salary: 200 },
+    { id: "senior_artist", name: "Vibe director", cost: 5000, salary: 200 }
+  ];
+
+  recruitTypes.forEach((rec, idx) => {
+    const y = 560 + idx * 58;
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 15px 'VT323', monospace";
+    ctx.fillText(`${rec.name} ($${rec.cost}) — Sal: $${rec.salary}/s`, 50, y);
+    drawPixelButton(ctx, 50, y + 8, 380, 36, "RECRUIT CANDIDATE", false, "#00e5ff", "9px 'Press Start 2P'");
+  });
+
+  ctx.fillStyle = "#ffd700";
+  ctx.font = "bold 14px 'Press Start 2P', monospace";
+  ctx.fillText("RESEARCH LAB LABS", 520, 540);
+
+  const researchTypes = [
+    { id: "unlocked_console", name: "Unlock Consoles", cost: 10, unlocked: gameState.unlocked_console },
+    { id: "researched_multiplayer", name: "Multiplayer Engine", cost: 25, unlocked: gameState.researched_multiplayer },
+    { id: "ai_behavior", name: "AI NPC Algorithms", cost: 50, unlocked: gameState.ai_behavior }
+  ];
+
+  researchTypes.forEach((res, idx) => {
+    const y = 560 + idx * 75;
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 15px 'VT323', monospace";
+    ctx.fillText(`${res.name} (Requires: ${res.cost} RP)`, 520, y);
+    drawPixelButton(ctx, 520, y + 8, 420, 38, res.unlocked ? "RESEARCH COMPLETED" : "PURCHASE RESEARCH", res.unlocked, res.unlocked ? "#39ff14" : "#ffd700", "9px 'Press Start 2P'");
+  });
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 14px 'Press Start 2P', monospace";
+  ctx.fillText(`TEAM ROSTER:`, 50, 600);
+  
+  let xOffset = 50;
+  if (gameState.employees.length === 0) {
+    ctx.fillStyle = "rgba(255,255,255,0.4)";
+    ctx.font = "18px 'VT323', monospace";
+    ctx.fillText("No personnel hired. You are codemonkeying alone.", 50, 635);
+  } else {
+    gameState.employees.forEach((emp, idx) => {
+      if (idx < 4) {
+        ctx.fillStyle = "#39ff14";
+        ctx.font = "bold 14px 'VT323', monospace";
+        ctx.fillText(`${emp.name.split(' ')[0]}`, xOffset, 630);
+        drawPixelButton(ctx, xOffset, 642, 190, 35, "DISMISS (FIRE)", false, "#ff1744", "8px 'Press Start 2P'");
+        xOffset += 220;
+      }
+    });
+  }
+
+  drawPixelButton(ctx, 400, 930, 224, 50, "ZOOM OUT", false, "#ff1744", "12px 'Press Start 2P'");
+}
+
+function drawLeaderboardTab(ctx, w) {
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 20px 'Press Start 2P', monospace";
+  ctx.fillText("GLOBAL NET WORTH LEADERBOARDS", 50, 190);
+
+  const list = window.leaderboardCache || [];
+  
+  ctx.strokeStyle = "rgba(255,255,255,0.08)";
+  ctx.lineWidth = 2;
+  
+  ctx.fillStyle = "#0c0d12";
+  ctx.fillRect(50, 240, 924, 45);
+  ctx.strokeRect(50, 240, 924, 45);
+
+  ctx.fillStyle = "#ffd700";
+  ctx.font = "12px 'Press Start 2P', monospace";
+  ctx.fillText("RANK", 70, 270);
+  ctx.fillText("STUDIO PROFILE", 200, 270);
+  ctx.fillText("OFFICE STATUS", 600, 270);
+  ctx.fillText("NET WORTH", 820, 270);
+
+  ctx.font = "20px 'VT323', monospace";
+  list.forEach((subject, index) => {
+    const y = 305 + index * 52;
+    
+    ctx.fillStyle = index === 0 ? "#ffd700" : "#ffffff";
+    ctx.fillText(`#${index + 1}`, 70, y);
+    
+    ctx.fillStyle = subject.color || "#00e5ff";
+    ctx.fillText(subject.username.toUpperCase(), 200, y);
+    ctx.fillStyle = "rgba(255,255,255,0.4)";
+    ctx.fillText(subject.company_name, 200, y + 20);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(subject.office_tier, 600, y);
+    ctx.fillText(`$${parseFloat(subject.net_worth).toLocaleString(undefined, { minimumFractionDigits: 2 })}`, 820, y);
+    
+    ctx.strokeStyle = "rgba(255,255,255,0.04)";
+    ctx.beginPath();
+    ctx.moveTo(50, y + 28);
+    ctx.lineTo(974, y + 28);
+    ctx.stroke();
+  });
+
+  drawPixelButton(ctx, 400, 930, 224, 50, "ZOOM OUT", false, "#ff1744", "12px 'Press Start 2P'");
+}
+
+function drawProfileTab(ctx, w) {
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 20px 'Press Start 2P', monospace";
+  ctx.fillText("DEVELOPER AUTHENTICATION STATUS", 50, 190);
+
+  ctx.font = "20px 'VT323', monospace";
+  if (isUserLoggedIn) {
+    ctx.fillStyle = "#39ff14";
+    ctx.fillText("ACCOUNT SYNCHRONIZED: ONLINE STATUS", 50, 240);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(`Profile Tag: ${localStorage.getItem("tycoon_active_username") || "Guest"}`, 50, 280);
+    ctx.fillText("All saves are actively syncing to cloud databases automatically.", 50, 310);
+
+    drawPixelButton(ctx, 200, 400, 420, 50, "LOG OUT PROFILE", false, "#ff1744", "12px 'Press Start 2P'");
+  } else {
+    ctx.fillStyle = "#ff1744";
+    ctx.fillText("PLAYING IN GUEST MODE: OFFLINE LOCAL ARCHIVES", 50, 240);
+    ctx.fillStyle = "rgba(255,255,255,0.5)";
+    ctx.fillText("To preserve net worth rankings, create or log in to a profile.", 50, 270);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText("ENTER USERNAME:", 50, 330);
+    ctx.fillStyle = focusedInputField === 'username' ? "#00e5ff" : "#1a1a20";
+    ctx.fillRect(200, 305, 400, 35);
+    ctx.strokeStyle = "#444";
+    ctx.strokeRect(200, 305, 400, 35);
+    ctx.fillStyle = "#fff";
+    ctx.fillText(profileUsernameText + (focusedInputField === 'username' ? "_" : ""), 210, 328);
+
+    ctx.fillText("ENTER PASSWORD:", 50, 390);
+    ctx.fillStyle = focusedInputField === 'password' ? "#00e5ff" : "#1a1a20";
+    ctx.fillRect(200, 365, 400, 35);
+    ctx.strokeRect(200, 365, 400, 35);
+    ctx.fillStyle = "#fff";
+    ctx.fillText("*".repeat(profilePasswordText.length) + (focusedInputField === 'password' ? "_" : ""), 210, 388);
+
+    drawPixelButton(ctx, 200, 430, 400, 45, "SUBMIT REGISTER / LOGIN", false, "#ffd700", "11px 'Press Start 2P'");
+    drawPixelButton(ctx, 200, 490, 400, 45, "FAST LOGIN AS RANDOM GUEST", false, "#39ff14", "10px 'Press Start 2P'");
+  }
+
+  drawPixelButton(ctx, 400, 930, 224, 50, "ZOOM OUT", false, "#ff1744", "12px 'Press Start 2P'");
+}
+
+function drawAuxScreen() {
+  if (!auxScreenCtx) return;
+  const ctx = auxScreenCtx;
+  const w = 512;
+  const h = 512;
+  
+  ctx.fillStyle = "#020204";
+  ctx.fillRect(0, 0, w, h);
+  
+  ctx.fillStyle = "rgba(255, 255, 255, 0.012)";
+  for (let y = 0; y < h; y += 4) {
+    ctx.fillRect(0, y, w, 2);
+  }
+  
+  ctx.fillStyle = "#111116";
+  ctx.fillRect(0, 0, w, 50);
+  ctx.strokeStyle = "rgba(255,255,255,0.08)";
+  ctx.beginPath();
+  ctx.moveTo(0, 50);
+  ctx.lineTo(w, 50);
+  ctx.stroke();
+  
+  ctx.fillStyle = "#39ff14";
+  ctx.font = "bold 13px 'Press Start 2P', monospace";
+  ctx.fillText("💬 COMMUNITY LIVE FEED", 20, 32);
+  
+  ctx.font = "18px 'VT323', monospace";
+  let yOffset = 80;
+  
+  const chatLogs = consoleLogs.slice(-15);
+  chatLogs.forEach(log => {
+    ctx.fillStyle = "rgba(255,255,255,0.3)";
+    ctx.fillText(`[${log.time || '00:00'}]`, 15, yOffset);
+    
+    ctx.fillStyle = log.color || "#00e5ff";
+    ctx.fillText(`${log.user || 'SYSTEM'}:`, 70, yOffset);
+    
+    ctx.fillStyle = "#ffffff";
+    let msg = log.text || "";
+    if (msg.length > 50) msg = msg.substring(0, 48) + "...";
+    ctx.fillText(msg, 180, yOffset);
+    
+    yOffset += 28;
+  });
+  
+  if (auxScreenTexture) {
+    auxScreenTexture.needsUpdate = true;
+  }
+}
+
+function drawLeaderboardWallPoster() {
+  if (!leaderboardCtx) return;
+  const ctx = leaderboardCtx;
+  const w = 512;
+  const h = 512;
+
+  ctx.fillStyle = "#0c0d12";
+  ctx.fillRect(0, 0, w, h);
+  
+  ctx.strokeStyle = "#b388ff";
+  ctx.lineWidth = 10;
+  ctx.strokeRect(5, 5, w - 10, h - 10);
+  
+  ctx.fillStyle = "#ffd700";
+  ctx.font = "bold 20px 'Press Start 2P', monospace";
+  ctx.textAlign = "center";
+  ctx.fillText("HALL OF FAME", w / 2, 70);
+
+  ctx.strokeStyle = "rgba(179,136,255,0.3)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(30, 100);
+  ctx.lineTo(w - 30, 100);
+  ctx.stroke();
+
+  ctx.font = "22px 'VT323', monospace";
+  ctx.textAlign = "left";
+
+  const list = window.leaderboardCache || [
+    { username: "CodeMaster99", company_name: "Byte Studios", net_worth: 15000.00 },
+    { username: "IndieGamerX", company_name: "Solo Garage", net_worth: 3500.00 },
+    { username: "NerveBreaker", company_name: "Torn Games LLC", net_worth: 89000.00 }
+  ];
+
+  list.forEach((subject, idx) => {
+    const y = 140 + idx * 60;
+    ctx.fillStyle = idx === 0 ? "#ffd700" : "#ffffff";
+    ctx.fillText(`#${idx + 1} ${subject.username.toUpperCase()}`, 40, y);
+    ctx.fillStyle = "rgba(255,255,255,0.4)";
+    ctx.fillText(`${subject.company_name} - $${parseFloat(subject.net_worth).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, 40, y + 22);
+  });
+  
+  ctx.textAlign = "center";
+  ctx.fillStyle = "rgba(255,255,255,0.3)";
+  ctx.font = "14px 'VT323', monospace";
+  ctx.fillText("Basement Tycoon Rankings 2026", w / 2, 470);
+
+  if (leaderboardTexture) {
+    leaderboardTexture.needsUpdate = true;
+  }
+}
+
+window.drawMainScreen = drawMainScreen;
+window.drawAuxScreen = drawAuxScreen;
+window.drawLeaderboardWallPoster = drawLeaderboardWallPoster;
+window.init3DScene = init3DScene;
 
