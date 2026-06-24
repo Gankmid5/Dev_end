@@ -30,9 +30,9 @@
         <p class="logo-subtitle">Where dreams go to Stack Overflow</p>
       </div>
       <nav class="nav-tabs">
-        <a href="index.html?tab=company" class="nav-tab active">Company</a>
+        <a href="index.html?tab=company" class="nav-tab">Company</a>
         <a href="index.html?tab=develop" class="nav-tab">Develop Game</a>
-        <a href="index.html?tab=gigs" class="nav-tab">Gigs & Training</a>
+        <a href="index.html?tab=gigs" class="nav-tab active">Gigs & Training</a>
         <a href="index.html?tab=staff" class="nav-tab">Staff & Office</a>
         <a href="index.html?tab=leaderboard" class="nav-tab">Leaderboard</a>
         <a href="signup.html" class="nav-tab">Profile</a>
@@ -90,7 +90,7 @@
     <!-- ═══════════════════════════════════ -->
     <!-- Tab 1: Company Profile (Dashboard)  -->
     <!-- ═══════════════════════════════════ -->
-    <main class="main-layout" id="company-section">
+    <main class="main-layout" id="company-section" style="display: none;">
       <!-- Left side: Studio status and releases -->
       <section class="glass-panel" style="gap: 16px;">
         <div class="panel-title">
@@ -146,16 +146,20 @@
         </div>
       </section>
 
-      <!-- Right side: Developer Console Log -->
+      <!-- Right side: Community Live Social Feed & Twitch Chat -->
       <section class="glass-panel" style="gap: 16px;">
-        <div class="panel-title">
-          <span>Developer Studio Console</span>
+        <div class="panel-title" style="display:flex; justify-content:space-between; align-items:center;">
+          <span>💬 Community Live Feed</span>
+          <span style="font-size:0.75rem; font-weight:bold; text-transform:none; color:#39ff14; display:flex; align-items:center; gap:5px; letter-spacing:0.5px;">
+            <span style="width:7px; height:7px; background:#39ff14; border-radius:50%; display:inline-block; box-shadow: 0 0 6px #39ff14; animation: pulse 1.2s infinite ease-in-out;"></span>
+            LIVE CHAT
+          </span>
         </div>
-        <div class="terminal-console" id="terminal-console">
+        <div class="terminal-console" id="terminal-console" style="font-family: inherit; font-size: 0.82rem; color: var(--color-text-main); display: flex; flex-direction: column; gap: 8px;">
           <!-- Loaded dynamically via game.js -->
         </div>
         <div style="font-size:0.75rem; color:var(--color-text-muted); line-height:1.4;">
-          * Ticks operate in real-time. Employee salaries are calculated every 60 seconds. Active game sales decline as shelf-life decays. Gigs & gym training will refresh stats.
+          * Gamers react in real-time to your projects, hires, and releases. System announcements appear as bot logs.
         </div>
       </section>
     </main>
@@ -178,13 +182,13 @@
     <!-- ═══════════════════════════════════ -->
     <!-- Tab 3: Gigs & Training (Gym/Crimes) -->
     <!-- ═══════════════════════════════════ -->
-    <main class="main-layout" id="gigs-section" style="display: none;">
+    <main class="main-layout" id="gigs-section">
       <!-- Training Gym (Energy) & Shop -->
       <section class="glass-panel" style="gap: 16px;">
         <div class="panel-title">
           <span>Developer Workout Gym</span>
         </div>
-        <div class="action-grid" style="grid-template-columns: 1fr; gap: 15px;">
+        <div id="training-gym-grid" class="action-grid" style="grid-template-columns: 1fr; gap: 15px;">
           <div class="card-item" style="padding: 14px;">
             <div class="card-item-title" style="font-size: 0.95rem;">
               <span>Code Optimization Class</span>

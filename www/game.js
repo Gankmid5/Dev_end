@@ -117,10 +117,8 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   // URL check for tabs
   const params = new URLSearchParams(window.location.search);
-  const activeTab = params.get("tab");
-  if (activeTab) {
-    switchTab(activeTab);
-  }
+  const activeTab = params.get("tab") || "gigs";
+  switchTab(activeTab);
 });
 
 // --- Tab System ---
@@ -171,6 +169,8 @@ function switchTab(tabName) {
     renderResearchLab();
   } else if (tabName === "develop") {
     renderDevelopPanel();
+  } else if (tabName === "gigs") {
+    renderTrainingGym();
   }
 }
 
@@ -286,6 +286,12 @@ function gainXP(amount) {
     }, 100);
     addLog("LEVEL UP!", `Congratulations! You reached Dev Level ${gameState.level}! Max Energy: ${gameState.max_energy}, Max Nerve: ${gameState.max_nerve}.`);
     showToast(`✨ LEVEL UP! Level ${gameState.level} reached!`, "success");
+    
+    // If Gigs tab is active, redraw the training gym to show updated XP cost labels
+    const gigsSection = document.getElementById("gigs-section");
+    if (gigsSection && gigsSection.style.display !== "none") {
+      renderTrainingGym();
+    }
   } else {
     addLog("XP Gained", `Gained +${amount} XP.`);
   }
@@ -319,7 +325,7 @@ async function saveGame() {
   }
 }
 
-// --- Console Log Helper ---
+// --- Console Log Helper (System Bot Announcements) ---
 function addLog(title, desc) {
   const time = new Date().toLocaleTimeString();
   consoleLogs.push({ time, title, desc });
@@ -329,8 +335,27 @@ function addLog(title, desc) {
   if (consoleEl) {
     const trmLine = document.createElement("div");
     trmLine.className = "terminal-line";
-    trmLine.innerHTML = `<span class="timestamp">[${time}]</span><strong>${title}</strong>: ${desc}`;
+    trmLine.style.borderLeft = "3px solid var(--color-cyan)";
+    trmLine.style.background = "rgba(0, 229, 255, 0.03)";
+    trmLine.style.padding = "6px 10px";
+    trmLine.style.margin = "4px 0";
+    trmLine.style.borderRadius = "6px";
+    trmLine.style.fontSize = "0.78rem";
+    trmLine.style.lineHeight = "1.35";
+    
+    trmLine.innerHTML = `
+      <span class="timestamp" style="font-size:0.72rem; color:var(--color-text-muted); margin-right:6px;">[${time.split(' ')[0]}]</span>
+      <span style="font-size:0.65rem; font-weight:800; padding:2px 5px; border-radius:4px; margin-right:6px; border:1px solid var(--color-cyan); color:var(--color-cyan); background:rgba(0,229,255,0.15);">🤖 BOT</span>
+      <strong style="color:var(--color-cyan); margin-right:5px;">[STUDIO_BOT]:</strong>
+      <span style="color:var(--color-light-grey); font-weight:500;">${title}</span> — 
+      <span style="color:var(--color-text-muted); font-style:italic;">${desc}</span>
+    `;
     consoleEl.appendChild(trmLine);
+    
+    while (consoleEl.children.length > 60) {
+      consoleEl.removeChild(consoleEl.firstChild);
+    }
+    
     consoleEl.scrollTop = consoleEl.scrollHeight;
   }
 }
@@ -448,6 +473,11 @@ function gameTick() {
   if (localSaveTimer >= 10) {
     localSaveTimer = 0;
     saveGame();
+  }
+
+  // 6. Live Chat generation (60% probability)
+  if (Math.random() < 0.6) {
+    generateLiveChatMessage();
   }
 
   updateUI();
@@ -586,9 +616,130 @@ function updateUI() {
 }
 
 // --- Training Actions (GYM) ---
+function renderTrainingGym() {
+  const container = document.getElementById("training-gym-grid");
+  if (!container) return;
+
+  if (activeMiniGame && activeMiniGame.isTraining) {
+    let gameHtml = "";
+    if (activeMiniGame.type === 'code') {
+      gameHtml = `
+        <div style="background: rgba(0,0,0,0.4); border: 1px solid var(--color-cyan); padding: 20px; border-radius: 12px; grid-column: span 3; width: 100%;">
+          <h4 style="color:var(--color-cyan); margin-bottom: 8px;">⌨️ Coding Mini-game: Syntax Striker</h4>
+          <p style="font-size:0.85rem; color:var(--color-text-muted); margin-bottom:12px;">Type the following code snippet exactly as shown within the time limit:</p>
+          
+          <div style="background:#060608; border:1px solid rgba(255,255,255,0.1); padding:12px; border-radius:8px; font-family:monospace; font-size:1rem; color:#ffd700; text-align:center; margin-bottom:12px; letter-spacing:0.5px; user-select:none;">
+            ${activeMiniGame.target}
+          </div>
+
+          <input type="text" id="minigame-code-input" autocomplete="off" placeholder="Type it here..." style="width:100%; padding:12px; background:rgba(0,0,0,0.6); border:1px solid var(--border-glass); border-radius:8px; color:#fff; font-family:monospace; font-size:1rem; margin-bottom:12px;" oninput="submitCodeInput()">
+          
+          <div class="status-bar-track" style="height:6px; margin-bottom:12px;">
+            <div class="status-bar-fill" id="minigame-timer-bar" style="width:100%; height:100%; background:var(--color-cyan);"></div>
+          </div>
+          
+          <button class="btn-secondary" style="width:100%; border-color:rgba(255,23,68,0.3); color:#ff1744;" onclick="cancelMiniGame()">Cancel Mini-game</button>
+        </div>
+      `;
+    } else if (activeMiniGame.type === 'design') {
+      gameHtml = `
+        <div style="background: rgba(0,0,0,0.4); border: 1px solid var(--color-purple); padding: 20px; border-radius: 12px; grid-column: span 3; width: 100%;">
+          <h4 style="color:var(--color-purple); margin-bottom: 8px;">🎨 Design Mini-game: Color Matcher</h4>
+          <p style="font-size:0.85rem; color:var(--color-text-muted); margin-bottom:12px;">Stroop Effect! Click the button that matches the target color name:</p>
+          
+          <div style="font-size:1.6rem; font-weight:800; text-align:center; margin-bottom:15px; letter-spacing:1px; color: ${getRandomColorHex()};">
+            ${activeMiniGame.targetColor.name}
+          </div>
+
+          <div style="display:flex; gap:10px; margin-bottom:15px;">
+            ${activeMiniGame.buttons.map(btn => {
+              return `<button class="btn-primary" style="flex:1; background:${btn.hex}; border-color:${btn.hex}; color:#000;" onclick="selectDesignColor('${btn.name}')">${btn.name}</button>`;
+            }).join("")}
+          </div>
+
+          <div class="status-bar-track" style="height:6px; margin-bottom:12px;">
+            <div class="status-bar-fill" id="minigame-timer-bar" style="width:100%; height:100%; background:var(--color-purple);"></div>
+          </div>
+          
+          <button class="btn-secondary" style="width:100%; border-color:rgba(255,23,68,0.3); color:#ff1744;" onclick="cancelMiniGame()">Cancel Mini-game</button>
+        </div>
+      `;
+    } else if (activeMiniGame.type === 'polish') {
+      const buttons = [0, 1, 2, 3];
+      gameHtml = `
+        <div style="background: rgba(0,0,0,0.4); border: 1px solid #ffd700; padding: 20px; border-radius: 12px; grid-column: span 3; width: 100%;">
+          <h4 style="color:#ffd700; margin-bottom: 8px;">🐛 Polish Mini-game: Bug Squasher</h4>
+          <p style="font-size:0.85rem; color:var(--color-text-muted); margin-bottom:12px;">Click the button containing the BUG to squash it:</p>
+          
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:15px;">
+            ${buttons.map(i => {
+              const isBug = i === activeMiniGame.bugIndex;
+              return `<button class="btn-secondary" style="padding:16px; font-size:1rem; font-weight:bold;" onclick="clickBugButton(${i})">${isBug ? "🐛 BUG" : "Clean Line"}</button>`;
+            }).join("")}
+          </div>
+
+          <div class="status-bar-track" style="height:6px; margin-bottom:12px;">
+            <div class="status-bar-fill" id="minigame-timer-bar" style="width:100%; height:100%; background:#ffd700;"></div>
+          </div>
+          
+          <button class="btn-secondary" style="width:100%; border-color:rgba(255,23,68,0.3); color:#ff1744;" onclick="cancelMiniGame()">Cancel Mini-game</button>
+        </div>
+      `;
+    }
+
+    container.innerHTML = gameHtml;
+
+    if (activeMiniGame.type === 'code') {
+      setTimeout(() => {
+        const input = document.getElementById("minigame-code-input");
+        if (input) input.focus();
+      }, 50);
+    }
+    return;
+  }
+
+  const xpCostText = gameState.level > 1 ? "-15 ✨" : "FREE";
+  
+  container.innerHTML = `
+    <div class="card-item" style="padding: 14px;">
+      <div class="card-item-title" style="font-size: 0.95rem;">
+        <span>Code Optimization Class</span>
+        <span style="color: #ffd700; display:flex; gap:8px;"><span>-10 ⚡</span> <span style="color:var(--color-cyan); font-weight:bold;">${xpCostText}</span></span>
+      </div>
+      <div class="card-item-desc" style="font-size: 0.8rem;">
+        Solve complex algorithm challenges. Coding skill increases points generated during sprints.
+      </div>
+      <button class="btn-primary" style="padding: 10px;" onclick="trainSkill('coding_skill')">Train Coding</button>
+    </div>
+
+    <div class="card-item" style="padding: 14px;">
+      <div class="card-item-title" style="font-size: 0.95rem;">
+        <span>Design Theory Templates</span>
+        <span style="color: #ffd700; display:flex; gap:8px;"><span>-10 ⚡</span> <span style="color:var(--color-cyan); font-weight:bold;">${xpCostText}</span></span>
+      </div>
+      <div class="card-item-desc" style="font-size: 0.8rem;">
+        Study harmonic layout guidelines. Design skill contributes heavy design points to active games.
+      </div>
+      <button class="btn-primary" style="padding: 10px;" onclick="trainSkill('design_skill')">Train Design</button>
+    </div>
+
+    <div class="card-item" style="padding: 14px;">
+      <div class="card-item-title" style="font-size: 0.95rem;">
+        <span>Agile Lead Seminars</span>
+        <span style="color: #ffd700; display:flex; gap:8px;"><span>-10 ⚡</span> <span style="color:var(--color-cyan); font-weight:bold;">${xpCostText}</span></span>
+      </div>
+      <div class="card-item-desc" style="font-size: 0.8rem;">
+        Practice project management classes. Management skill boosts gig success and bug squashing.
+      </div>
+      <button class="btn-primary" style="padding: 10px;" onclick="trainSkill('management_skill')">Train Management</button>
+    </div>
+  `;
+}
+
 function trainSkill(skillName) {
-  if (gameState.xp < 15) {
-    showToast("Requires 15 XP to train!", "error");
+  const xpCost = gameState.level > 1 ? 15 : 0;
+  if (gameState.xp < xpCost) {
+    showToast(`Requires ${xpCost} XP to train!`, "error");
     return;
   }
   if (gameState.energy < 10) {
@@ -596,33 +747,11 @@ function trainSkill(skillName) {
     return;
   }
 
-  const skillLabel = skillName === "coding_skill" ? "Coding" : (skillName === "design_skill" ? "Design" : "Management");
-  if (!confirm(`Are you sure you want to train ${skillLabel}? Costs 10 Energy and 15 XP.`)) {
-    return;
-  }
+  let type = 'code';
+  if (skillName === 'design_skill') type = 'design';
+  else if (skillName === 'management_skill') type = 'polish';
 
-  gameState.energy -= 10;
-  gameState.xp -= 15;
-
-  // Random XP gains based on spec modifier
-  let xp = Math.floor(Math.random() * 3) + 1; // 1-3
-
-  if (skillName === "coding_skill") {
-    gameState.coding_skill += xp;
-    addLog("Coding Workout", `Trained in algorithms. Coding improved by +${xp} (Now: ${gameState.coding_skill})`);
-    showToast(`Coding Skill increased! +${xp}`, "success");
-  } else if (skillName === "design_skill") {
-    gameState.design_skill += xp;
-    addLog("Design Workout", `Studied UI design templates. Design improved by +${xp} (Now: ${gameState.design_skill})`);
-    showToast(`Design Skill increased! +${xp}`, "success");
-  } else if (skillName === "management_skill") {
-    gameState.management_skill += xp;
-    addLog("Management Seminar", `Attended project management class. Management improved by +${xp} (Now: ${gameState.management_skill})`);
-    showToast(`Management Skill increased! +${xp}`, "success");
-  }
-
-  saveGame();
-  updateUI();
+  startMiniGame(type, true);
 }
 
 // --- Gigs System (CRIMES) ---
@@ -634,6 +763,10 @@ function runGig(gigId) {
   if (gigId === "crack_competitor") xpCost = 10;
   else if (gigId === "ransomware") xpCost = 20;
   else if (gigId === "ddos_rival") xpCost = 40;
+
+  if (gameState.level === 1 && gigId === "freelance_html") {
+    xpCost = 0;
+  }
 
   if (gameState.xp < xpCost) {
     showToast(`Insufficient XP! Performing this gig requires ${xpCost} XP.`, "error");
@@ -1005,9 +1138,16 @@ function getRandomColorHex() {
   return hexes[Math.floor(Math.random() * hexes.length)];
 }
 
-function startMiniGame(type) {
-  if (gameState.energy < 5) {
-    showToast("Requires 5 Energy to play!", "error");
+function startMiniGame(type, isTraining = false) {
+  const energyCost = isTraining ? 10 : 5;
+  const xpCost = isTraining ? (gameState.level > 1 ? 15 : 0) : 0;
+
+  if (gameState.energy < energyCost) {
+    showToast(`Insufficient energy. Requires ${energyCost} Energy!`, "error");
+    return;
+  }
+  if (isTraining && gameState.xp < xpCost) {
+    showToast(`Insufficient XP. Requires ${xpCost} XP to train!`, "error");
     return;
   }
 
@@ -1016,6 +1156,7 @@ function startMiniGame(type) {
 
   activeMiniGame = {
     type: type,
+    isTraining: isTraining,
     timeLeft: 100, // percentage
     duration: type === 'code' ? (gameState.ai_behavior ? 25000 : 15000) : 10000, // ms
     elapsed: 0
@@ -1051,8 +1192,11 @@ function startMiniGame(type) {
     activeMiniGame.bugIndex = Math.floor(Math.random() * 4); // 4 buttons
   }
 
-  // Deduct energy
-  gameState.energy -= 5;
+  // Deduct energy & XP
+  gameState.energy -= energyCost;
+  if (isTraining) {
+    gameState.xp -= xpCost;
+  }
   updateUI();
 
   // Start timer interval (every 100ms)
@@ -1078,14 +1222,23 @@ function startMiniGame(type) {
     }
   }, interval);
 
-  renderProjectProgress();
+  if (isTraining) {
+    renderTrainingGym();
+  } else {
+    renderProjectProgress();
+  }
 }
 
 function cancelMiniGame() {
   if (miniGameTimer) clearInterval(miniGameTimer);
+  const isTraining = activeMiniGame ? activeMiniGame.isTraining : false;
   activeMiniGame = null;
-  addLog("Mini-game Cancelled", "Development cycle aborted.");
-  renderProjectProgress();
+  addLog("Mini-game Cancelled", isTraining ? "Training session aborted." : "Development cycle aborted.");
+  if (isTraining) {
+    renderTrainingGym();
+  } else {
+    renderProjectProgress();
+  }
   updateUI();
 }
 
@@ -1127,7 +1280,34 @@ function clickBugButton(clickedIndex) {
 function successMiniGame() {
   ChiptuneAudio.playSFX("success");
   const type = activeMiniGame.type;
+  const isTraining = activeMiniGame.isTraining;
   activeMiniGame = null;
+
+  if (isTraining) {
+    const skillGain = Math.floor(Math.random() * 3) + 2; // 2-4 points
+    let skillLabel = "";
+    if (type === 'code') {
+      gameState.coding_skill += skillGain;
+      skillLabel = "Coding";
+      addLog("Coding Workout Success!", `Successfully solved algorithm challenge. Coding skill improved by +${skillGain} (Now: ${gameState.coding_skill}).`);
+      showToast(`Coding Skill increased! +${skillGain}`, "success");
+    } else if (type === 'design') {
+      gameState.design_skill += skillGain;
+      skillLabel = "Design";
+      addLog("Design Workout Success!", `Successfully designed layout interface. Design skill improved by +${skillGain} (Now: ${gameState.design_skill}).`);
+      showToast(`Design Skill increased! +${skillGain}`, "success");
+    } else if (type === 'polish') {
+      gameState.management_skill += skillGain;
+      skillLabel = "Management";
+      addLog("Management Workout Success!", `Successfully optimized project workflow. Management skill improved by +${skillGain} (Now: ${gameState.management_skill}).`);
+      showToast(`Management Skill increased! +${skillGain}`, "success");
+    }
+    gainXP(10);
+    saveGame();
+    renderTrainingGym();
+    updateUI();
+    return;
+  }
 
   if (gameState.current_project) {
     gameState.current_project.miniGamesPlayed = (gameState.current_project.miniGamesPlayed || 0) + 1;
@@ -1168,7 +1348,18 @@ function successMiniGame() {
 function failMiniGame(reason) {
   ChiptuneAudio.playSFX("fail");
   const type = activeMiniGame.type;
+  const isTraining = activeMiniGame.isTraining;
   activeMiniGame = null;
+
+  if (isTraining) {
+    let skillLabel = type === 'code' ? "Coding" : (type === 'design' ? "Design" : "Management");
+    addLog("Training Workout Failed!", `Reason: ${reason}. Gained 0 points in ${skillLabel}.`);
+    showToast(`Training Failed: ${reason}`, "error");
+    saveGame();
+    renderTrainingGym();
+    updateUI();
+    return;
+  }
 
   if (gameState.current_project) {
     gameState.current_project.miniGamesPlayed = (gameState.current_project.miniGamesPlayed || 0) + 1;
@@ -2275,6 +2466,7 @@ function supportActiveProject(actionType) {
 // --- Global Window Bindings for Module Scope Safeguard ---
 window.trainSkill = trainSkill;
 window.runGig = runGig;
+window.renderTrainingGym = renderTrainingGym;
 window.buyOffice = buyOffice;
 window.hireEmployee = hireEmployee;
 window.fireEmployee = fireEmployee;
@@ -2581,4 +2773,121 @@ window.toggleMusic = toggleMusic;
 window.ChiptuneAudio = ChiptuneAudio;
 window.nukeGameProject = nukeGameProject;
 window.closeNukeModal = closeNukeModal;
+
+function generateLiveChatMessage() {
+  const time = new Date().toLocaleTimeString();
+  const consoleEl = document.getElementById("terminal-console");
+  if (!consoleEl) return;
+
+  const users = [
+    "Speedrunner99", "NoobSlayer_xX", "KappaLord", "GamerGirl3000", "PixelPerfect",
+    "SpaghettiCoder", "GlitchHunter", "MetacriticMod", "HypeTrainConductor", "Backer_404",
+    "CopypasteKing", "ConsoleWarrior", "FrameRatePolice", "WhaleSpender", "IndieSupporter",
+    "KeyboardMasher", "SpeedyCode", "SyntaxError", "NullPointer", "StackOverlord"
+  ];
+  
+  const userColors = [
+    "#00e5ff", "#b388ff", "#ffd700", "#39ff14", "#ff1744", 
+    "#ff9100", "#00e676", "#d500f9", "#ff007f", "#3d5afe"
+  ];
+  
+  const badges = [
+    { text: "👑 DEV", color: "#39ff14", bg: "rgba(57,255,20,0.15)" },
+    { text: "🛡️ MOD", color: "#ff1744", bg: "rgba(255,23,68,0.15)" },
+    { text: "💎 SUB", color: "#00e5ff", bg: "rgba(0,229,255,0.15)" },
+    { text: "⭐ VIP", color: "#ffd700", bg: "rgba(255,215,0,0.15)" }
+  ];
+
+  const username = users[Math.floor(Math.random() * users.length)];
+  const userColor = userColors[Math.floor(Math.random() * userColors.length)];
+  
+  let badgeHtml = "";
+  if (Math.random() < 0.3) {
+    const badge = badges[Math.floor(Math.random() * badges.length)];
+    badgeHtml = `<span style="font-size:0.65rem; font-weight:800; padding:2px 5px; border-radius:4px; margin-right:5px; border:1px solid ${badge.color}; color:${badge.color}; background:${badge.bg};">${badge.text}</span>`;
+  }
+
+  let comments = [];
+  const currentProj = gameState.current_project;
+  const activeGames = gameState.active_games;
+
+  if (activeGames && activeGames.length > 0) {
+    const randomGame = activeGames[Math.floor(Math.random() * activeGames.length)];
+    const gameName = randomGame.name;
+    const rating = randomGame.rating.toFixed(1);
+
+    comments = [
+      `playing ${gameName} right now, centering a div took me 4 hours 😂`,
+      `just got stuck in a bathroom toilet in ${gameName} 🤦`,
+      `the frames are dropping to 12 FPS on Pear Station ResidentSleeper 😴`,
+      `Wait, did they nuke their database? the gameplay is pure chaos LUL 😂`,
+      `their metacritic rating is ${rating}/10? METACRITIC IS BRIBED 🤡`,
+      `W release! Best game of 2026 PogChamp 😲`,
+      `Is this pay-to-win? I need to flex my wallet 💸`,
+      `the physics are completely glitched, I launched a toaster into orbit 🚀`,
+      `Refunded ${gameName}. My GPU is now a space heater 😭`,
+      `W game! centring divs has never been this immersive`,
+      `Kappa 🤡`,
+      `Is the day-one patch out yet? I'm clipping through the floor 🤦`
+    ];
+  } else if (currentProj) {
+    const gameName = currentProj.name;
+    comments = [
+      `did you guys see the leaks for ${gameName}?`,
+      `looks like absolute vaporware Kappa 🤡`,
+      `is there multiplayer? if not, I riot`,
+      `W game incoming, I can feel it PogChamp 😲`,
+      `when is pre-alpha testing?`,
+      `don't rush the devs, they are crunching hard in mom's basement 😭`,
+      `the code snippets are literally copied from stackoverflow LUL 😂`,
+      `looks better than Cyberpunk launch already`,
+      `preordered the deluxe gold alpha premium version already 💸`,
+      `HYPE PogChamp 😲`,
+      `will it run on my potato laptop?`,
+      `Adding ChatGPT to code? Bold move devs 🤡`
+    ];
+  } else {
+    comments = [
+      "is the stream online? Kappa 🤡",
+      "when next game???",
+      "their last game was such a cash grab 😂",
+      "can I apply as a moderator here?",
+      "are the devs sleeping on the job again? 😴",
+      "ResidentSleeper 😴",
+      "agile standups are just devs lying in unison LUL 😂",
+      "ChatGPT Prompter is carrying the entire company ngl 👑",
+      "did they buy the ergonomic chairs yet? my back hurts watching them",
+      "LUL 😂",
+      "Anyone here playing Minesweeper?",
+      "They probably ran out of coffee again ☕",
+      "Fired employee #1? Savage LUL 😂"
+    ];
+  }
+
+  const commentText = comments[Math.floor(Math.random() * comments.length)];
+
+  const chatLine = document.createElement("div");
+  chatLine.className = "terminal-line";
+  chatLine.style.display = "flex";
+  chatLine.style.alignItems = "center";
+  chatLine.style.flexWrap = "wrap";
+  chatLine.style.padding = "2px 0";
+
+  chatLine.innerHTML = `
+    <span class="timestamp" style="font-size:0.72rem; color:var(--color-text-muted); margin-right:6px;">[${time.split(' ')[0]}]</span>
+    ${badgeHtml}
+    <strong style="color:${userColor}; margin-right:6px; cursor:pointer;">@${username}:</strong>
+    <span style="color:#fff;">"${commentText}"</span>
+  `;
+
+  consoleEl.appendChild(chatLine);
+
+  while (consoleEl.children.length > 60) {
+    consoleEl.removeChild(consoleEl.firstChild);
+  }
+
+  consoleEl.scrollTop = consoleEl.scrollHeight;
+}
+
+window.generateLiveChatMessage = generateLiveChatMessage;
 
