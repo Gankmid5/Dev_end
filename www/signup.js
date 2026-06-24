@@ -38,6 +38,44 @@ const logoutBtn = document.getElementById("logout-btn");
 const avatarGlowOrb = document.getElementById("avatar-glow-orb");
 const avatarContainer = document.getElementById("avatar-container");
 const headerProfileBadge = document.getElementById("header-profile-badge");
+const activeRankDisplay = document.getElementById("active-rank-display");
+
+const OFFICE_TIER_LABELS = {
+  Garage: "Parent's Damp Basement",
+  CoWorking: "Overpriced Co-Working Desk",
+  IndieStudio: "Hipster Loft with Single Window",
+  MegaCampus: "Mega-Corp Subterranean Bunker"
+};
+
+function getOfficeTierLabel(tierKey) {
+  return OFFICE_TIER_LABELS[tierKey] || tierKey || "Garage";
+}
+
+function loadLocalGameState() {
+  const activeUser = localStorage.getItem("tycoon_active_username");
+  if (activeUser) {
+    const userKey = `dev_tycoon_local_state_${activeUser}`;
+    const userState = localStorage.getItem(userKey);
+    if (userState) return JSON.parse(userState);
+  }
+  const guestState = localStorage.getItem("dev_tycoon_local_state_guest");
+  return guestState ? JSON.parse(guestState) : null;
+}
+
+function statsFromGameState(state) {
+  if (!state) return null;
+  return {
+    net_worth: state.net_worth ?? 500,
+    cash: state.cash ?? 500,
+    office_tier: state.office_tier ?? "Garage",
+    coding_skill: state.coding_skill ?? 10,
+    design_skill: state.design_skill ?? 10,
+    management_skill: state.management_skill ?? 10,
+    games_released: state.games_released ?? 0,
+    games_sold: state.games_sold ?? 0,
+    employees_count: state.employees_count ?? (state.employees?.length || 0)
+  };
+}
 
 // Signup-only groups
 const usernameGroup = document.getElementById("username-group");
@@ -414,8 +452,30 @@ async function loadSavedProfile() {
   } catch (err) {}
 
   if (!user) {
-    // Show local guest stats in signup if they exist
-    headerProfileBadge.innerText = "GUEST";
+    if (headerProfileBadge) headerProfileBadge.innerText = "GUEST";
+
+    const guestState = loadLocalGameState();
+    const guestStats = statsFromGameState(guestState);
+    if (!guestStats) return;
+
+    const guestName = (guestState.company_name || "Guest Developer").toUpperCase();
+    if (activeCodenameDisplay) {
+      activeCodenameDisplay.innerText = guestName;
+      activeCodenameDisplay.style.color = "#00e5ff";
+    }
+    if (activeEmailDisplay) activeEmailDisplay.innerText = "Playing locally — no cloud sync";
+    if (activeMetaDisplay) {
+      activeMetaDisplay.innerHTML = `Specialization: <strong>Garage Indie</strong> | Zodiac: <strong>Stack Overflow</strong>`;
+    }
+    if (activeRankDisplay) {
+      activeRankDisplay.innerText = `Studio Tier: ${getOfficeTierLabel(guestStats.office_tier)}`;
+    }
+
+    populateProfileStats(guestStats);
+    if (signupForm) signupForm.style.display = "none";
+    if (authTabs) authTabs.style.display = "none";
+    if (activeProfileDetails) activeProfileDetails.style.display = "flex";
+    if (panelTitle) panelTitle.querySelector("span").innerText = "Guest Studio Profile";
     return;
   }
 
@@ -443,45 +503,72 @@ async function loadSavedProfile() {
     profile = res;
     if (res.stats) stats = res.stats;
   } catch (dbErr) {
-    // Fall back to local
-    const localStats = localStorage.getItem("dev_tycoon_local_stats");
-    if (localStats) stats = JSON.parse(localStats);
+    const localStats = statsFromGameState(loadLocalGameState());
+    if (localStats) stats = localStats;
   }
 
   // Populate UI
   const color = profile.color || "#00e5ff";
   const name = (profile.username || "Developer").toUpperCase();
 
-  headerProfileBadge.innerText = name;
-  headerProfileBadge.style.borderColor = color;
-  headerProfileBadge.style.color = color;
+  if (headerProfileBadge) {
+    headerProfileBadge.innerText = name;
+    headerProfileBadge.style.borderColor = color;
+    headerProfileBadge.style.color = color;
+  }
 
-  activeCodenameDisplay.innerText = name;
-  activeCodenameDisplay.style.color = color;
-  activeEmailDisplay.innerText = user.email;
-  activeMetaDisplay.innerHTML = `Specialization: <strong>${profile.specialization}</strong> | Zodiac: <strong>${profile.zodiac}</strong>`;
-  activeRankDisplay.innerText = `Studio Tier: ${stats.office_tier}`;
+  if (activeCodenameDisplay) {
+    activeCodenameDisplay.innerText = name;
+    activeCodenameDisplay.style.color = color;
+  }
+  if (activeEmailDisplay) activeEmailDisplay.innerText = user.email;
+  if (activeMetaDisplay) {
+    activeMetaDisplay.innerHTML = `Specialization: <strong>${profile.specialization}</strong> | Zodiac: <strong>${profile.zodiac}</strong>`;
+  }
+  if (activeRankDisplay) {
+    activeRankDisplay.innerText = `Studio Tier: ${getOfficeTierLabel(stats.office_tier)}`;
+  }
 
-  avatarGlowOrb.style.background = color;
-  avatarGlowOrb.style.boxShadow = `0 0 30px ${color}`;
-  avatarContainer.style.borderColor = color;
+  if (avatarGlowOrb) {
+    avatarGlowOrb.style.background = color;
+    avatarGlowOrb.style.boxShadow = `0 0 30px ${color}`;
+  }
+  if (avatarContainer) avatarContainer.style.borderColor = color;
 
-  document.getElementById("prof-net-worth").innerText = `$${parseFloat(stats.net_worth).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-  document.getElementById("prof-cash").innerText = `$${parseFloat(stats.cash).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-  document.getElementById("prof-office-tier").innerText = stats.office_tier;
-  document.getElementById("prof-coding").innerText = stats.coding_skill;
-  document.getElementById("prof-design").innerText = stats.design_skill;
-  document.getElementById("prof-management").innerText = stats.management_skill;
-  document.getElementById("prof-games-released").innerText = stats.games_released;
-  document.getElementById("prof-games-sold").innerText = parseInt(stats.games_sold).toLocaleString();
-  document.getElementById("prof-employees").innerText = stats.employees_count;
+  populateProfileStats(stats);
 
-  signupForm.style.display = "none";
-  authTabs.style.display = "none";
-  activeProfileDetails.style.display = "flex";
+  if (signupForm) signupForm.style.display = "none";
+  if (authTabs) authTabs.style.display = "none";
+  if (activeProfileDetails) activeProfileDetails.style.display = "flex";
   if (panelTitle) {
     panelTitle.querySelector("span").innerText = "Active Studio Profile";
   }
+}
+
+function populateProfileStats(stats) {
+  const netWorthEl = document.getElementById("prof-net-worth");
+  const cashEl = document.getElementById("prof-cash");
+  const officeEl = document.getElementById("prof-office-tier");
+  const codingEl = document.getElementById("prof-coding");
+  const designEl = document.getElementById("prof-design");
+  const mgmtEl = document.getElementById("prof-management");
+  const releasedEl = document.getElementById("prof-games-released");
+  const soldEl = document.getElementById("prof-games-sold");
+  const employeesEl = document.getElementById("prof-employees");
+
+  if (netWorthEl) {
+    netWorthEl.innerText = `$${parseFloat(stats.net_worth).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+  if (cashEl) {
+    cashEl.innerText = `$${parseFloat(stats.cash).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+  if (officeEl) officeEl.innerText = getOfficeTierLabel(stats.office_tier);
+  if (codingEl) codingEl.innerText = stats.coding_skill;
+  if (designEl) designEl.innerText = stats.design_skill;
+  if (mgmtEl) mgmtEl.innerText = stats.management_skill;
+  if (releasedEl) releasedEl.innerText = stats.games_released;
+  if (soldEl) soldEl.innerText = parseInt(stats.games_sold).toLocaleString();
+  if (employeesEl) employeesEl.innerText = stats.employees_count;
 }
 
 // UI HELPERS

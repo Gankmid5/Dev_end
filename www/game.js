@@ -235,6 +235,9 @@ function initTabs() {
 }
 
 function switchTab(tabName) {
+  if (tabName !== activeTab) {
+    suspendMiniGameForTabChange(tabName);
+  }
   activeTab = tabName;
 
   // Hide all main layout containers
@@ -391,8 +394,15 @@ function gainXP(amount) {
   if (leveledUp) {
     triggerScreenFlash(57, 255, 20);
     if (window.SynthwaveAudio) SynthwaveAudio.playSFX("levelup");
-    addLog("LEVEL UP!", `Congratulations! You reached Dev Level ${gameState.level}! Max Energy: ${gameState.max_energy}, Max Nerve: ${gameState.max_nerve}.`);
-    showToast(`✨ LEVEL UP! Level ${gameState.level} reached!`, "success");
+    const levelQuips = [
+      "HR says you're now 'senior enough to blame'.",
+      "Your LinkedIn headline updated itself to 'Visionary'.",
+      "Parents still ask when you'll get a real job. Level up anyway.",
+      "Achievement unlocked: more responsibilities, same snack budget."
+    ];
+    const levelQuip = levelQuips[Math.floor(Math.random() * levelQuips.length)];
+    addLog("LEVEL UP!", `Dev Level ${gameState.level}! Max Energy: ${gameState.max_energy}, Max Nerve: ${gameState.max_nerve}. ${levelQuip}`);
+    showToast(`✨ LEVEL ${gameState.level}! ${levelQuip}`, "success");
     
     // If Gigs tab is active, redraw the training gym to show updated XP cost labels
     const gigsSection = document.getElementById("gigs-section");
@@ -475,13 +485,15 @@ function addLog(title, desc) {
 
 // --- Dynamic Form Inputs ---
 function initFormInputs() {
+  if (formInputsInitialized) return;
   const gameNameInput = document.getElementById("game-name-input");
   const randomNameBtn = document.getElementById("random-name-btn");
 
   if (randomNameBtn && gameNameInput) {
+    formInputsInitialized = true;
     randomNameBtn.addEventListener("click", () => {
-      const prefixes = ["Half-Baked", "Glitchy", "Spaghetti", "Cyber-Trash", "Buggy", "Pixel-Art", "Microtransaction", "AI-Generated", "Unfinished", "Pre-Alpha", "Pay-to-Win", "Crunch-Time"];
-      const suffixes = ["Simulator", "Fiasco", "Disaster", "Tycoon", "Dead-End", "Keyboard-Smasher", "Asset-Flip", "Refund-Edition", "Spaghetti-Code", "Crash-Simulator", "Crunch-Edition"];
+      const prefixes = ["Half-Baked", "Glitchy", "Spaghetti", "Cyber-Trash", "Buggy", "AI-Generated", "Unfinished", "Pay-to-Win", "Crunch-Time", "Wobbly", "NFT", "Live-Service"];
+      const suffixes = ["Simulator", "Fiasco", "Disaster", "Tycoon", "Refund-Edition", "Crash-Simulator", "Battle Pass", "Early Access Forever", "Day-One Patch", "Microtransaction Hell"];
       const r1 = prefixes[Math.floor(Math.random() * prefixes.length)];
       const r2 = suffixes[Math.floor(Math.random() * suffixes.length)];
       gameNameInput.value = `${r1} ${r2}`;
@@ -565,7 +577,7 @@ function gameTick() {
           if (scale === "AAA") cap = 20000;
         }
         
-        const isDead = g.age >= 120 || (g.totalRevenue || 0) >= cap;
+        const isDead = g.age >= GAME_SHELF_LIFE || (g.totalRevenue || 0) >= cap;
         if (isDead) {
           addLog("Sales Concluded", `'${g.name}' has concluded its sales run (Lifetime Rev: $${parseFloat(g.totalRevenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}).`);
         }
@@ -626,23 +638,44 @@ function triggerRandomEvent() {
   const pool = [
     () => {
       gameState.energy = Math.min(gameState.max_energy, gameState.energy + 18);
-      addLog("Random Event", "Roommate delivered lukewarm pizza. +18 Energy.");
-      showToast("🍕 Pizza delivery! +18 Energy", "success");
+      addLog("Random Event", "Roommate delivered lukewarm pizza. +18 Energy. Toppings: regret and marinara.");
+      showToast("🍕 Pizza delivery! +18 Energy (crust optional)", "success");
     },
     () => {
       gameState.cash += 85;
-      addLog("Random Event", "Found $85 in the couch cushions between the Cheeto dust.");
+      addLog("Random Event", "Found $85 in the couch cushions between the Cheeto dust and a forgotten Steam refund.");
       showToast("💰 Couch treasure! +$85", "success");
     },
     () => {
       gameState.research_points += 4;
-      addLog("Random Event", "StackOverflow answer accepted. +4 Research Points.");
+      addLog("Random Event", "StackOverflow answer accepted. +4 RP. Someone called you 'legend' then deleted their account.");
       showToast("📚 Research breakthrough! +4 RP", "info");
     },
     () => {
       gameState.nerve = Math.min(gameState.max_nerve, gameState.nerve + 2);
-      addLog("Random Event", "Espresso machine fixed itself. +2 Nerve Focus.");
+      addLog("Random Event", "Espresso machine fixed itself. +2 Nerve. It still tastes like burnt ambition.");
       showToast("☕ Espresso miracle! +2 Focus", "success");
+    },
+    () => {
+      gameState.xp += 8;
+      addLog("Random Event", "A recruiter DM'd 'quick call?' You ignored it and gained +8 XP from pure spite.");
+      showToast("💼 Recruiter ignored! +8 XP", "info");
+    },
+    () => {
+      gameState.cash = Math.max(0, gameState.cash - 40);
+      addLog("Random Event", "Accidentally subscribed to another AI tool trial. -$40. It only writes TODO comments.");
+      showToast("🤖 AI trial regret! -$40", "warning");
+    },
+    () => {
+      if (gameState.employees.length > 0) {
+        gameState.cash = Math.max(0, gameState.cash - 25);
+        addLog("Random Event", "Intern ordered 14 oat-milk lattes on the company card. -$25.");
+        showToast("☕ Latte incident! -$25", "warning");
+      } else {
+        gameState.energy = Math.min(gameState.max_energy, gameState.energy + 6);
+        addLog("Random Event", "No staff to blame. You drank the intern's imaginary latte and gained +6 Energy.");
+        showToast("🫠 Solo dev coping! +6 Energy", "info");
+      }
     }
   ];
 
@@ -667,6 +700,8 @@ function triggerRandomEvent() {
 }
 
 // --- Target point targets based on Dev scale ---
+const GAME_SHELF_LIFE = 120;
+
 function getTargetPointsForScale(scale) {
   switch (scale) {
     case "Small": return 30;
@@ -674,6 +709,110 @@ function getTargetPointsForScale(scale) {
     case "Large": return 300;
     case "AAA": return 1000;
     default: return 30;
+  }
+}
+
+function getProjectProgressPercent(proj) {
+  const target = getTargetPointsForScale(proj.scale);
+  const totalPoints = (proj.tech_points || 0) + (proj.design_points || 0);
+  return Math.min(100, (totalPoints / (target * 2)) * 100);
+}
+
+function canReleaseProject(proj) {
+  return getProjectProgressPercent(proj) >= 90 && (proj.bug_points || 0) <= 8;
+}
+
+function getDevEnergyCost() {
+  return gameState.level === 1 ? 4 : 5;
+}
+
+function getOfficeDisplayName(tierKey) {
+  return OFFICE_TIERS[tierKey]?.name || tierKey;
+}
+
+function getGameIncomePerTick(game) {
+  const halfLife = game.decayHalfLife || 90;
+  const baseUnits = game.initialSalesRate || 100;
+  const decayMult = Math.max(0.01, Math.exp(-(game.age || 0) / halfLife));
+  const copiesSoldThisTick = Math.ceil((baseUnits * decayMult) / 20);
+  return copiesSoldThisTick * game.price * 0.70;
+}
+
+let developPanelRefreshCounter = 0;
+let activeGamesRefreshCounter = 0;
+let formInputsInitialized = false;
+
+function getGigXpCost(gigId) {
+  if (gigId === "freelance_html") return gameState.level === 1 ? 0 : 3;
+  if (gigId === "crack_competitor") return 10;
+  if (gigId === "ransomware") return 20;
+  if (gigId === "ddos_rival") return 40;
+  return 0;
+}
+
+const GIG_DOSSIERS = {
+  freelance_html: {
+    title: "Freelance HTML Edits",
+    desc: "Tweak markup code templates for small neighborhood stores. High success rate, small payouts.",
+    dossier: "Luigi (local pizzeria owner) claims his pizza image is shifting 2px left when clicked. He demands inline styles because bootstrap is \"communist spyware\". Rot your soul for $50."
+  },
+  crack_competitor: {
+    title: "Crack Competitor DRM",
+    desc: "Leak files of rival software assets to internet forums. Generates decent returns with moderate risk.",
+    dossier: "Bypass wobbly DRM loops that melt client CPUs. Upload cracked binaries to retro forums. Gains decent returns and massive street cred among 14-year-olds."
+  },
+  ransomware: {
+    title: "Ransomware local server",
+    desc: "Infect server of offshore shell companies. High payout but failure results in corporate penalties.",
+    dossier: "Drop-shipping conglomerate using password \"admin123\". If you fail, their automatic legal fax bots will flood your parents' fax machine with 8,000 cease-and-desists."
+  },
+  ddos_rival: {
+    title: "DDoS Rival Studio",
+    desc: "Overwhelm competitor servers with smart-toaster traffic. Massive payout, maximum heat.",
+    dossier: "Target a rival whose servers run on a Raspberry Pi and hope. Success means champagne; failure means your router gets subpoenaed by three countries."
+  }
+};
+
+function suspendMiniGameForTabChange(nextTab) {
+  if (!activeMiniGame) return;
+
+  if (miniGameTimer) {
+    clearInterval(miniGameTimer);
+    miniGameTimer = null;
+  }
+
+  const mg = activeMiniGame;
+  activeMiniGame = null;
+
+  if (mg.isGig) {
+    if (mg._refundNerve) gameState.nerve = Math.min(gameState.max_nerve, gameState.nerve + mg._refundNerve);
+    if (mg._refundXp) gameState.xp += mg._refundXp;
+    addLog("Gig Interrupted", "You alt-tabbed to another zone. Crime cancelled; nerve refunded (plausible deniability restored).");
+    showToast("Gig aborted — focus refunded. One hack at a time, criminal.", "warning");
+    renderGigsBoard();
+    saveGame();
+    return;
+  }
+
+  if (mg.isStore && nextTab !== "gigs") {
+    if (mg.energyGain) gameState.energy = Math.min(gameState.max_energy, gameState.energy + mg.energyGain);
+    if (mg.nerveGain) gameState.nerve = Math.min(gameState.max_nerve, gameState.nerve + mg.nerveGain);
+    addLog("Store Run", "Abandoned brew mid-pour. Drank it lukewarm anyway.");
+    showToast("Left the store mid-brew. Lukewarm caffeine acquired.", "warning");
+    renderDeveloperStore();
+    saveGame();
+    return;
+  }
+
+  if (mg.isTraining && nextTab !== "gigs") {
+    showToast("Training paused. Your gym membership is non-refundable.", "info");
+    return;
+  }
+
+  if (!mg.isGig && !mg.isStore && !mg.isTraining && nextTab !== "develop") {
+    miniGameCombo = 0;
+    updateHudCombo(0);
+    showToast("Sprint interrupted by a Slack @here. Energy not refunded.", "warning");
   }
 }
 
@@ -712,23 +851,23 @@ function updateUI() {
   const dbResearch = document.getElementById("db-research");
 
   if (dbCompanyName) dbCompanyName.innerText = gameState.company_name;
-  if (dbOfficeName) dbOfficeName.innerText = gameState.office_tier;
+  if (dbOfficeName) dbOfficeName.innerText = getOfficeDisplayName(gameState.office_tier);
   if (dbNetWorth) dbNetWorth.innerText = `$${parseFloat(gameState.net_worth).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   if (dbReleased) dbReleased.innerText = gameState.games_released;
   if (dbSold) dbSold.innerText = parseInt(gameState.games_sold).toLocaleString();
   if (dbEmployees) dbEmployees.innerText = gameState.employees.length;
-  if (dbResearch) dbResearch.innerText = gameState.research_points;
+  if (dbResearch) dbResearch.innerText = Math.floor(gameState.research_points);
 
-  // Active games list render
+  // Active games list render (throttled — full re-render every 4 ticks)
   const activeGamesContainer = document.getElementById("active-games-list");
-  if (activeGamesContainer) {
+  if (activeGamesContainer && activeGamesRefreshCounter++ % 4 === 0) {
     if (gameState.active_games.length === 0) {
-      activeGamesContainer.innerHTML = `<div class="terminal-line" style="color: var(--color-text-muted); font-style: italic;">No active products generating sales.</div>`;
+      activeGamesContainer.innerHTML = `<div class="terminal-line" style="color: var(--color-text-muted); font-style: italic;">No active products generating sales. The shelf is as empty as your sprint backlog.</div>`;
     } else {
       activeGamesContainer.innerHTML = gameState.active_games.map((game, index) => {
-        const remainingTicks = Math.max(0, 240 - game.age);
-        const agePercent = Math.min(100, (game.age / 240) * 100);
-        const curIncome = (game.initialSalesRate * Math.exp(-game.age / 90) * game.price * 0.70);
+        const remainingTicks = Math.max(0, GAME_SHELF_LIFE - game.age);
+        const agePercent = Math.min(100, (game.age / GAME_SHELF_LIFE) * 100);
+        const curIncome = getGameIncomePerTick(game);
         return `
           <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); padding: 12px; border-radius: 10px; margin-bottom: 8px;">
             <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:0.9rem;">
@@ -775,11 +914,11 @@ function updateUI() {
     }
   }
 
-  // Active project progress rendering in Dev Panel
-  if (gameState.current_project) {
-    if (gameState.current_project.phase === "post_release") {
-      renderPostReleaseDashboard();
-    } else if (!activeMiniGame) {
+  const developSection = document.getElementById("develop-section");
+  const developVisible = developSection && developSection.style.display !== "none";
+  developPanelRefreshCounter++;
+  if (gameState.current_project && developVisible && !activeMiniGame) {
+    if (gameState.current_project.phase !== "post_release" && developPanelRefreshCounter % 4 === 0) {
       renderProjectProgress();
     }
   }
@@ -896,6 +1035,8 @@ function renderTrainingGym() {
     return;
   }
 
+  const xpCostText = gameState.level > 1 ? "-15 XP" : "FREE (mom pays tuition)";
+
   container.innerHTML = `
     <div class="card-item" style="padding: 14px;">
       <div class="card-item-title" style="font-size: 0.95rem;">
@@ -964,14 +1105,7 @@ function runGig(gigId) {
   const gig = GIGS.find(g => g.id === gigId);
   if (!gig) return;
 
-  let xpCost = 3;
-  if (gigId === "crack_competitor") xpCost = 10;
-  else if (gigId === "ransomware") xpCost = 20;
-  else if (gigId === "ddos_rival") xpCost = 40;
-
-  if (gameState.level === 1 && gigId === "freelance_html") {
-    xpCost = 0;
-  }
+  const xpCost = getGigXpCost(gigId);
 
   if (gameState.xp < xpCost) {
     showToast(`Insufficient XP! Performing this gig requires ${xpCost} XP.`, "error");
@@ -990,8 +1124,14 @@ function runGig(gigId) {
   gameState.nerve -= gig.nerveCost;
   gameState.xp -= xpCost;
 
+  const attachGigMeta = (mg) => {
+    mg._refundNerve = gig.nerveCost;
+    mg._refundXp = xpCost;
+    return mg;
+  };
+
   if (gigId === "freelance_html") {
-    activeMiniGame = {
+    activeMiniGame = attachGigMeta({
       type: "slider",
       isGig: true,
       gigId: gigId,
@@ -1002,10 +1142,10 @@ function runGig(gigId) {
       needleSpeed: 4,
       greenZoneStart: 38,
       greenZoneEnd: 62
-    };
+    });
   } else if (gigId === "crack_competitor") {
     const { target, options } = generateBinaryMatcherState();
-    activeMiniGame = {
+    activeMiniGame = attachGigMeta({
       type: "binary",
       isGig: true,
       gigId: gigId,
@@ -1013,7 +1153,7 @@ function runGig(gigId) {
       elapsed: 0,
       targetSequence: target,
       options: options
-    };
+    });
   } else if (gigId === "ransomware") {
     let coords = [];
     for (let i = 1; i <= 4; i++) {
@@ -1023,7 +1163,7 @@ function runGig(gigId) {
         left: Math.floor(Math.random() * 70) + 15
       });
     }
-    activeMiniGame = {
+    activeMiniGame = attachGigMeta({
       type: "trace",
       isGig: true,
       gigId: gigId,
@@ -1031,9 +1171,9 @@ function runGig(gigId) {
       elapsed: 0,
       currentNumber: 1,
       coords: coords
-    };
+    });
   } else if (gigId === "ddos_rival") {
-    activeMiniGame = {
+    activeMiniGame = attachGigMeta({
       type: "ping",
       isGig: true,
       gigId: gigId,
@@ -1041,7 +1181,7 @@ function runGig(gigId) {
       elapsed: 0,
       clicksCount: 0,
       targetClicks: 15
-    };
+    });
   }
 
   activateMiniGameTimer();
@@ -1193,10 +1333,13 @@ function hireEmployee(empKey) {
 function fireEmployee(index) {
   if (index < 0 || index >= gameState.employees.length) return;
   const emp = gameState.employees[index];
+  const info = EMPLOYEES_INFO[emp.id];
+  if (!confirm(`Fire ${info?.name || emp.name}? They will live-tweet about your 'toxic studio culture'.`)) return;
+
   gameState.employees.splice(index, 1);
 
-  addLog("Staff Dismissed", `Fired employee index #${index + 1} (${emp.name}).`);
-  showToast(`${emp.name} was dismissed.`, "info");
+  addLog("Staff Dismissed", `Fired ${info?.name || emp.name}. They left a 1-star Glassdoor review from the parking lot.`);
+  showToast(`${info?.name || emp.name} was dismissed. Morale unchanged (there was none).`, "info");
 
   saveGame();
   renderStaffPanel();
@@ -1261,7 +1404,7 @@ function renderDevelopPanel() {
             <div class="form-group">
               <label class="form-label">Project Scale</label>
               <select id="scale-select">
-                <option value="Small">Small (10 Energy action cost)</option>
+                <option value="Small">Small (4–5 Energy per dev sprint)</option>
                 <option value="Medium">Medium (Requires $1,000 budget)</option>
                 <option value="Large">Large (Requires $10,000 budget)</option>
                 <option value="AAA">AAA (Requires $50,000 budget)</option>
@@ -1298,7 +1441,7 @@ function createGameProject() {
   const scale = document.getElementById("scale-select").value;
 
   if (platformKey === "console" && !gameState.unlocked_console) {
-    showToast("You must research '3D Graphics Engine' first to target Console platforms!", "error");
+    showToast("Console requires Spinning Green Cube™ research. Pear Station lawyers demand at least one rotating cube.", "error");
     return;
   }
 
@@ -1467,6 +1610,8 @@ function cancelMiniGame() {
   const itemId = activeMiniGame.itemId;
   const storeEnergy = activeMiniGame.energyGain;
   const storeNerve = activeMiniGame.nerveGain;
+  const refundNerve = activeMiniGame._refundNerve || 0;
+  const refundXp = activeMiniGame._refundXp || 0;
 
   activeMiniGame = null;
 
@@ -1488,8 +1633,11 @@ function cancelMiniGame() {
   }
 
   if (isGig) {
-    addLog("Gig Cancelled", "Aborted gig mid-execution. Focus and nerve costs were lost in the network noise.");
-    showToast("Gig Aborted!", "error");
+    if (refundNerve) gameState.nerve = Math.min(gameState.max_nerve, gameState.nerve + refundNerve);
+    if (refundXp) gameState.xp += refundXp;
+    addLog("Gig Cancelled", "Aborted mid-hack. Nerve refunded. Your VPN history has been tastefully blurred.");
+    showToast("Gig aborted — nerve refunded. The FBI sends their regards.", "warning");
+    saveGame();
     renderGigsBoard();
     updateUI();
     return;
@@ -1738,8 +1886,9 @@ function renderProjectProgress() {
 
   const proj = gameState.current_project;
   const target = getTargetPointsForScale(proj.scale);
-  const totalPoints = proj.tech_points + proj.design_points;
-  const progressPercent = Math.min(100, (totalPoints / (target * 2)) * 100);
+  const progressPercent = getProjectProgressPercent(proj);
+  const readyToShip = canReleaseProject(proj);
+  const energyCost = getDevEnergyCost();
 
   // Mini-game conditional rendering
   if (activeMiniGame) {
@@ -1868,7 +2017,7 @@ function renderProjectProgress() {
       </div>
 
       <div style="font-size:0.8rem; color:var(--color-text-muted); line-height:1.4; margin-top:5px; text-align:center;">
-        💡 Click on a task to play a mini-game and generate code/art features! Costs <strong>5 energy</strong> per play.
+        💡 Mini-games build your game. Costs <strong>${energyCost} energy</strong> per sprint. Ship at <strong>90%</strong> with <strong>≤8 bugs</strong> (industry standard™).
       </div>
 
       <!-- Interactive develop actions -->
@@ -1884,8 +2033,8 @@ function renderProjectProgress() {
         </button>
       </div>
 
-      <button class="btn-primary" style="margin-top:10px; background:#39ff14; border-color:#39ff14; color:#000;" ${progressPercent < 90 ? "disabled" : ""} onclick="releaseGameProject()">
-        🚀 Release & Sell Game
+      <button class="btn-primary" style="margin-top:10px; background:#39ff14; border-color:#39ff14; color:#000;" ${readyToShip ? "" : "disabled"} onclick="releaseGameProject()">
+        ${readyToShip ? "🚀 Ship It (Lawyers Pre-Approved)" : `🔒 Need 90% + ≤8 bugs (${Math.floor(progressPercent)}%, ${proj.bug_points || 0} bugs)`}
       </button>
       <button class="btn-primary nuke-btn" style="margin-top:10px; background:rgba(255,23,68,0.15); border-color:#ff1744; color:#fff;" onclick="nukeGameProject()">
         💥 Nuke Project (Cancel & Delete)
@@ -1897,6 +2046,11 @@ function renderProjectProgress() {
 function releaseGameProject() {
   if (!gameState.current_project) return;
   const proj = gameState.current_project;
+
+  if (!canReleaseProject(proj)) {
+    showToast(`Can't ship yet — need 90% progress and ≤8 bugs (current: ${Math.floor(getProjectProgressPercent(proj))}%, ${proj.bug_points || 0} bugs). Industry standard!`, "error");
+    return;
+  }
 
   // Compute rating out of 10.0
   const target = getTargetPointsForScale(proj.scale);
@@ -1984,9 +2138,6 @@ function releaseGameProject() {
   else if (proj.scale === "AAA") cap = 20000;
 
   const gameNum = gameState.games_released;
-  if (gameNum === 0) cap = 0.50;
-  else if (gameNum === 1) cap = 3.00;
-  else if (gameNum === 2) cap = 10.00;
 
   const releasedGame = {
     name: proj.name,
@@ -2020,8 +2171,15 @@ function releaseGameProject() {
 
   const totalXPGained = baseXP + bonusXP;
 
-  addLog("Game Released!", `'${proj.name}' was published! Shelf revenue generating (Max Revenue Cap: $${cap.toFixed(2)}). Gained +${totalXPGained} XP.`);
-  showToast(`Released '${proj.name}'! Rating: ${rating.toFixed(1)}/10`, "success");
+  const releaseQuips = [
+    "Metacritic is already composing a passive-aggressive tweet.",
+    "Day-one patch scheduled for approximately 37 seconds from now.",
+    "Investors describe this as 'aggressive shipping with defensive bug posture'.",
+    "Your mom just asked if this will finally make you move out."
+  ];
+  const quip = releaseQuips[Math.floor(Math.random() * releaseQuips.length)];
+  addLog("Game Released!", `'${proj.name}' hit the shelves! Max revenue cap: $${cap.toLocaleString()}. +${totalXPGained} XP. ${quip}`);
+  showToast(`🚀 Shipped '${proj.name}' at ${rating.toFixed(1)}/10! ${quip}`, "success");
 
   miniGameCombo = 0;
   updateHudCombo(0);
@@ -2225,7 +2383,7 @@ function renderResearchLab() {
   const upgrades = [
     {
       id: "unlocked_console",
-      name: "3D Cube spinning renderer (Graphics!)",
+      name: "Spinning Green Cube™ (Graphics Engine)",
       cost: 50,
       desc: "Research a revolutionary technology that renders a single, flat, spinning green cube on screen at 24 FPS. Claim to the press that this represents a '120 FPS ray-traced next-generation graphics engine'. Unlocks target compatibility for console platforms. Warn your hardware provider about smoke hazards.",
       owned: !!gameState.unlocked_console
@@ -2414,7 +2572,7 @@ function runActivity(activityType) {
   } else if (activityType === "hackathon") {
     gameState.research_points += researchGain;
     addLog("Started Hackathon", `Spent $${cost} and 25 XP to organize a hackathon. Gained +15 Research Points.`);
-    showToast("Hackathon complete! +15 RP", "success");
+    showToast("24h hackathon complete! Devs saw God, then a linter. +15 RP", "success");
   } else if (activityType === "dev_con") {
     gameState.research_points += researchGain;
     gameState.coding_skill += skillGain;
@@ -2494,14 +2652,13 @@ function renderPostReleaseDashboard() {
           <span>🔧 Day-One Patch Mini-game</span>
           <span>🍎 Apples: ${proj.applesCollected || 0}/3</span>
         </h4>
-        <p style="font-size:0.8rem; color:var(--color-text-muted); margin-bottom:12px; line-height:1.4;">Click the grid cells to collect 3 apples and squash launch bugs to increase critic reviews score rating by <strong>+1.0</strong>!</p>
+        <p style="font-size:0.8rem; color:var(--color-text-muted); margin-bottom:12px; line-height:1.4;">Find the hidden memory leak disguised as fruit. Collect 3 to ship a Day-One Patch and earn <strong>+1.0</strong> Metacritic pity points.</p>
         
         <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:8px; max-width:240px; margin: 0 auto 10px;">
           ${cells.map(i => {
-            const hasApple = i === proj.appleIndex;
             return `
-              <button class="btn-secondary" style="padding:0; font-size:1.2rem; display:flex; justify-content:center; align-items:center; min-height:48px; border-radius:6px; cursor:pointer;" onclick="clickPatchGrid(${i})">
-                ${hasApple ? "🍎" : ""}
+              <button class="btn-secondary" style="padding:0; font-size:1.1rem; display:flex; justify-content:center; align-items:center; min-height:48px; border-radius:6px; cursor:pointer; color:var(--color-text-muted);" onclick="clickPatchGrid(${i})">
+                ❓
               </button>
             `;
           }).join("")}
@@ -2682,10 +2839,11 @@ function clickPatchGrid(index) {
         nextIndex = Math.floor(Math.random() * 16);
       }
       proj.appleIndex = nextIndex;
-      showToast("Bug resolved! Apple squashed!", "success");
+      showToast("Bug squashed! One down. The apple was a metaphor (mostly).", "success");
     }
   } else {
-    showToast("Clicked clean line! Find the 🍎!", "info");
+    const misses = ["Clean line. No bugs. Suspicious.", "That's production code. Don't touch it.", "Stack trace points elsewhere. Probably." ];
+    showToast(misses[Math.floor(Math.random() * misses.length)], "info");
   }
   
   saveGame();
@@ -2928,15 +3086,13 @@ function nukeGameProject() {
   if (wasReleased) {
     gameState.active_games = gameState.active_games.filter(g => g.name !== gameName);
   }
-  
-  // Play failure sound
+  gameState.portfolio = (gameState.portfolio || []).filter(g => g.name !== gameName);
+
   ChiptuneAudio.playSFX("fail");
-  
-  // Clear the active project
+
   gameState.current_project = null;
-  
-  // Log the cancellation
-  addLog("PROJECT NUKED", `'${gameName}' was permanently incinerated and deleted.`);
+
+  addLog("PROJECT NUKED", `'${gameName}' was vaporized. Store delisted. Portfolio entry sent to /dev/null (not really — we fixed that).`);
   
   saveGame();
   
@@ -3386,87 +3542,30 @@ function renderGigsBoard() {
     return;
   }
 
-  const getXpCost = (id) => {
-    if (id === "freelance_html") return gameState.level === 1 ? 0 : 3;
-    if (id === "crack_competitor") return 10;
-    if (id === "ransomware") return 20;
-    if (id === "ddos_rival") return 40;
-    return 0;
-  };
-
-  container.innerHTML = `
-    <div class="card-item">
-      <div class="card-item-title">
-        <span>Freelance HTML Edits</span>
-        <span style="color: #ff1744; display:flex; gap:8px;"><span>-2 🎯</span> <span style="color:var(--color-cyan); font-weight:bold;">-${getXpCost("freelance_html")} XP</span></span>
+  container.innerHTML = GIGS.map(gig => {
+    const dossier = GIG_DOSSIERS[gig.id] || { title: gig.name, desc: gig.label, dossier: gig.label };
+    const xpCost = getGigXpCost(gig.id);
+    const successPct = Math.round(gig.successRate * 100);
+    return `
+      <div class="card-item">
+        <div class="card-item-title">
+          <span>${dossier.title}</span>
+          <span style="color: #ff1744; display:flex; gap:8px;"><span>-${gig.nerveCost} 🎯</span> <span style="color:var(--color-cyan); font-weight:bold;">-${xpCost} XP</span></span>
+        </div>
+        <div class="card-item-desc" style="line-height:1.4;">
+          ${dossier.desc}<br>
+          <span style="font-size: 0.75rem; color: var(--color-text-muted); display: block; margin-top: 4px; font-style: italic;">
+            <strong>Dossier:</strong> ${dossier.dossier}
+          </span>
+        </div>
+        <div class="card-item-meta">
+          <span>💵 Payout: $${gig.rewardMin.toLocaleString()} - $${gig.rewardMax.toLocaleString()}</span>
+          <span>📈 Client Reliability: ${successPct}%</span>
+        </div>
+        <button class="btn-primary" onclick="runGig('${gig.id}')">Perform Gig</button>
       </div>
-      <div class="card-item-desc" style="line-height:1.4;">
-        Tweak markup code templates for small neighborhood stores. High success rate, small payouts.<br>
-        <span style="font-size: 0.75rem; color: var(--color-text-muted); display: block; margin-top: 4px; font-style: italic;">
-          <strong>Dossier:</strong> Luigi (local pizzeria owner) claims his pizza image is shifting 2px left when clicked. He demands inline styles because bootstrap is "communist spyware". Rot your soul for $50.
-        </span>
-      </div>
-      <div class="card-item-meta">
-        <span>💵 Payout: $50 - $100</span>
-        <span>📈 Success: 95%</span>
-      </div>
-      <button class="btn-primary" onclick="runGig('freelance_html')">Perform Gig</button>
-    </div>
-
-    <div class="card-item">
-      <div class="card-item-title">
-        <span>Crack Competitor DRM</span>
-        <span style="color: #ff1744; display:flex; gap:8px;"><span>-4 🎯</span> <span style="color:var(--color-cyan); font-weight:bold;">-10 XP</span></span>
-      </div>
-      <div class="card-item-desc" style="line-height:1.4;">
-        Leak files of rival software assets to internet forums. Generates decent returns with moderate risk.<br>
-        <span style="font-size: 0.75rem; color: var(--color-text-muted); display: block; margin-top: 4px; font-style: italic;">
-          <strong>Dossier:</strong> Bypass wobbly DRM loops that melt client CPUs. Upload cracked binaries to retro forums. Gains decent returns and massive street cred among 14-year-olds.
-        </span>
-      </div>
-      <div class="card-item-meta">
-        <span>💵 Payout: $200 - $400</span>
-        <span>📈 Success: 75%</span>
-      </div>
-      <button class="btn-primary" onclick="runGig('crack_competitor')">Perform Gig</button>
-    </div>
-
-    <div class="card-item">
-      <div class="card-item-title">
-        <span>Ransomware local server</span>
-        <span style="color: #ff1744; display:flex; gap:8px;"><span>-6 🎯</span> <span style="color:var(--color-cyan); font-weight:bold;">-20 XP</span></span>
-      </div>
-      <div class="card-item-desc" style="line-height:1.4;">
-        Infect server of offshore shell companies. High payout but failure results in corporate penalties.<br>
-        <span style="font-size: 0.75rem; color: var(--color-text-muted); display: block; margin-top: 4px; font-style: italic;">
-          <strong>Dossier:</strong> Drop-shipping conglomerate using password "admin123". If you fail, their automatic legal fax bots will flood your parents' fax machine with 8,000 cease-and-desists.
-        </span>
-      </div>
-      <div class="card-item-meta">
-        <span>💵 Payout: $800 - $1,500</span>
-        <span>📈 Success: 60%</span>
-      </div>
-      <button class="btn-primary" onclick="runGig('ransomware')">Perform Gig</button>
-    </div>
-
-    <div class="card-item">
-      <div class="card-item-title">
-        <span>DDoS Competitor Platform</span>
-        <span style="color: #ff1744; display:flex; gap:8px;"><span>-8 🎯</span> <span style="color:var(--color-cyan); font-weight:bold;">-40 XP</span></span>
-      </div>
-      <div class="card-item-desc" style="line-height:1.4;">
-        Crash concurrent database nodes of giant rivals. Extremely risky, but lucrative rewards.<br>
-        <span style="font-size: 0.75rem; color: var(--color-text-muted); display: block; margin-top: 4px; font-style: italic;">
-          <strong>Dossier:</strong> Coordinate botnet of 40,000 wobbly smart refrigerators and electric toothbrushes to flood a competitor's servers during their pre-order launch. Highly volatile!
-        </span>
-      </div>
-      <div class="card-item-meta">
-        <span>💵 Payout: $3,000 - $6,000</span>
-        <span>📈 Success: 45%</span>
-      </div>
-      <button class="btn-primary" onclick="runGig('ddos_rival')">Perform Gig</button>
-    </div>
-  `;
+    `;
+  }).join("");
 }
 
 function stopCoffeePour() {
@@ -3540,23 +3639,32 @@ function finishGig(gigId, wasSuccess) {
   if (!gig) return;
 
   if (wasSuccess) {
-    const payout = Math.floor(Math.random() * (gig.rewardMax - gig.rewardMin + 1)) + gig.rewardMin;
+    let payout = Math.floor(Math.random() * (gig.rewardMax - gig.rewardMin + 1)) + gig.rewardMin;
+    const reliabilityBonus = Math.floor(payout * gig.successRate * 0.15);
+    payout += reliabilityBonus;
     gameState.cash += payout;
 
     gameState[gig.skillRequired] += gig.xpReward;
 
     const xpRewardGained = gig.xpReward * 6;
+    const bonusNote = reliabilityBonus > 0 ? ` (+$${reliabilityBonus} repeat-client tip)` : "";
 
-    addLog(`SUCCESS: ${gig.name}`, `Earned $${payout}, gained +${gig.xpReward} in ${gig.skillRequired.replace("_skill", "")}, and gained +${xpRewardGained} XP.`);
-    showToast(`Gig Success! +$${payout}`, "success");
+    addLog(`SUCCESS: ${gig.name}`, `Earned $${payout}${bonusNote}, gained +${gig.xpReward} in ${gig.skillRequired.replace("_skill", "")}, and gained +${xpRewardGained} XP. VPN logs shredded.`);
+    showToast(`Gig Success! +$${payout}${bonusNote}`, "success");
     if (window.SynthwaveAudio) SynthwaveAudio.playSFX("cash");
 
     gainXP(xpRewardGained);
   } else {
-    const penalty = Math.floor(gig.rewardMin * 0.50);
+    const penalty = Math.floor(gig.rewardMin * (0.25 + (1 - gig.successRate) * 0.45));
     gameState.cash = Math.max(0, gameState.cash - penalty);
 
-    addLog(`FAILURE: ${gig.name}`, `Busted by network firewalls. Lost $${penalty} in server penalties.`);
+    const failLines = [
+      "Busted by network firewalls. Lost money and dignity.",
+      "Caught by an intern with a Wireshark hobby. Penalties applied.",
+      "Your smart toaster botnet betrayed you to IT. Classic."
+    ];
+    const failLine = failLines[Math.floor(Math.random() * failLines.length)];
+    addLog(`FAILURE: ${gig.name}`, `${failLine} Lost $${penalty} in server penalties.`);
     showToast(`Gig Failed! Lost $${penalty}`, "error");
   }
 

@@ -112,6 +112,7 @@ const SynthwaveAudio = {
   seqTimer: null,
   padNodes: [],
   _unlocked: false,
+  _lastMeaningfulSfx: 0,
   musicEnabled: true,
 
   init() {
@@ -405,6 +406,11 @@ const SynthwaveAudio = {
     this.init();
     if (!this.ctx) return;
     if (this.ctx.state === "suspended") this.ctx.resume();
+
+    const wallNow = Date.now();
+    if (type === "click" && wallNow - this._lastMeaningfulSfx < 150) return;
+    if (type !== "click") this._lastMeaningfulSfx = wallNow;
+
     const now = this.ctx.currentTime;
 
     if (type === "click") {
