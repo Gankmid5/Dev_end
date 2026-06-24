@@ -1456,6 +1456,30 @@ h1.logo-title {
   width: 100%;
 }
 
+.now-playing {
+  font-family: 'VT323', monospace;
+  font-size: 1.05rem;
+  letter-spacing: 2px;
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: 6px 10px;
+  border: 1px dashed rgba(255, 42, 154, 0.2);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.now-playing.playing {
+  color: var(--color-cyan);
+  border-color: rgba(0, 229, 255, 0.35);
+  text-shadow: 0 0 8px rgba(0, 229, 255, 0.4);
+  animation: now-playing-pulse 2s ease-in-out infinite alternate;
+}
+
+@keyframes now-playing-pulse {
+  from { opacity: 0.85; }
+  to { opacity: 1; }
+}
+
 .hud-combo {
   text-align: center;
   background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 145, 0, 0.08));

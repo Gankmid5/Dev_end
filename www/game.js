@@ -191,6 +191,10 @@ window.addEventListener("DOMContentLoaded", async () => {
   activeTab = params.get("tab") || "gigs";
   switchTab(activeTab);
 
+  if (window.SynthwaveAudio) {
+    SynthwaveAudio.boot(activeTab);
+  }
+
   if (!localStorage.getItem("dev_end_seen_tutorial")) {
     localStorage.setItem("dev_end_seen_tutorial", "1");
     setTimeout(() => {
@@ -218,7 +222,6 @@ function initTabs() {
       const tabName = node.dataset.tab;
       switchTab(tabName);
       window.history.pushState({}, "", `index.html?tab=${tabName}`);
-      ChiptuneAudio.playSFX("click");
     });
   });
 
@@ -227,7 +230,6 @@ function initTabs() {
       const tabName = node.dataset.tab;
       switchTab(tabName);
       window.history.pushState({}, "", `index.html?tab=${tabName}`);
-      ChiptuneAudio.playSFX("click");
     });
   });
 }
@@ -274,6 +276,10 @@ function switchTab(tabName) {
     renderTrainingGym();
     renderDeveloperStore();
     renderGigsBoard();
+  }
+
+  if (window.SynthwaveAudio) {
+    SynthwaveAudio.setZone(tabName);
   }
 }
 
@@ -384,9 +390,7 @@ function gainXP(amount) {
   
   if (leveledUp) {
     triggerScreenFlash(57, 255, 20);
-    setTimeout(() => {
-      if (window.ChiptuneAudio) ChiptuneAudio.playSFX("release");
-    }, 100);
+    if (window.SynthwaveAudio) SynthwaveAudio.playSFX("levelup");
     addLog("LEVEL UP!", `Congratulations! You reached Dev Level ${gameState.level}! Max Energy: ${gameState.max_energy}, Max Nerve: ${gameState.max_nerve}.`);
     showToast(`✨ LEVEL UP! Level ${gameState.level} reached!`, "success");
     
@@ -2856,165 +2860,6 @@ function showToast(message, type = "info") {
 }
 window.showToast = showToast;
 
-// --- Chiptune Audio Synth Engine (Web Audio API) ---
-const ChiptuneAudio = {
-  ctx: null,
-  isPlaying: false,
-  sequencerTimer: null,
-  volumeNode: null,
-  
-  melody: [
-    "A3", "C4", "E4", "G4", "A4", "G4", "E4", "C4",
-    "D3", "F3", "A3", "C4", "D4", "C4", "A3", "F3",
-    "E3", "G3", "B3", "D4", "E4", "D4", "B3", "G3",
-    "F3", "A3", "C4", "E4", "F4", "E4", "C4", "A3"
-  ],
-  
-  noteFreqs: {
-    "A3": 220.00, "B3": 246.94, "C4": 261.63, "D4": 293.66,
-    "E4": 329.63, "F3": 174.61, "F4": 349.23, "G3": 196.00,
-    "G4": 392.00, "A4": 440.00, "D3": 146.83, "E3": 164.81
-  },
-
-  init() {
-    if (this.ctx) return;
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContext) return;
-    this.ctx = new AudioContext();
-    this.volumeNode = this.ctx.createGain();
-    this.volumeNode.gain.setValueAtTime(0.04, this.ctx.currentTime); // Low volume melody
-    this.volumeNode.connect(this.ctx.destination);
-  },
-
-  toggle() {
-    this.init();
-    if (!this.ctx) return;
-
-    if (this.ctx.state === "suspended") {
-      this.ctx.resume();
-    }
-
-    if (this.isPlaying) {
-      this.stop();
-    } else {
-      this.start();
-    }
-  },
-
-  start() {
-    this.isPlaying = true;
-    let step = 0;
-    const stepDuration = 0.25;
-
-    this.sequencerTimer = setInterval(() => {
-      if (!this.isPlaying) return;
-      const noteName = this.melody[step % this.melody.length];
-      const freq = this.noteFreqs[noteName];
-      if (freq) {
-        this.playPluck(freq, this.ctx.currentTime, stepDuration);
-      }
-      step++;
-    }, 250);
-  },
-
-  stop() {
-    this.isPlaying = false;
-    if (this.sequencerTimer) {
-      clearInterval(this.sequencerTimer);
-      this.sequencerTimer = null;
-    }
-  },
-
-  playPluck(freq, startTime, duration) {
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    
-    osc.type = "triangle";
-    osc.frequency.setValueAtTime(freq, startTime);
-    
-    const filter = this.ctx.createBiquadFilter();
-    filter.type = "lowpass";
-    filter.frequency.setValueAtTime(800, startTime);
-    filter.Q.setValueAtTime(1, startTime);
-
-    gain.gain.setValueAtTime(0.5, startTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration - 0.02);
-
-    osc.connect(filter);
-    filter.connect(gain);
-    gain.connect(this.volumeNode);
-
-    osc.start(startTime);
-    osc.stop(startTime + duration);
-  },
-
-  playSFX(type) {
-    this.init();
-    if (!this.ctx) return;
-    
-    if (this.ctx.state === "suspended") {
-      this.ctx.resume();
-    }
-
-    const now = this.ctx.currentTime;
-    
-    if (type === "success") {
-      const notes = [261.63, 329.63, 392.00, 523.25]; // C major arpeggio
-      notes.forEach((freq, i) => {
-        this.playTone(freq, "sine", now + i * 0.08, 0.15, 0.05);
-      });
-    } else if (type === "fail") {
-      this.playTone(150, "sawtooth", now, 0.25, 0.1);
-      this.playTone(110, "sawtooth", now + 0.1, 0.25, 0.1);
-    } else if (type === "release") {
-      const notes = [329.63, 392.00, 523.25, 659.25, 783.99]; // E minor / G fanfare
-      notes.forEach((freq, i) => {
-        const dur = i === notes.length - 1 ? 0.6 : 0.12;
-        this.playTone(freq, "triangle", now + i * 0.1, dur, 0.06);
-      });
-    } else if (type === "combo") {
-      const notes = [392.00, 493.88, 587.33, 783.99];
-      notes.forEach((freq, i) => {
-        this.playTone(freq, "square", now + i * 0.06, 0.1, 0.04);
-      });
-    } else if (type === "click") {
-      this.playTone(600, "sine", now, 0.05, 0.02);
-    }
-  },
-
-  playTone(freq, type, startTime, duration, vol) {
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, startTime);
-    
-    gain.gain.setValueAtTime(vol, startTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration - 0.01);
-    
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    
-    osc.start(startTime);
-    osc.stop(startTime + duration);
-  }
-};
-
-function toggleMusic() {
-  ChiptuneAudio.toggle();
-  const isOn = ChiptuneAudio.isPlaying;
-  const btn = document.getElementById("music-toggle-btn");
-  const hudBtn = document.getElementById("hud-music-btn");
-  if (btn) {
-    btn.innerText = isOn ? "🎵 ON" : "🎵 OFF";
-    btn.classList.toggle("music-on", isOn);
-  }
-  if (hudBtn) {
-    hudBtn.innerText = isOn ? "🎵 SYNTH: ON" : "🎵 SYNTH: OFF";
-    hudBtn.classList.toggle("music-on", isOn);
-  }
-}
-
 function triggerScreenFlash(r, g, b) {
   const main = document.getElementById("zone-main");
   if (!main) return;
@@ -3154,8 +2999,6 @@ function closeNukeModal() {
   updateUI();
 }
 
-window.toggleMusic = toggleMusic;
-window.ChiptuneAudio = ChiptuneAudio;
 window.nukeGameProject = nukeGameProject;
 window.closeNukeModal = closeNukeModal;
 
@@ -3706,7 +3549,8 @@ function finishGig(gigId, wasSuccess) {
 
     addLog(`SUCCESS: ${gig.name}`, `Earned $${payout}, gained +${gig.xpReward} in ${gig.skillRequired.replace("_skill", "")}, and gained +${xpRewardGained} XP.`);
     showToast(`Gig Success! +$${payout}`, "success");
-    
+    if (window.SynthwaveAudio) SynthwaveAudio.playSFX("cash");
+
     gainXP(xpRewardGained);
   } else {
     const penalty = Math.floor(gig.rewardMin * 0.50);

@@ -17,6 +17,9 @@
   <!-- 3. API helpers (depends on window.supabaseClient) -->
   <script defer src="api.js"></script>
 
+  <!-- 3.5 Synthwave soundtrack engine -->
+  <script defer src="synthwave-audio.js"></script>
+
   <!-- 4. Main Game logic (depends on api.js and supabase.js) -->
   <script defer src="game.js"></script>
 </head>
@@ -534,6 +537,7 @@
       <aside class="feed-rail">
         <div id="hud-combo" class="hud-combo" style="display:none;"></div>
         <button id="hud-music-btn" class="synth-btn-mini music-rail" onclick="toggleMusic()">🎵 SYNTH: OFF</button>
+        <div id="now-playing-track" class="now-playing">■ SILENCE</div>
 
         <section class="glass-panel feed-panel">
           <div class="panel-title feed-title">
