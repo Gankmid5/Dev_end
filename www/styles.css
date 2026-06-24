@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Press+Start+2P&family=VT323&display=swap');
 
 :root {
   --bg-primary: #000000;
@@ -1019,4 +1019,82 @@ h1.logo-title span {
   0% { opacity: 0.3; }
   50% { opacity: 1; }
   100% { opacity: 0.3; }
+}
+
+/* --- Retro Gamey Aesthetics Override --- */
+
+/* CRT scanlines */
+body::after {
+  content: " ";
+  display: block;
+  position: fixed;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.18) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+  background-size: 100% 3px, 6px 100%;
+  z-index: 99999;
+  pointer-events: none;
+  opacity: 0.4;
+}
+
+/* Global pixel styles for gaming feel */
+h1.logo-title {
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: 1.6rem !important;
+  letter-spacing: -1px;
+}
+
+.nav-tabs a {
+  font-family: 'VT323', monospace !important;
+  font-size: 1.35rem !important;
+  letter-spacing: 0.5px;
+}
+
+.panel-title span {
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: 0.72rem !important;
+  letter-spacing: 0.5px;
+}
+
+.wallet-balance, .stat-value, .status-bar-header, .card-item-title span, .reviewer-score-badge, .reviewer-name {
+  font-family: 'VT323', monospace !important;
+}
+
+.stat-value {
+  font-size: 1.8rem !important;
+}
+
+.status-bar-header span, .status-bar-header strong {
+  font-family: 'VT323', monospace !important;
+  font-size: 1.1rem !important;
+}
+
+/* Button pixel styles */
+.btn-primary, .btn-secondary {
+  font-family: 'VT323', monospace !important;
+  font-size: 1.15rem !important;
+  text-transform: uppercase;
+  border-radius: 4px !important;
+  border: 2px solid currentColor !important;
+  box-shadow: 3px 3px 0 currentColor;
+  transition: all 0.1s ease-in-out;
+  cursor: pointer;
+}
+
+.btn-primary:active:not(:disabled), .btn-secondary:active:not(:disabled) {
+  transform: translate(2px, 2px) !important;
+  box-shadow: 1px 1px 0 currentColor !important;
+}
+
+.btn-primary:hover:not(:disabled), .btn-secondary:hover:not(:disabled) {
+  filter: brightness(1.2);
+}
+
+/* Glow improvements for gamey indicators */
+.status-bar-fill.energy {
+  background: linear-gradient(90deg, #ffd700, #ff9100) !important;
+  box-shadow: 0 0 10px rgba(255, 145, 0, 0.5);
+}
+.status-bar-fill.nerve {
+  background: linear-gradient(90deg, #ff1744, #ff007f) !important;
+  box-shadow: 0 0 10px rgba(255, 23, 68, 0.5);
 }

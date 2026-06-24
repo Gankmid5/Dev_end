@@ -236,6 +236,8 @@ function switchTab(tabName) {
     renderDevelopPanel();
   } else if (tabName === "gigs") {
     renderTrainingGym();
+    renderDeveloperStore();
+    renderGigsBoard();
   }
 }
 
@@ -857,45 +859,62 @@ function runGig(gigId) {
   gameState.nerve -= gig.nerveCost;
   gameState.xp -= xpCost;
 
-  // Calculate success probability based on relevant skill levels
-  // High skill increases success rate slightly
-  const baseSuccess = gig.successRate;
-  const userSkill = gameState[gig.skillRequired] || 10;
-  const skillBonus = Math.min(0.20, (userSkill - 10) * 0.003); // Max +20% success
-  const actualSuccess = Math.min(0.98, baseSuccess + skillBonus);
-
-  const roll = Math.random();
-  if (roll <= actualSuccess) {
-    // Success
-    const payout = Math.floor(Math.random() * (gig.rewardMax - gig.rewardMin + 1)) + gig.rewardMin;
-    gameState.cash += payout;
-
-    // Add skill points
-    gameState[gig.skillRequired] += gig.xpReward;
-
-    // Give some XP back on success!
-    const xpRewardGained = gig.xpReward * 6;
-
-    // Play success SFX
-    ChiptuneAudio.playSFX("success");
-
-    addLog(`SUCCESS: ${gig.name}`, `Earned $${payout}, gained +${gig.xpReward} in ${gig.skillRequired.replace("_skill", "")}, and gained +${xpRewardGained} XP.`);
-    showToast(`Gig Success! +$${payout}`, "success");
-    
-    gainXP(xpRewardGained);
-  } else {
-    // Failure / Penalty
-    const penalty = Math.floor(gig.rewardMin * 0.50);
-    gameState.cash = Math.max(0, gameState.cash - penalty);
-    
-    // Play fail SFX
-    ChiptuneAudio.playSFX("fail");
-
-    addLog(`FAILURE: ${gig.name}`, `Busted by network firewalls. Lost $${penalty} in server penalties.`);
-    showToast(`Gig Failed! Lost $${penalty}`, "error");
+  if (gigId === "freelance_html") {
+    activeMiniGame = {
+      type: "slider",
+      isGig: true,
+      gigId: gigId,
+      duration: 8000,
+      elapsed: 0,
+      needlePosition: 0,
+      needleDirection: 1,
+      needleSpeed: 4,
+      greenZoneStart: 38,
+      greenZoneEnd: 62
+    };
+  } else if (gigId === "crack_competitor") {
+    const { target, options } = generateBinaryMatcherState();
+    activeMiniGame = {
+      type: "binary",
+      isGig: true,
+      gigId: gigId,
+      duration: 10000,
+      elapsed: 0,
+      targetSequence: target,
+      options: options
+    };
+  } else if (gigId === "ransomware") {
+    let coords = [];
+    for (let i = 1; i <= 4; i++) {
+      coords.push({
+        num: i,
+        top: Math.floor(Math.random() * 50) + 20,
+        left: Math.floor(Math.random() * 70) + 15
+      });
+    }
+    activeMiniGame = {
+      type: "trace",
+      isGig: true,
+      gigId: gigId,
+      duration: 12000,
+      elapsed: 0,
+      currentNumber: 1,
+      coords: coords
+    };
+  } else if (gigId === "ddos_rival") {
+    activeMiniGame = {
+      type: "ping",
+      isGig: true,
+      gigId: gigId,
+      duration: 7000,
+      elapsed: 0,
+      clicksCount: 0,
+      targetClicks: 15
+    };
   }
 
-  saveGame();
+  activateMiniGameTimer();
+  renderGigsBoard();
   updateUI();
 }
 
@@ -1309,8 +1328,42 @@ function startMiniGame(type, isTraining = false) {
 
 function cancelMiniGame() {
   if (miniGameTimer) clearInterval(miniGameTimer);
-  const isTraining = activeMiniGame ? activeMiniGame.isTraining : false;
+  if (!activeMiniGame) return;
+
+  const isTraining = activeMiniGame.isTraining;
+  const isGig = activeMiniGame.isGig;
+  const isStore = activeMiniGame.isStore;
+  const itemId = activeMiniGame.itemId;
+  const storeEnergy = activeMiniGame.energyGain;
+  const storeNerve = activeMiniGame.nerveGain;
+
   activeMiniGame = null;
+
+  if (isStore) {
+    if (storeEnergy > 0) {
+      gameState.energy = Math.min(gameState.max_energy, gameState.energy + storeEnergy);
+      addLog("Consumable Aborted", `Brew cancelled. Gained base +${storeEnergy} Energy.`);
+      showToast(`Brew aborted! +${storeEnergy} Energy`, "warning");
+    }
+    if (storeNerve > 0) {
+      gameState.nerve = Math.min(gameState.max_nerve, gameState.nerve + storeNerve);
+      addLog("Consumable Aborted", `Nootropic cancelled. Gained base +${storeNerve} Nerve.`);
+      showToast(`Nootropic aborted! +${storeNerve} Nerve Focus`, "warning");
+    }
+    saveGame();
+    renderDeveloperStore();
+    updateUI();
+    return;
+  }
+
+  if (isGig) {
+    addLog("Gig Cancelled", "Aborted gig mid-execution. Focus and nerve costs were lost in the network noise.");
+    showToast("Gig Aborted!", "error");
+    renderGigsBoard();
+    updateUI();
+    return;
+  }
+
   addLog("Mini-game Cancelled", isTraining ? "Training session aborted." : "Development cycle aborted.");
   if (isTraining) {
     renderTrainingGym();
@@ -1356,10 +1409,44 @@ function clickBugButton(clickedIndex) {
 }
 
 function successMiniGame() {
+  if (!activeMiniGame) return;
   ChiptuneAudio.playSFX("success");
   const type = activeMiniGame.type;
   const isTraining = activeMiniGame.isTraining;
+  const isGig = activeMiniGame.isGig;
+  const gigId = activeMiniGame.gigId;
+  const isStore = activeMiniGame.isStore;
+  const itemId = activeMiniGame.itemId;
+
+  const storeEnergy = activeMiniGame.energyGain;
+  const storeNerve = activeMiniGame.nerveGain;
+
   activeMiniGame = null;
+
+  if (isStore) {
+    let label = itemId === "energy_drink" ? "Java Volt Energy Drink" : (itemId === "coffee" ? "Espresso Shot Coffee" : "Focus Nootropic Pill");
+    if (storeEnergy > 0) {
+      const doubledEnergy = storeEnergy * 2;
+      gameState.energy = Math.min(gameState.max_energy, gameState.energy + doubledEnergy);
+      addLog("Consumable Masterwork", `Successfully brewed/poured perfect ${label}! Gained double energy: +${doubledEnergy} Energy.`);
+      showToast(`Perfect brew! +${doubledEnergy} Energy`, "success");
+    }
+    if (storeNerve > 0) {
+      const doubledNerve = storeNerve * 2;
+      gameState.nerve = Math.min(gameState.max_nerve, gameState.nerve + doubledNerve);
+      addLog("Consumable Masterwork", `Successfully ingested perfect ${label}! Gained double focus: +${doubledNerve} Nerve.`);
+      showToast(`Perfect focus! +${doubledNerve} Nerve Focus`, "success");
+    }
+    saveGame();
+    renderDeveloperStore();
+    updateUI();
+    return;
+  }
+
+  if (isGig) {
+    finishGig(gigId, true);
+    return;
+  }
 
   if (isTraining) {
     const skillGain = Math.floor(Math.random() * 3) + 2; // 2-4 points
@@ -1424,10 +1511,41 @@ function successMiniGame() {
 }
 
 function failMiniGame(reason) {
+  if (!activeMiniGame) return;
   ChiptuneAudio.playSFX("fail");
   const type = activeMiniGame.type;
   const isTraining = activeMiniGame.isTraining;
+  const isGig = activeMiniGame.isGig;
+  const gigId = activeMiniGame.gigId;
+  const isStore = activeMiniGame.isStore;
+  const itemId = activeMiniGame.itemId;
+
+  const storeEnergy = activeMiniGame.energyGain;
+  const storeNerve = activeMiniGame.nerveGain;
+
   activeMiniGame = null;
+
+  if (isStore) {
+    if (storeEnergy > 0) {
+      gameState.energy = Math.min(gameState.max_energy, gameState.energy + storeEnergy);
+      addLog("Consumable Fail (Bitter Brew)", `Brew failed: ${reason}. Drank bitter cold coffee anyway. Gained base +${storeEnergy} Energy.`);
+      showToast(`Bitter brew: ${reason}! +${storeEnergy} Energy`, "warning");
+    }
+    if (storeNerve > 0) {
+      gameState.nerve = Math.min(gameState.max_nerve, gameState.nerve + storeNerve);
+      addLog("Consumable Fail (Bitter Pill)", `Swallow failed: ${reason}. Gained base +${storeNerve} Nerve.`);
+      showToast(`Bitter pill: ${reason}! +${storeNerve} Nerve Focus`, "warning");
+    }
+    saveGame();
+    renderDeveloperStore();
+    updateUI();
+    return;
+  }
+
+  if (isGig) {
+    finishGig(gigId, false);
+    return;
+  }
 
   if (isTraining) {
     let skillLabel = type === 'code' ? "Coding" : (type === 'design' ? "Design" : "Management");
@@ -1863,18 +1981,26 @@ function buyItem(itemType) {
   }
 
   gameState.cash -= cost;
-  if (energyGain > 0) {
-    gameState.energy = Math.min(gameState.max_energy, gameState.energy + energyGain);
-    addLog("Consumed Item", `Bought and drank ${label} for $${cost}. Gained +${energyGain} Energy.`);
-    showToast(`Consumed ${label}! +${energyGain} Energy`, "success");
-  }
-  if (nerveGain > 0) {
-    gameState.nerve = Math.min(gameState.max_nerve, gameState.nerve + nerveGain);
-    addLog("Consumed Item", `Bought and consumed ${label} for $${cost}. Gained +${nerveGain} Nerve.`);
-    showToast(`Consumed ${label}! +${nerveGain} Nerve Focus`, "success");
-  }
 
-  saveGame();
+  // Start pouring mini-game!
+  activeMiniGame = {
+    type: "pour",
+    isStore: true,
+    itemId: itemType,
+    cost: cost,
+    energyGain: energyGain,
+    nerveGain: nerveGain,
+    duration: 6000,
+    elapsed: 0,
+    pointerPosition: 0,
+    pointerDirection: 1,
+    pointerSpeed: 5,
+    greenZoneStart: 38,
+    greenZoneEnd: 62
+  };
+
+  activateMiniGameTimer();
+  renderDeveloperStore();
   updateUI();
 }
 
@@ -2967,4 +3093,439 @@ function generateLiveChatMessage() {
 }
 
 window.generateLiveChatMessage = generateLiveChatMessage;
+
+
+// ═══════════════════════════════════════════════
+// --- NEW MINI-GAME UTILITIES AND FUNCTIONS ---
+// ═══════════════════════════════════════════════
+
+function generateBinaryMatcherState() {
+  const binaryOptions = ["0000", "0001", "0010", "0011", "0100", "0101", "0110", "0111", "1000", "1001", "1010", "1011", "1100", "1101", "1110", "1111"];
+  const target = binaryOptions[Math.floor(Math.random() * binaryOptions.length)];
+  let others = binaryOptions.filter(x => x !== target);
+  let fake1 = others[Math.floor(Math.random() * others.length)];
+  others = others.filter(x => x !== fake1);
+  let fake2 = others[Math.floor(Math.random() * others.length)];
+  const options = [target, fake1, fake2].sort(() => Math.random() - 0.5);
+  return { target, options };
+}
+
+function activateMiniGameTimer() {
+  if (miniGameTimer) clearInterval(miniGameTimer);
+
+  const interval = 100;
+  miniGameTimer = setInterval(() => {
+    if (!activeMiniGame) {
+      clearInterval(miniGameTimer);
+      return;
+    }
+
+    activeMiniGame.elapsed += interval;
+    activeMiniGame.timeLeft = Math.max(0, 100 - (activeMiniGame.elapsed / activeMiniGame.duration) * 100);
+
+    const bar = document.getElementById("minigame-timer-bar");
+    if (bar) {
+      bar.style.width = `${activeMiniGame.timeLeft}%`;
+    }
+
+    if (activeMiniGame.type === 'slider') {
+      activeMiniGame.needlePosition += activeMiniGame.needleDirection * activeMiniGame.needleSpeed;
+      if (activeMiniGame.needlePosition >= 100) {
+        activeMiniGame.needlePosition = 100;
+        activeMiniGame.needleDirection = -1;
+      } else if (activeMiniGame.needlePosition <= 0) {
+        activeMiniGame.needlePosition = 0;
+        activeMiniGame.needleDirection = 1;
+      }
+      const needle = document.getElementById("minigame-slider-needle");
+      if (needle) {
+        needle.style.left = `${activeMiniGame.needlePosition}%`;
+      }
+    } else if (activeMiniGame.type === 'pour') {
+      activeMiniGame.pointerPosition += activeMiniGame.pointerDirection * activeMiniGame.pointerSpeed;
+      if (activeMiniGame.pointerPosition >= 100) {
+        activeMiniGame.pointerPosition = 100;
+        activeMiniGame.pointerDirection = -1;
+      } else if (activeMiniGame.pointerPosition <= 0) {
+        activeMiniGame.pointerPosition = 0;
+        activeMiniGame.pointerDirection = 1;
+      }
+      const needle = document.getElementById("minigame-pour-needle");
+      if (needle) {
+        needle.style.left = `${activeMiniGame.pointerPosition}%`;
+      }
+    }
+
+    if (activeMiniGame.elapsed >= activeMiniGame.duration) {
+      clearInterval(miniGameTimer);
+      failMiniGame("Time Out!");
+    }
+  }, interval);
+}
+
+function renderDeveloperStore() {
+  const container = document.getElementById("store-items-grid");
+  if (!container) return;
+
+  if (activeMiniGame && activeMiniGame.isStore) {
+    container.innerHTML = `
+      <div style="background: rgba(0,0,0,0.4); border: 2px solid var(--color-gold); padding: 20px; border-radius: 12px; grid-column: span 1; width: 100%; text-align: center; box-sizing: border-box;">
+        <h4 style="color: var(--color-gold); margin-bottom: 8px; font-family: 'Press Start 2P', monospace; font-size: 0.8rem;">☕ Pouring Mini-game: Caffeine Brew</h4>
+        <p style="font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 15px;">Pour/Consume when the wobbly pointer is inside the green zone to double your recovery!</p>
+        
+        <div style="position: relative; height: 30px; background: #222; border: 2px solid #555; border-radius: 6px; margin-bottom: 20px; overflow: hidden;">
+          <div style="position: absolute; left: ${activeMiniGame.greenZoneStart}%; width: ${activeMiniGame.greenZoneEnd - activeMiniGame.greenZoneStart}%; height: 100%; background: #39ff14; opacity: 0.6; box-shadow: 0 0 10px #39ff14;"></div>
+          <div id="minigame-pour-needle" style="position: absolute; left: ${activeMiniGame.pointerPosition}%; width: 6px; height: 100%; background: #ff1744; border-radius: 3px; transform: translateX(-50%); box-shadow: 0 0 8px #ff1744; transition: left 0.05s linear;"></div>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+          <button class="btn-primary" style="flex: 1; padding: 12px; font-size: 1rem;" onclick="stopCoffeePour()">POUR / BREW</button>
+          <button class="btn-secondary" style="flex: 1; padding: 12px; border-color: rgba(255,23,68,0.3); color:#ff1744;" onclick="cancelMiniGame()">ABORT</button>
+        </div>
+
+        <div class="status-bar-track" style="height: 6px;">
+          <div class="status-bar-fill" id="minigame-timer-bar" style="width: 100%; height: 100%; background: var(--color-gold);"></div>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="card-item" style="padding: 14px;">
+      <div class="card-item-title" style="font-size: 0.9rem;">
+        <span>Java Volt Extra-Battery Acid</span>
+        <span style="color: #39ff14;">$50</span>
+      </div>
+      <div class="card-item-desc" style="font-size: 0.8rem; line-height:1.35;">
+        A carbonated cocktail of taurine, caffeine, and pure desperation. Instantly restores <strong>+25 Energy</strong>.<br>
+        <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block; margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
+          ⚠️ <strong>WARNING:</strong> Highly radioactive. Side effects include seeing memory leaks in 4D space, rapid finger twitching, and typing compile loops in your sleep. Daily value of caffeine: 900%.
+        </span>
+      </div>
+      <button class="btn-primary" style="padding: 10px; font-size: 0.85rem;" onclick="buyItem('energy_drink')">Buy & Consume</button>
+    </div>
+
+    <div class="card-item" style="padding: 14px;">
+      <div class="card-item-title" style="font-size: 0.9rem;">
+        <span>Lukewarm Office Drip Coffee</span>
+        <span style="color: #39ff14;">$20</span>
+      </div>
+      <div class="card-item-desc" style="font-size: 0.8rem; line-height:1.35;">
+        Brewed last Tuesday in a machine that has not been descaled since the Dot-Com crash. Restores <strong>+10 Energy</strong>.<br>
+        <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block; margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
+          ⚠️ <strong>Surgeon General Warning:</strong> Tastes like hot copper coins, industrial solvent, and broken promises. Morale boost is zero, but it is wet.
+        </span>
+      </div>
+      <button class="btn-primary" style="padding: 10px; font-size: 0.85rem;" onclick="buyItem('coffee')">Buy & Consume</button>
+    </div>
+
+    <div class="card-item" style="padding: 14px;">
+      <div class="card-item-title" style="font-size: 0.9rem;">
+        <span>Sus Nootropic Focus Pill</span>
+        <span style="color: #39ff14;">$100</span>
+      </div>
+      <div class="card-item-desc" style="font-size: 0.8rem; line-height:1.35;">
+        Bought from a sketchy pop-up banner on an unindexed forum. Instantly restores <strong>+5 Nerve Focus</strong>.<br>
+        <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block; margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
+          ⚠️ <strong>DISCLAIMER:</strong> Ingredients list is written in wingdings. Guaranteed to lock you in an 8-hour loop staring at CSS centering tutorials.
+        </span>
+      </div>
+      <button class="btn-primary" style="padding: 10px; font-size: 0.85rem;" onclick="buyItem('nootropic')">Buy & Consume</button>
+    </div>
+  `;
+}
+
+function renderGigsBoard() {
+  const container = document.getElementById("gigs-board-grid");
+  if (!container) return;
+
+  if (activeMiniGame && activeMiniGame.isGig) {
+    if (activeMiniGame.type === 'slider') {
+      container.innerHTML = `
+        <div style="background: rgba(0,0,0,0.4); border: 2px solid var(--color-cyan); padding: 20px; border-radius: 12px; grid-column: span 1; width: 100%; text-align: center; box-sizing: border-box;">
+          <h4 style="color: var(--color-cyan); margin-bottom: 8px; font-family: 'Press Start 2P', monospace; font-size: 0.8rem;">📐 Slider Centering: CSS Alignment</h4>
+          <p style="font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 15px;">Lock the needle directly inside the center green zone to align the Luigi pizzeria layout!</p>
+
+          <div style="position: relative; height: 30px; background: #222; border: 2px solid #555; border-radius: 6px; margin-bottom: 20px; overflow: hidden;">
+            <div style="position: absolute; left: ${activeMiniGame.greenZoneStart}%; width: ${activeMiniGame.greenZoneEnd - activeMiniGame.greenZoneStart}%; height: 100%; background: #39ff14; opacity: 0.6; box-shadow: 0 0 10px #39ff14;"></div>
+            <div id="minigame-slider-needle" style="position: absolute; left: ${activeMiniGame.needlePosition}%; width: 6px; height: 100%; background: #00e5ff; border-radius: 3px; transform: translateX(-50%); box-shadow: 0 0 8px #00e5ff; transition: left 0.05s linear;"></div>
+          </div>
+
+          <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+            <button class="btn-primary" style="flex: 1; padding: 12px; font-size: 1rem;" onclick="stopGigSlider()">LOCK ALIGNMENT</button>
+            <button class="btn-secondary" style="flex: 1; padding: 12px; border-color: rgba(255,23,68,0.3); color:#ff1744;" onclick="cancelMiniGame()">ABORT</button>
+          </div>
+
+          <div class="status-bar-track" style="height: 6px;">
+            <div class="status-bar-fill" id="minigame-timer-bar" style="width: 100%; height: 100%; background: var(--color-cyan);"></div>
+          </div>
+        </div>
+      `;
+    } else if (activeMiniGame.type === 'binary') {
+      container.innerHTML = `
+        <div style="background: rgba(0,0,0,0.4); border: 2px solid var(--color-purple); padding: 20px; border-radius: 12px; grid-column: span 1; width: 100%; text-align: center; box-sizing: border-box;">
+          <h4 style="color: var(--color-purple); margin-bottom: 8px; font-family: 'Press Start 2P', monospace; font-size: 0.8rem;">💾 DRM Crack: Binary Matcher</h4>
+          <p style="font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 15px;">Click the button that matches the target key to crack the rival's DRM:</p>
+
+          <div style="font-size: 1.8rem; font-weight: 800; color: #ffd700; margin-bottom: 20px; font-family: monospace; letter-spacing: 2px;">
+            TARGET: ${activeMiniGame.targetSequence}
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 15px;">
+            ${activeMiniGame.options.map(opt => {
+              return `<button class="btn-primary" style="padding: 12px; font-size: 1rem; font-family: monospace;" onclick="clickGigBinary('${opt}')">${opt}</button>`;
+            }).join("")}
+          </div>
+
+          <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+            <button class="btn-secondary" style="width: 100%; padding: 12px; border-color: rgba(255,23,68,0.3); color:#ff1744;" onclick="cancelMiniGame()">ABORT</button>
+          </div>
+
+          <div class="status-bar-track" style="height: 6px;">
+            <div class="status-bar-fill" id="minigame-timer-bar" style="width: 100%; height: 100%; background: var(--color-purple);"></div>
+          </div>
+        </div>
+      `;
+    } else if (activeMiniGame.type === 'trace') {
+      container.innerHTML = `
+        <div style="background: rgba(0,0,0,0.5); border: 2px solid #ff1744; padding: 20px; border-radius: 12px; grid-column: span 1; width: 100%; text-align: center; box-sizing: border-box;">
+          <h4 style="color: #ff1744; margin-bottom: 8px; font-family: 'Press Start 2P', monospace; font-size: 0.8rem;">🎯 Ransomware: Trace Evader</h4>
+          <p style="font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 15px;">Locate and click the numbers 1, 2, 3, 4 in ascending order to bypass security tracing!</p>
+
+          <div style="position: relative; height: 180px; background: #08080a; border: 2px dashed #ff1744; border-radius: 8px; margin-bottom: 15px; overflow: hidden;">
+            ${activeMiniGame.coords.map(coord => {
+              const isNext = coord.num === activeMiniGame.currentNumber;
+              const isClicked = coord.num < activeMiniGame.currentNumber;
+              const opacity = isClicked ? 0.2 : 1;
+              const pointerEvents = isClicked ? 'none' : 'auto';
+              const borderGlow = isNext ? 'box-shadow: 0 0 10px #39ff14; border-color: #39ff14; color: #39ff14;' : 'border-color: #ff1744; color: #ff1744;';
+              return `
+                <button class="btn-primary" style="position: absolute; top: ${coord.top}%; left: ${coord.left}%; padding: 8px 14px; font-size: 1.1rem; border-radius: 50% !important; min-width: 40px; min-height: 40px; transform: translate(-50%, -50%); transition: all 0.2s ease-in-out; opacity: ${opacity}; pointer-events: ${pointerEvents}; ${borderGlow}" onclick="clickGigMatrix(${coord.num})">
+                  ${coord.num}
+                </button>
+              `;
+            }).join("")}
+          </div>
+
+          <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+            <button class="btn-secondary" style="width: 100%; padding: 12px; border-color: rgba(255,23,68,0.3); color:#ff1744;" onclick="cancelMiniGame()">ABORT</button>
+          </div>
+
+          <div class="status-bar-track" style="height: 6px;">
+            <div class="status-bar-fill" id="minigame-timer-bar" style="width: 100%; height: 100%; background: #ff1744;"></div>
+          </div>
+        </div>
+      `;
+    } else if (activeMiniGame.type === 'ping') {
+      container.innerHTML = `
+        <div style="background: rgba(0,0,0,0.4); border: 2px solid #ffd700; padding: 20px; border-radius: 12px; grid-column: span 1; width: 100%; text-align: center; box-sizing: border-box;">
+          <h4 style="color: #ffd700; margin-bottom: 8px; font-family: 'Press Start 2P', monospace; font-size: 0.8rem;">⚡ DDoS platform: Ping Spammer</h4>
+          <p style="font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 15px;">Spam the PING button ${activeMiniGame.targetClicks} times to overwhelm their database cluster!</p>
+
+          <div style="font-size: 2.2rem; font-weight: 800; color: #ffd700; margin-bottom: 15px; font-family: monospace;">
+            ${activeMiniGame.clicksCount} / ${activeMiniGame.targetClicks}
+          </div>
+
+          <button class="btn-primary" style="width: 100%; padding: 20px; font-size: 1.3rem; margin-bottom: 15px; background: #ffd700; color: #000; font-family: 'Press Start 2P', monospace;" onclick="clickGigPing()">
+            💥 PING!
+          </button>
+
+          <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+            <button class="btn-secondary" style="width: 100%; padding: 12px; border-color: rgba(255,23,68,0.3); color:#ff1744;" onclick="cancelMiniGame()">ABORT</button>
+          </div>
+
+          <div class="status-bar-track" style="height: 6px;">
+            <div class="status-bar-fill" id="minigame-timer-bar" style="width: 100%; height: 100%; background: #ffd700;"></div>
+          </div>
+        </div>
+      `;
+    }
+    return;
+  }
+
+  const getXpCost = (id) => {
+    if (id === "freelance_html") return gameState.level === 1 ? 0 : 3;
+    if (id === "crack_competitor") return 10;
+    if (id === "ransomware") return 20;
+    if (id === "ddos_rival") return 40;
+    return 0;
+  };
+
+  container.innerHTML = `
+    <div class="card-item">
+      <div class="card-item-title">
+        <span>Freelance HTML Edits</span>
+        <span style="color: #ff1744; display:flex; gap:8px;"><span>-2 🎯</span> <span style="color:var(--color-cyan); font-weight:bold;">-${getXpCost("freelance_html")} XP</span></span>
+      </div>
+      <div class="card-item-desc" style="line-height:1.4;">
+        Tweak markup code templates for small neighborhood stores. High success rate, small payouts.<br>
+        <span style="font-size: 0.75rem; color: var(--color-text-muted); display: block; margin-top: 4px; font-style: italic;">
+          <strong>Dossier:</strong> Luigi (local pizzeria owner) claims his pizza image is shifting 2px left when clicked. He demands inline styles because bootstrap is "communist spyware". Rot your soul for $50.
+        </span>
+      </div>
+      <div class="card-item-meta">
+        <span>💵 Payout: $50 - $100</span>
+        <span>📈 Success: 95%</span>
+      </div>
+      <button class="btn-primary" onclick="runGig('freelance_html')">Perform Gig</button>
+    </div>
+
+    <div class="card-item">
+      <div class="card-item-title">
+        <span>Crack Competitor DRM</span>
+        <span style="color: #ff1744; display:flex; gap:8px;"><span>-4 🎯</span> <span style="color:var(--color-cyan); font-weight:bold;">-10 XP</span></span>
+      </div>
+      <div class="card-item-desc" style="line-height:1.4;">
+        Leak files of rival software assets to internet forums. Generates decent returns with moderate risk.<br>
+        <span style="font-size: 0.75rem; color: var(--color-text-muted); display: block; margin-top: 4px; font-style: italic;">
+          <strong>Dossier:</strong> Bypass wobbly DRM loops that melt client CPUs. Upload cracked binaries to retro forums. Gains decent returns and massive street cred among 14-year-olds.
+        </span>
+      </div>
+      <div class="card-item-meta">
+        <span>💵 Payout: $200 - $400</span>
+        <span>📈 Success: 75%</span>
+      </div>
+      <button class="btn-primary" onclick="runGig('crack_competitor')">Perform Gig</button>
+    </div>
+
+    <div class="card-item">
+      <div class="card-item-title">
+        <span>Ransomware local server</span>
+        <span style="color: #ff1744; display:flex; gap:8px;"><span>-6 🎯</span> <span style="color:var(--color-cyan); font-weight:bold;">-20 XP</span></span>
+      </div>
+      <div class="card-item-desc" style="line-height:1.4;">
+        Infect server of offshore shell companies. High payout but failure results in corporate penalties.<br>
+        <span style="font-size: 0.75rem; color: var(--color-text-muted); display: block; margin-top: 4px; font-style: italic;">
+          <strong>Dossier:</strong> Drop-shipping conglomerate using password "admin123". If you fail, their automatic legal fax bots will flood your parents' fax machine with 8,000 cease-and-desists.
+        </span>
+      </div>
+      <div class="card-item-meta">
+        <span>💵 Payout: $800 - $1,500</span>
+        <span>📈 Success: 60%</span>
+      </div>
+      <button class="btn-primary" onclick="runGig('ransomware')">Perform Gig</button>
+    </div>
+
+    <div class="card-item">
+      <div class="card-item-title">
+        <span>DDoS Competitor Platform</span>
+        <span style="color: #ff1744; display:flex; gap:8px;"><span>-8 🎯</span> <span style="color:var(--color-cyan); font-weight:bold;">-40 XP</span></span>
+      </div>
+      <div class="card-item-desc" style="line-height:1.4;">
+        Crash concurrent database nodes of giant rivals. Extremely risky, but lucrative rewards.<br>
+        <span style="font-size: 0.75rem; color: var(--color-text-muted); display: block; margin-top: 4px; font-style: italic;">
+          <strong>Dossier:</strong> Coordinate botnet of 40,000 wobbly smart refrigerators and electric toothbrushes to flood a competitor's servers during their pre-order launch. Highly volatile!
+        </span>
+      </div>
+      <div class="card-item-meta">
+        <span>💵 Payout: $3,000 - $6,000</span>
+        <span>📈 Success: 45%</span>
+      </div>
+      <button class="btn-primary" onclick="runGig('ddos_rival')">Perform Gig</button>
+    </div>
+  `;
+}
+
+function stopCoffeePour() {
+  if (!activeMiniGame || activeMiniGame.type !== 'pour') return;
+  if (miniGameTimer) clearInterval(miniGameTimer);
+
+  const pos = activeMiniGame.pointerPosition;
+  if (pos >= activeMiniGame.greenZoneStart && pos <= activeMiniGame.greenZoneEnd) {
+    successMiniGame();
+  } else {
+    failMiniGame("Poured coffee on keyboard!");
+  }
+}
+
+function stopGigSlider() {
+  if (!activeMiniGame || activeMiniGame.type !== 'slider') return;
+  if (miniGameTimer) clearInterval(miniGameTimer);
+
+  const pos = activeMiniGame.needlePosition;
+  if (pos >= activeMiniGame.greenZoneStart && pos <= activeMiniGame.greenZoneEnd) {
+    successMiniGame();
+  } else {
+    failMiniGame("Layout misaligned! Pizzeria image overflowed.");
+  }
+}
+
+function clickGigBinary(selectedOption) {
+  if (!activeMiniGame || activeMiniGame.type !== 'binary') return;
+  if (miniGameTimer) clearInterval(miniGameTimer);
+
+  if (selectedOption === activeMiniGame.targetSequence) {
+    successMiniGame();
+  } else {
+    failMiniGame("Encryption mismatch! Security alarm triggered.");
+  }
+}
+
+function clickGigMatrix(num) {
+  if (!activeMiniGame || activeMiniGame.type !== 'trace') return;
+
+  if (num === activeMiniGame.currentNumber) {
+    activeMiniGame.currentNumber += 1;
+    if (activeMiniGame.currentNumber > 4) {
+      if (miniGameTimer) clearInterval(miniGameTimer);
+      successMiniGame();
+    } else {
+      renderGigsBoard();
+    }
+  } else {
+    if (miniGameTimer) clearInterval(miniGameTimer);
+    failMiniGame("Tracing active! Wrong node order selected.");
+  }
+}
+
+function clickGigPing() {
+  if (!activeMiniGame || activeMiniGame.type !== 'ping') return;
+
+  activeMiniGame.clicksCount += 1;
+  if (activeMiniGame.clicksCount >= activeMiniGame.targetClicks) {
+    if (miniGameTimer) clearInterval(miniGameTimer);
+    successMiniGame();
+  } else {
+    renderGigsBoard();
+  }
+}
+
+function finishGig(gigId, wasSuccess) {
+  const gig = GIGS.find(g => g.id === gigId);
+  if (!gig) return;
+
+  if (wasSuccess) {
+    const payout = Math.floor(Math.random() * (gig.rewardMax - gig.rewardMin + 1)) + gig.rewardMin;
+    gameState.cash += payout;
+
+    gameState[gig.skillRequired] += gig.xpReward;
+
+    const xpRewardGained = gig.xpReward * 6;
+
+    addLog(`SUCCESS: ${gig.name}`, `Earned $${payout}, gained +${gig.xpReward} in ${gig.skillRequired.replace("_skill", "")}, and gained +${xpRewardGained} XP.`);
+    showToast(`Gig Success! +$${payout}`, "success");
+    
+    gainXP(xpRewardGained);
+  } else {
+    const penalty = Math.floor(gig.rewardMin * 0.50);
+    gameState.cash = Math.max(0, gameState.cash - penalty);
+
+    addLog(`FAILURE: ${gig.name}`, `Busted by network firewalls. Lost $${penalty} in server penalties.`);
+    showToast(`Gig Failed! Lost $${penalty}`, "error");
+  }
+
+  saveGame();
+  renderGigsBoard();
+  updateUI();
+}
+
+window.cancelMiniGame = cancelMiniGame;
+window.stopCoffeePour = stopCoffeePour;
+window.stopGigSlider = stopGigSlider;
+window.clickGigBinary = clickGigBinary;
+window.clickGigMatrix = clickGigMatrix;
+window.clickGigPing = clickGigPing;
+window.renderDeveloperStore = renderDeveloperStore;
+window.renderGigsBoard = renderGigsBoard;
 
