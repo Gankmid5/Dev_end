@@ -180,6 +180,8 @@ window.addEventListener("DOMContentLoaded", async () => {
     loadProfileFromLocal();
   }
 
+  ensureStudioMeta();
+
   // Start the tick loops
   setInterval(gameTick, 1000);
 
@@ -338,11 +340,12 @@ async function loadProfileFromServer() {
       gameState.xp_needed = backup.xp_needed ?? 100;
     }
 
-    ensureStudioMeta();
     addLog("Cloud profile synced.", `Welcome back, ${profile.username}.`);
   } catch (err) {
     console.warn("Could not sync cloud profile, loading local backup:", err);
     loadProfileFromLocal();
+  } finally {
+    ensureStudioMeta();
   }
 }
 
@@ -369,7 +372,6 @@ function loadProfileFromLocal() {
   }
 
   addLog("Guest local profile loaded.", "Progress is stored on this device.");
-  ensureStudioMeta();
 }
 
 function gainXP(amount) {
@@ -1053,7 +1055,10 @@ function ensureStudioMeta() {
   gameState.studioAwards = gameState.studioAwards ?? [];
   gameState.rentOverdue = gameState.rentOverdue ?? 0;
   gameState.investorMeetings = gameState.investorMeetings ?? 0;
-  if (!gameState.studioOpportunity) generateStudioOpportunity();
+  if (gameState.studioOpportunity == null) {
+    const pool = [...STUDIO_OPPORTUNITY_POOL].sort(() => Math.random() - 0.5);
+    gameState.studioOpportunity = pool[0];
+  }
 }
 
 function pushStudioDiary(text) {
@@ -1066,7 +1071,6 @@ function pushStudioDiary(text) {
 }
 
 function generateStudioOpportunity() {
-  ensureStudioMeta();
   const pool = [...STUDIO_OPPORTUNITY_POOL].sort(() => Math.random() - 0.5);
   gameState.studioOpportunity = pool[0];
 }

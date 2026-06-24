@@ -137,10 +137,12 @@ const TycoonAPI = {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (!pError && dbProfile) {
         profile = dbProfile;
+      } else if (pError && pError.code !== "PGRST116") {
+        console.warn("Profiles query issue (using auth metadata):", pError.message);
       }
     } catch (err) {
       console.warn("Profiles table not readable/accessible. Using local metadata fallback.", err.message);
@@ -157,6 +159,8 @@ const TycoonAPI = {
 
       if (!stError && dbStats) {
         stats = dbStats;
+      } else if (stError && stError.code !== "PGRST116") {
+        console.warn("Stats query issue (using localStorage fallback):", stError.message);
       }
     } catch (err) {
       console.warn("dev_tycoon_stats table not readable/accessible. Using localStorage fallback.", err.message);
