@@ -2085,3 +2085,23 @@ window.clickPatchGrid = clickPatchGrid;
 window.concludeGameProject = concludeGameProject;
 window.supportActiveProject = supportActiveProject;
 
+// TOAST NOTIFICATIONS
+function showToast(message, type = "info") {
+  const container = document.getElementById("toast-container");
+  if (!container) return;
+
+  const toast = document.createElement("div");
+  toast.className = `toast ${type}`;
+  toast.innerText = message;
+
+  container.appendChild(toast);
+
+  setTimeout(() => toast.classList.add("visible"), 50);
+
+  setTimeout(() => {
+    toast.classList.remove("visible");
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+window.showToast = showToast;
+
