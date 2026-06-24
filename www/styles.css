@@ -1018,6 +1018,7 @@ h1.logo-title span {
 }
 
 .arcade-canvas-wrap {
+  position: relative;
   display: flex;
   justify-content: center;
   margin-bottom: 10px;
@@ -1025,6 +1026,93 @@ h1.logo-title span {
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: #040408;
+}
+
+.arcade-start-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(4, 4, 8, 0.92);
+  backdrop-filter: blur(2px);
+  z-index: 2;
+  transition: opacity 0.25s ease;
+}
+
+.arcade-start-overlay--gone {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.arcade-start-panel {
+  text-align: center;
+  padding: 16px 20px;
+  max-width: 92%;
+}
+
+.arcade-start-goal,
+.arcade-start-controls {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin: 0 0 10px;
+  line-height: 1.45;
+}
+
+.arcade-start-goal span,
+.arcade-start-controls span {
+  display: block;
+  font-size: 0.65rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-cyan);
+  margin-bottom: 3px;
+  font-weight: 700;
+}
+
+.arcade-start-btn {
+  margin-top: 6px;
+  padding: 12px 28px !important;
+  font-size: 0.95rem !important;
+  letter-spacing: 0.5px;
+}
+
+.arcade-start-btn:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.arcade-countdown {
+  margin-top: 14px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 1.6rem;
+  color: var(--color-gold);
+  text-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
+  animation: arcade-count-pulse 0.65s ease;
+}
+
+@keyframes arcade-count-pulse {
+  0% { transform: scale(0.7); opacity: 0.4; }
+  50% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.arcade-timer-paused .status-bar-fill {
+  opacity: 0.35;
+  animation: arcade-timer-pulse 2s ease-in-out infinite;
+}
+
+@keyframes arcade-timer-pulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.55; }
+}
+
+.arcade-timer-label {
+  font-size: 0.68rem;
+  color: var(--color-text-muted);
+  text-align: center;
+  margin: -6px 0 10px;
+  opacity: 0.85;
 }
 
 #arcade-canvas {

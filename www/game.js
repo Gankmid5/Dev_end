@@ -2020,7 +2020,6 @@ function renderTrainingGym() {
 
   if (activeMiniGame && activeMiniGame.isTraining) {
     container.innerHTML = buildArcadeMiniGameHtml(activeMiniGame, "grid-column: span 3; width: 100%;");
-    mountActiveArcadeMiniGame();
     return;
   }
 
@@ -2142,10 +2141,10 @@ function runGig(gigId) {
     gigId: gigId,
     duration: gigDuration,
     elapsed: 0,
-    timeLeft: 100
+    timeLeft: 100,
+    arcadeStarted: false
   });
 
-  activateMiniGameTimer();
   renderGigsBoard();
   updateUI();
 }
@@ -2506,7 +2505,56 @@ function getArcadeMeta(mg) {
 
 function buildArcadeMiniGameHtml(mg, extraStyle) {
   if (!window.ArcadeMinigames) return "";
-  return window.ArcadeMinigames.renderShell(mg.arcadeId, extraStyle || "");
+  return window.ArcadeMinigames.renderShell(mg.arcadeId, extraStyle || "", {
+    started: !!mg.arcadeStarted
+  });
+}
+
+function startArcadeSession() {
+  if (!activeMiniGame || activeMiniGame.type !== "arcade" || activeMiniGame.arcadeStarted) return;
+
+  const overlay = document.getElementById("arcade-start-overlay");
+  const countdownEl = document.getElementById("arcade-countdown");
+  const startBtn = overlay ? overlay.querySelector(".arcade-start-btn") : null;
+  if (!overlay || !countdownEl) return;
+
+  if (startBtn) startBtn.disabled = true;
+
+  const steps = ["3", "2", "1", "GO!"];
+  let step = 0;
+  countdownEl.hidden = false;
+  countdownEl.textContent = steps[step];
+
+  const tick = () => {
+    step++;
+    if (step < steps.length) {
+      countdownEl.textContent = steps[step];
+      setTimeout(tick, 650);
+      return;
+    }
+
+    overlay.classList.add("arcade-start-overlay--gone");
+    activeMiniGame.arcadeStarted = true;
+    activeMiniGame.elapsed = 0;
+    activeMiniGame.timeLeft = 100;
+
+    const badge = document.querySelector(".arcade-minigame .arcade-badge");
+    if (badge) badge.textContent = "LIVE";
+
+    const timerTrack = document.querySelector(".arcade-timer");
+    if (timerTrack) timerTrack.classList.remove("arcade-timer-paused");
+
+    const timerLabel = document.getElementById("arcade-timer-label");
+    if (timerLabel) timerLabel.textContent = "";
+
+    const bar = document.getElementById("minigame-timer-bar");
+    if (bar) bar.style.width = "100%";
+
+    mountActiveArcadeMiniGame();
+    activateMiniGameTimer();
+  };
+
+  setTimeout(tick, 650);
 }
 
 function mountActiveArcadeMiniGame() {
@@ -2564,7 +2612,8 @@ function startMiniGame(type, isTraining = false) {
     isTraining: isTraining,
     timeLeft: 100,
     duration: arcadeDuration,
-    elapsed: 0
+    elapsed: 0,
+    arcadeStarted: false
   };
 
   // Deduct energy & XP
@@ -2573,29 +2622,6 @@ function startMiniGame(type, isTraining = false) {
     gameState.xp -= xpCost;
   }
   updateUI();
-
-  // Start timer interval (every 100ms)
-  const interval = 100;
-  miniGameTimer = setInterval(() => {
-    if (!activeMiniGame) {
-      clearInterval(miniGameTimer);
-      return;
-    }
-
-    activeMiniGame.elapsed += interval;
-    activeMiniGame.timeLeft = Math.max(0, 100 - (activeMiniGame.elapsed / activeMiniGame.duration) * 100);
-
-    // Update the progress bar element directly for performance
-    const bar = document.getElementById("minigame-timer-bar");
-    if (bar) {
-      bar.style.width = `${activeMiniGame.timeLeft}%`;
-    }
-
-    if (activeMiniGame.elapsed >= activeMiniGame.duration) {
-      clearInterval(miniGameTimer);
-      failMiniGame("Time Out!");
-    }
-  }, interval);
 
   if (isTraining) {
     renderTrainingGym();
@@ -3001,7 +3027,6 @@ function renderProjectProgress() {
         ${buildArcadeMiniGameHtml(activeMiniGame, "margin-top: 15px;")}
       </div>
     `;
-    mountActiveArcadeMiniGame();
     return;
   }
 
@@ -4699,6 +4724,8 @@ function activateMiniGameTimer() {
       return;
     }
 
+    if (activeMiniGame.type === "arcade" && !activeMiniGame.arcadeStarted) return;
+
     activeMiniGame.elapsed += interval;
     activeMiniGame.timeLeft = Math.max(0, 100 - (activeMiniGame.elapsed / activeMiniGame.duration) * 100);
 
@@ -4822,7 +4849,6 @@ function renderGigsBoard() {
   if (activeMiniGame && activeMiniGame.isGig) {
     if (activeMiniGame.type === 'arcade') {
       container.innerHTML = buildArcadeMiniGameHtml(activeMiniGame, "grid-column: span 1; width: 100%; text-align: center; box-sizing: border-box;");
-      mountActiveArcadeMiniGame();
     } else if (activeMiniGame.type === 'slider') {
       container.innerHTML = `
         <div style="background: rgba(0,0,0,0.4); border: 2px solid var(--color-cyan); padding: 20px; border-radius: 12px; grid-column: span 1; width: 100%; text-align: center; box-sizing: border-box;">
@@ -5060,6 +5086,7 @@ function finishGig(gigId, wasSuccess) {
 }
 
 window.cancelMiniGame = cancelMiniGame;
+window.startArcadeSession = startArcadeSession;
 window.stopCoffeePour = stopCoffeePour;
 window.stopGigSlider = stopGigSlider;
 window.clickGigBinary = clickGigBinary;
