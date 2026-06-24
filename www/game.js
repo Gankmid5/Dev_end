@@ -155,6 +155,276 @@ let studioRentTimer = 0;
 // Mini-game combo streak (resets on fail)
 let miniGameCombo = 0;
 
+// HUD display copy — internal keys (energy/nerve/xp/level) stay the same in gameState
+const HUD_COPY = {
+  caffeine: {
+    icon: "☕",
+    name: "Caffeine Reserves",
+    short: "Caff",
+    unit: "mg of desperation",
+    empty: "Decaf mode. Typing speed halved by OSHA (they don't exist here).",
+    low: "Running on a Monster from 2019 and pure spite.",
+    mid: "Jitters within industry-standard parameters.",
+    high: "Heart rate: feature. Sleep: deprecated.",
+    full: "Legally classified as a hummingbird."
+  },
+  sketch: {
+    icon: "🕶️",
+    name: "Sketch Factor",
+    short: "Sketch",
+    unit: "chutzpah",
+    empty: "Too wholesome for gigs. HR would be proud (fire them).",
+    low: "VPN not enabled. Plausible deniability loading...",
+    mid: "Morally flexible. Terms of Service unread.",
+    high: "FBI watchlist speedrun any% pace.",
+    full: "You could sell ice to a blockchain startup."
+  },
+  imposter: {
+    icon: "🎭",
+    name: "Imposter Tier",
+    short: "Tier",
+    titles: [
+      "Junior Copy-Paster", "Mid-Level Googler", "Senior Yak Shaver",
+      "Staff Blame Shifter", "Principal Meeting Attendee", "Distinguished Slide Maker",
+      "Fellow Scope Creep", "Architect of Vibes"
+    ]
+  },
+  resume: {
+    icon: "📋",
+    name: "Resume Padding",
+    short: "Pad",
+    unit: "bullet points",
+    gain: "Another line item for LinkedIn nobody will read."
+  },
+  cash: {
+    icon: "💸",
+    name: "Runway (Probably)",
+    subtitle: "Audited by nobody. Trusted by investors anyway."
+  }
+};
+
+const HUD_TICKER_LINES = [
+  "⚠️ STUDIO STATUS: All metrics are vibes-based and non-refundable.",
+  "📢 REMINDER: 'It's not a bug, it's an undocumented feature' is still our official policy.",
+  "☕ CAFFEINE ADVISORY: Third espresso counts as a standup meeting.",
+  "🕶️ SKETCH ALERT: Plausible deniability replenishes slower than your will to live.",
+  "🎭 IMPOSTER TIER: Promotions are cosmetic. Responsibilities are real.",
+  "📋 RESUME PADDING: +1 bullet point for 'survived another sprint'.",
+  "🐛 PROD HEALTH: Fine. Probably. We didn't check.",
+  "📅 STANDUP COUNT: 4 today. 3 were about standups.",
+  "💬 SLACK UNREAD: 847. Pretend you saw them.",
+  "🎮 CRUNCH MODE: Disabled until morale hits 'illegal'.",
+  "📊 KPI UPDATE: KPIs updated to reflect that KPIs are meaningless.",
+  "🧪 QA STATUS: Tested on developer machine. Ship it.",
+  "🏢 OFFICE VIBES: Feng shui optimized for passive aggression.",
+  "🔥 COMBO STREAK: Management calls it 'synergy'. You call it survival.",
+  "📧 INBOX ZERO: Achieved by declaring bankruptcy on old threads.",
+  "🌐 CLOUD SYNC: Your save is local. The cloud is a marketing term.",
+  "🎵 SYNTHWAVE: Mandatory. Productivity optional.",
+  "🍕 PIZZA BUDGET: Exceeded. Morale budget: never existed.",
+  "🧑‍💻 CODING SKILL: Measured in Stack Overflow tabs open.",
+  "📝 POST-MORTEM: Scheduled. Blame distribution TBD."
+];
+
+const CORPORATE_MANDATES = [
+  "All bugs are now 'unexpected user journeys'. Do not fix.",
+  "Mandatory fun hour moved to 11pm. Attendance tracked via webcam.",
+  "Replace all variable names with 'synergy' by end of quarter.",
+  "The roadmap is now a mood board. Pins are non-binding.",
+  "Coffee is a perk. Sleep is a personal choice.",
+  "If it compiles, it ships. If it crashes, it's early access.",
+  "Standups are now async voice notes. Maximum length: 47 minutes.",
+  "Tech debt renamed to 'heritage code'. Celebrate it.",
+  "All deadlines are 'aspirational timelines' until they aren't.",
+  "Morale surveys are anonymous except we know it's you, Kevin.",
+  "NFT integration is now a P0. Blockchain optional. Confusion mandatory.",
+  "Touch grass is prohibited on company property. Grass is untested.",
+  "Every meeting could've been a Slack thread that could've been nothing.",
+  "Performance reviews based on GitHub green squares and vibes.",
+  "The intern is now 'Head of Innovation'. Salary unchanged."
+];
+
+const CEO_THOUGHTS = [
+  "\"We should AI the blockchain synergy.\"",
+  "\"What if the game, but subscription?\"",
+  "\"Can we make the bugs premium DLC?\"",
+  "\"Investors love the word 'disrupt'. Use it 14 times.\"",
+  "\"Our competitor shipped. That's aggressive of them.\"",
+  "\"Let's pivot to B2B. Gamers are too emotional.\"",
+  "\"The crash is a feature for hardcore players.\"",
+  "\"I read on LinkedIn that crunch builds character.\"",
+  "\"Why fix netcode when we can sell battle pass?\"",
+  "\"Agile means we change our minds every hour.\""
+];
+
+const SLACK_HERE_MESSAGES = [
+  "@here quick question (will take 3 hours to answer)",
+  "@here who broke prod? (it was me but I'm not ready)",
+  "@here can we sync on the sync about syncing?",
+  "@here URGENT: logo 2px too left on staging",
+  "@here friendly reminder that reminders are mandatory",
+  "@here standup in 5 — please have updates nobody will read",
+  "@here does anyone know why the build works on Dave's machine only?",
+  "@here celebrating small wins! (the win is leaving early)",
+  "@here new policy: policies will be announced via more policies"
+];
+
+const BUZZWORD_PHRASES = [
+  "AI-powered agile blockchain gamification",
+  "synergistic metaverse loot pipeline",
+  "disruptive neural net UX paradigm",
+  "cloud-native hypercasual NFT retention loop",
+  "cross-platform soul-like battle pass ecosystem",
+  "procedural empathy-driven KPI dashboard",
+  "decentralized vibe-first monetization stack"
+];
+
+const BLAME_TARGETS = [
+  "the intern (who started yesterday)",
+  "DNS (classic)",
+  "a solar flare (unverified)",
+  "the previous developer (fired in 2019)",
+  "works on my machine™",
+  "an undocumented third-party API",
+  "cosmic radiation flipping bits",
+  "the designer's 'final_final_v2' PSD",
+  "a merge conflict from the future",
+  "the office plant (it saw everything)",
+  "Stack Overflow (you copied the wrong answer)",
+  "Windows Update (always)"
+];
+
+const STUDIO_BADGE_DEFS = {
+  first_ship: { icon: "🚀", name: "Shipped Something", desc: "Released a game without spontaneously combusting." },
+  first_nuke: { icon: "💥", name: "Nuke Veteran", desc: "Vaporized a project. The internet remembers." },
+  gig_criminal: { icon: "🕶️", name: "Career Criminal", desc: "Performed 5 gigs. FBI mildly curious." },
+  caffeine_legend: { icon: "☕", name: "Caffeine Legend", desc: "Hit max desperation 50 times. Heart optional." },
+  imposter_5: { icon: "🎭", name: "Senior Pretender", desc: "Reached Imposter Tier 5. Still googling for loops." },
+  combo_king: { icon: "🔥", name: "Combo King", desc: "Hit a 5x arcade combo. Synergy achieved." },
+  rent_survivor: { icon: "🏠", name: "Rent Survivor", desc: "Paid rent 3 times. Landlord suspicious." },
+  plant_parent: { icon: "🪴", name: "Plant Parent", desc: "Bought fake office plant. Wellness unlocked." },
+  blame_master: { icon: "🎰", name: "Blame Master", desc: "Spun blame roulette 10 times. Accountability zero." },
+  touch_grass_fail: { icon: "🌿", name: "Grass Denier", desc: "Attempted to touch grass. Failed professionally." }
+};
+
+const HUD_SIDEBAR_QUIPS = [
+  "Today's forecast: 90% chance of scope creep before lunch.",
+  "Reminder: the standup could have been an email. It wasn't.",
+  "Your imposter syndrome is now a team sport.",
+  "Coffee count: yes.",
+  "Legal says 'don't ask, don't deploy'.",
+  "Motivation status: loading... loading... failed.",
+  "The roadmap is a suggestion written in crayon.",
+  "QA found bugs. Management found 'personality'.",
+  "Your PR will be reviewed after the heat death of the universe.",
+  "Morale is a custom enum we never defined."
+];
+
+let hudTickerIndex = 0;
+let hudFlavorTimer = 0;
+
+function getImposterTitle(level) {
+  const titles = HUD_COPY.imposter.titles;
+  return titles[Math.min(level - 1, titles.length - 1)] || `Tier ${level} Chaos Agent`;
+}
+
+function getCaffeineFlavor() {
+  const pct = gameState.energy / gameState.max_energy;
+  const c = HUD_COPY.caffeine;
+  if (pct <= 0.1) return c.empty;
+  if (pct <= 0.35) return c.low;
+  if (pct <= 0.7) return c.mid;
+  if (pct < 1) return c.high;
+  return c.full;
+}
+
+function getSketchFlavor() {
+  const pct = gameState.nerve / gameState.max_nerve;
+  const s = HUD_COPY.sketch;
+  if (pct <= 0.1) return s.empty;
+  if (pct <= 0.35) return s.low;
+  if (pct <= 0.7) return s.mid;
+  if (pct < 1) return s.high;
+  return s.full;
+}
+
+function getHudStatusBanner() {
+  const proj = gameState.current_project;
+  const lines = [];
+  if (gameState.rentOverdue > 0) lines.push(`RENT OVERDUE ×${gameState.rentOverdue} — landlord sending passive-aggressive emoji`);
+  if (proj && proj.phase !== "post_release") {
+    const bugs = proj.bug_points || 0;
+    if (bugs > 12) lines.push(`${bugs} bugs in active build — classified as 'ambient horror'`);
+    else if (bugs > 5) lines.push(`${bugs} bugs — QA says 'ship it, users love surprises'`);
+    else lines.push(`Project '${proj.name}' — ${Math.floor(getProjectProgressPercent(proj))}% done, ${bugs} bugs (acceptable)`);
+  } else if (gameState.active_games.length > 0) {
+    lines.push(`${gameState.active_games.length} game(s) live — support tickets breeding in the wild`);
+  }
+  if (gameState.employees.length > 0) lines.push(`${gameState.employees.length} staff on payroll — ${gameState.employees.length} will deny writing the bug`);
+  if (gameState.cash < 200) lines.push("Cash low — ramen protocol engaged");
+  if (miniGameCombo >= 3) lines.push(`${miniGameCombo}x COMBO — productivity spike or coping mechanism unclear`);
+  if (lines.length === 0) lines.push("No active crises. Suspicious. Investigate immediately.");
+  return lines[hudFlavorTimer % lines.length];
+}
+
+function refreshHudHumor() {
+  hudFlavorTimer++;
+
+  const caffeineFlavor = document.getElementById("hud-caffeine-flavor");
+  const sketchFlavor = document.getElementById("hud-sketch-flavor");
+  const resumeFlavor = document.getElementById("hud-resume-flavor");
+  const imposterTitle = document.getElementById("hud-imposter-title");
+  const statusBanner = document.getElementById("hud-status-banner");
+  const ticker = document.getElementById("hud-ticker-text");
+  const vitals = document.getElementById("hud-vitals-row");
+
+  if (caffeineFlavor) caffeineFlavor.innerText = getCaffeineFlavor();
+  if (sketchFlavor) sketchFlavor.innerText = getSketchFlavor();
+  if (resumeFlavor) resumeFlavor.innerText = HUD_COPY.resume.gain;
+  if (imposterTitle) imposterTitle.innerText = getImposterTitle(gameState.level);
+  if (statusBanner) statusBanner.innerText = getHudStatusBanner();
+
+  if (ticker && hudFlavorTimer % 3 === 0) {
+    hudTickerIndex = (hudTickerIndex + 1) % HUD_TICKER_LINES.length;
+    ticker.innerText = HUD_TICKER_LINES[hudTickerIndex];
+  }
+
+  const sidebarQuip = document.getElementById("hud-sidebar-quip");
+  if (sidebarQuip && hudFlavorTimer % 5 === 0) {
+    sidebarQuip.innerText = HUD_SIDEBAR_QUIPS[hudFlavorTimer % HUD_SIDEBAR_QUIPS.length];
+  }
+
+  const mandateEl = document.getElementById("hud-mandate-text");
+  if (mandateEl && hudFlavorTimer % 7 === 0) {
+    gameState.corporateMandateIndex = ((gameState.corporateMandateIndex || 0) + 1) % CORPORATE_MANDATES.length;
+    mandateEl.innerText = CORPORATE_MANDATES[gameState.corporateMandateIndex];
+  }
+
+  const ceoBubble = document.getElementById("ceo-thought-bubble");
+  if (ceoBubble && hudFlavorTimer % 6 === 0) {
+    ceoBubble.innerText = CEO_THOUGHTS[Math.floor(Math.random() * CEO_THOUGHTS.length)];
+  }
+
+  renderBadgeWall();
+
+  if (vitals) {
+    const standups = 2 + (gameState.level % 5);
+    const tabs = 8 + gameState.coding_skill;
+    const morale = gameState.studioMorale != null ? Math.floor(gameState.studioMorale) : randHudMorale();
+    vitals.innerHTML = `
+      <span class="hud-vital-chip">📅 Standups today: <strong>${standups}</strong> (2 were about lunch)</span>
+      <span class="hud-vital-chip">🌐 SO tabs open: <strong>${tabs}</strong></span>
+      <span class="hud-vital-chip">😶 Morale: <strong>${morale}%</strong> (survey optional)</span>
+      <span class="hud-vital-chip">🐛 Prod bugs: <strong>${gameState.current_project?.bug_points || "¯\\_(ツ)_/¯"}</strong></span>
+      <span class="hud-vital-chip">📧 Unread: <strong>${847 + gameState.games_released * 12}</strong></span>
+    `;
+  }
+}
+
+function randHudMorale() {
+  return 34 + Math.floor(Math.random() * 40);
+}
+
 // Active UI zone (synthwave dashboard)
 let activeTab = "gigs";
 
@@ -186,8 +456,12 @@ window.addEventListener("DOMContentLoaded", async () => {
   setInterval(gameTick, 1000);
 
   // Renders
-  addLog("System initialized.", "Ready in developer console.");
+  addLog("System initialized.", "Ready in developer console. Neon void online. Morale: unmeasured.");
+  initNeonCity();
+  initLogoEasterEgg();
   updateUI();
+  refreshHudHumor();
+  renderBadgeWall();
 
   // URL check for tabs
   const params = new URLSearchParams(window.location.search);
@@ -408,8 +682,8 @@ function gainXP(amount) {
       "Achievement unlocked: more responsibilities, same snack budget."
     ];
     const levelQuip = levelQuips[Math.floor(Math.random() * levelQuips.length)];
-    addLog("LEVEL UP!", `Dev Level ${gameState.level}! Max Energy: ${gameState.max_energy}, Max Nerve: ${gameState.max_nerve}. ${levelQuip}`);
-    showToast(`✨ LEVEL ${gameState.level}! ${levelQuip}`, "success");
+    addLog("IMPOSTER TIER UP!", `${HUD_COPY.imposter.icon} Tier ${gameState.level} — ${getImposterTitle(gameState.level)}! Max ${HUD_COPY.caffeine.short}: ${gameState.max_energy}, Max ${HUD_COPY.sketch.short}: ${gameState.max_nerve}. ${levelQuip}`);
+    showToast(`${HUD_COPY.imposter.icon} TIER ${gameState.level}! ${levelQuip}`, "success");
     
     // If Gigs tab is active, redraw the training gym to show updated XP cost labels
     const gigsSection = document.getElementById("gigs-section");
@@ -417,7 +691,7 @@ function gainXP(amount) {
       renderTrainingGym();
     }
   } else {
-    addLog("XP Gained", `Gained +${amount} XP.`);
+    addLog("Resume Padding", `+${amount} ${HUD_COPY.resume.unit} added. Recruiters mildly interested.`);
   }
   
   saveGame();
@@ -525,14 +799,20 @@ function initFormInputs() {
 
 // --- Game Tick Loops (1s) ---
 function gameTick() {
-  // 1. Regenerate Energy and Nerve (tuned for snappier early-game pacing)
+  // 1. Regenerate caffeine & sketch factor
   const recoveryBonus = gameState.ergonomic_chairs ? 1.5 : 1.0;
+  const plantBonus = gameState.officePlant ? 1.08 : 1.0;
   const energyRate = (gameState.level === 1 ? 12 : 8) / 60;
   if (gameState.energy < gameState.max_energy) {
-    gameState.energy = Math.min(gameState.max_energy, gameState.energy + energyRate * recoveryBonus);
+    gameState.energy = Math.min(gameState.max_energy, gameState.energy + energyRate * recoveryBonus * plantBonus);
   }
   if (gameState.nerve < gameState.max_nerve) {
     gameState.nerve = Math.min(gameState.max_nerve, gameState.nerve + (2 / 60));
+  }
+
+  if (gameState.officePlant && Math.random() < 0.008) {
+    ensureStudioMeta();
+    gameState.studioMorale = Math.min(100, gameState.studioMorale + 1);
   }
 
   // 1b. Staff passively contribute to active dev project
@@ -668,7 +948,162 @@ function gameTick() {
     triggerRandomEvent();
   }
 
+  // 8. Slack @here simulator (~2% per tick)
+  if (Math.random() < 0.02) {
+    postSlackNotification();
+  }
+
   updateUI();
+}
+
+function unlockStudioBadge(badgeId) {
+  ensureStudioMeta();
+  if (gameState.studioBadges.includes(badgeId)) return;
+  const def = STUDIO_BADGE_DEFS[badgeId];
+  if (!def) return;
+  gameState.studioBadges.push(badgeId);
+  addLog("Achievement Unlocked", `${def.icon} ${def.name} — ${def.desc}`);
+  showToast(`${def.icon} BADGE: ${def.name}`, "success");
+  renderBadgeWall();
+}
+
+function checkFunnyAchievements() {
+  ensureStudioMeta();
+  if (gameState.games_released >= 1) unlockStudioBadge("first_ship");
+  if (gameState.level >= 5) unlockStudioBadge("imposter_5");
+  if (gameState.gigsCompleted >= 5) unlockStudioBadge("gig_criminal");
+  if (gameState.caffeinePeakCount >= 50) unlockStudioBadge("caffeine_legend");
+  if (gameState.rentPaidCount >= 3) unlockStudioBadge("rent_survivor");
+  if (gameState.officePlant) unlockStudioBadge("plant_parent");
+  if (gameState.blameSpins >= 10) unlockStudioBadge("blame_master");
+  if (miniGameCombo >= 5) unlockStudioBadge("combo_king");
+}
+
+function renderBadgeWall() {
+  const wall = document.getElementById("badge-wall");
+  if (!wall) return;
+  ensureStudioMeta();
+  if (!gameState.studioBadges.length) {
+    wall.innerHTML = `<span class="badge-chip" style="opacity:0.5;">🏅 No badges yet. Fail upward.</span>`;
+    return;
+  }
+  wall.innerHTML = gameState.studioBadges.map(id => {
+    const b = STUDIO_BADGE_DEFS[id];
+    if (!b) return "";
+    return `<span class="badge-chip" title="${b.desc}">${b.icon} ${b.name}</span>`;
+  }).join("");
+}
+
+function postSlackNotification() {
+  const msg = SLACK_HERE_MESSAGES[Math.floor(Math.random() * SLACK_HERE_MESSAGES.length)];
+  const time = new Date().toLocaleTimeString().split(" ")[0];
+  const consoleEl = document.getElementById("terminal-console");
+  if (!consoleEl) return;
+  const line = document.createElement("div");
+  line.className = "terminal-line slack-line";
+  line.innerHTML = `
+    <span class="timestamp" style="font-size:0.72rem; color:var(--color-text-muted); margin-right:6px;">[${time}]</span>
+    <span style="font-size:0.65rem; font-weight:800; padding:2px 5px; border-radius:4px; margin-right:6px; border:1px solid #ff0080; color:#ff0080; background:rgba(255,0,128,0.12);">💬 SLACK</span>
+    <span style="color:#ff6b9d; font-weight:600;">#general:</span>
+    <span style="color:var(--color-text-muted); font-style:italic;"> ${msg}</span>
+  `;
+  consoleEl.appendChild(line);
+  while (consoleEl.children.length > 60) consoleEl.removeChild(consoleEl.firstChild);
+  consoleEl.scrollTop = consoleEl.scrollHeight;
+}
+
+function runChaosAction(actionId) {
+  ensureStudioMeta();
+  if (actionId === "slack_here") {
+    postSlackNotification();
+    showToast("💬 @here deployed. 47 replies incoming.", "warning");
+    return;
+  }
+  if (actionId === "buzzword") {
+    const phrase = BUZZWORD_PHRASES[Math.floor(Math.random() * BUZZWORD_PHRASES.length)];
+    addLog("Buzzword Generated", `"${phrase}" added to Q3 strategy deck.`);
+    showToast(`📊 New buzzword: ${phrase}`, "info");
+    gameState.studioBuzz = Math.min(100, gameState.studioBuzz + 2);
+    saveGame();
+    updateUI();
+    return;
+  }
+  if (actionId === "touch_grass") {
+    unlockStudioBadge("touch_grass_fail");
+    const fails = [
+      "You opened the door. UV radiation from the sun caused a production incident.",
+      "Grass touched you back. It filed a Jira ticket.",
+      "You stepped outside. A recruiter appeared. Retreat successful.",
+      "Nature patch notes unknown. Rolled back to basement immediately."
+    ];
+    const msg = fails[Math.floor(Math.random() * fails.length)];
+    addLog("Touch Grass Attempt", msg);
+    showToast("🌿 Touch grass failed. +0 wellness.", "warning");
+    return;
+  }
+  if (actionId === "ceo_thought") {
+    const thought = CEO_THOUGHTS[Math.floor(Math.random() * CEO_THOUGHTS.length)];
+    const bubble = document.getElementById("ceo-thought-bubble");
+    if (bubble) bubble.innerText = thought;
+    addLog("CEO Brainwave", thought.replace(/"/g, ""));
+    showToast("🧠 CEO thought emitted.", "info");
+    return;
+  }
+  if (actionId === "blame_roulette") {
+    gameState.blameSpins = (gameState.blameSpins || 0) + 1;
+    const target = BLAME_TARGETS[Math.floor(Math.random() * BLAME_TARGETS.length)];
+    addLog("Blame Roulette", `Spin result: ${target} is at fault. Case closed.`);
+    showToast(`🎰 Blame assigned: ${target}`, "info");
+    checkFunnyAchievements();
+    saveGame();
+    return;
+  }
+}
+
+function initNeonCity() {
+  const city = document.getElementById("void-city");
+  if (!city || city.children.length > 0) return;
+  const colors = ["#00fff0", "#ff0080", "#8b5cff", "#00e5ff", "#ff2a9a", "#39ff14"];
+  const widths = [3, 4, 5, 6, 7, 8, 10, 12, 14, 5, 6, 8, 4, 9, 11, 7];
+  const heights = [35, 55, 70, 45, 80, 60, 90, 50, 75, 40, 65, 85, 48, 72, 58, 68];
+  widths.forEach((w, i) => {
+    const b = document.createElement("div");
+    b.className = "city-building";
+    const h = heights[i % heights.length];
+    const c = colors[i % colors.length];
+    b.style.width = `${w}%`;
+    b.style.height = `${h}%`;
+    b.style.setProperty("--bcolor", c);
+    b.style.setProperty("--fdelay", `${(i * 0.3) % 2}s`);
+    b.style.maxWidth = `${40 + (i % 5) * 12}px`;
+    city.appendChild(b);
+  });
+}
+
+function initLogoEasterEgg() {
+  const logo = document.getElementById("logo-title-easter");
+  if (!logo) return;
+  const quips = [
+    "Still loading existential dread...",
+    "Error 418: Studio is a teapot.",
+    "You are now legally a '10x engineer' (terms apply).",
+    "Achievement: Clicked the logo. HR has been notified.",
+    "The dead end is a feature, not a bug.",
+    "Have you tried turning the company off and on again?"
+  ];
+  logo.style.cursor = "pointer";
+  logo.addEventListener("click", () => {
+    gameState.logoClicks = (gameState.logoClicks || 0) + 1;
+    const q = quips[gameState.logoClicks % quips.length];
+    showToast(q, "info");
+    if (gameState.logoClicks === 7) {
+      gameState.cash += 7;
+      addLog("Logo Secret", "7 clicks. The universe refunds $7. Coincidence? Yes.");
+      showToast("🎉 Secret: +$7 from the void!", "success");
+      saveGame();
+      updateUI();
+    }
+  });
 }
 
 function triggerRandomEvent() {
@@ -726,6 +1161,41 @@ function triggerRandomEvent() {
       gameState.studioReputation = Math.min(100, gameState.studioReputation + 3);
       addLog("Random Event", "Local blog called your studio 'ones to watch'. +3 Reputation.");
       showToast("📰 Press mention! +3 Rep", "info");
+    },
+    () => {
+      postSlackNotification();
+      addLog("Random Event", "Slack @here in #general. Productivity halted globally.");
+    },
+    () => {
+      gameState.nerve = Math.min(gameState.max_nerve, gameState.nerve + 1);
+      addLog("Random Event", "Watched a true crime documentary. +1 chutzpah. Ethics unexamined.");
+      showToast("🕶️ +1 sketch factor from crime TV", "info");
+    },
+    () => {
+      const mandate = CORPORATE_MANDATES[Math.floor(Math.random() * CORPORATE_MANDATES.length)];
+      gameState.corporateMandateIndex = CORPORATE_MANDATES.indexOf(mandate);
+      const el = document.getElementById("hud-mandate-text");
+      if (el) el.innerText = mandate;
+      addLog("Corporate Update", `New mandate: ${mandate}`);
+      showToast("📜 New corporate mandate!", "warning");
+    },
+    () => {
+      gameState.cash += 12;
+      addLog("Random Event", "Found $12 in the USB stick jar labeled 'emergency snacks'.");
+      showToast("💰 USB stick jar! +$12", "success");
+    },
+    () => {
+      ensureStudioMeta();
+      gameState.studioBuzz = Math.min(100, gameState.studioBuzz + 4);
+      addLog("Random Event", "Influencer mispronounced your studio name. +4 buzz anyway.");
+      showToast("📱 Viral mispronunciation! +4 buzz", "info");
+    },
+    () => {
+      if (gameState.current_project) {
+        gameState.current_project.hypeMeter = Math.min(100, (gameState.current_project.hypeMeter || 0) + 5);
+        addLog("Random Event", "Leaked screenshot gained traction. +5 hype. It was a placeholder.");
+        showToast("📸 Leak hype! +5 (it was a gray box)", "info");
+      }
     }
   ];
 
@@ -1053,8 +1523,16 @@ function ensureStudioMeta() {
   gameState.studioBuzz = gameState.studioBuzz ?? 0;
   gameState.studioDiary = gameState.studioDiary ?? [];
   gameState.studioAwards = gameState.studioAwards ?? [];
+  gameState.studioBadges = gameState.studioBadges ?? [];
   gameState.rentOverdue = gameState.rentOverdue ?? 0;
   gameState.investorMeetings = gameState.investorMeetings ?? 0;
+  gameState.officePlant = gameState.officePlant ?? false;
+  gameState.blameSpins = gameState.blameSpins ?? 0;
+  gameState.caffeinePeakCount = gameState.caffeinePeakCount ?? 0;
+  gameState.gigsCompleted = gameState.gigsCompleted ?? 0;
+  gameState.rentPaidCount = gameState.rentPaidCount ?? 0;
+  gameState.corporateMandateIndex = gameState.corporateMandateIndex ?? 0;
+  gameState.logoClicks = gameState.logoClicks ?? 0;
   if (gameState.studioOpportunity == null) {
     const pool = [...STUDIO_OPPORTUNITY_POOL].sort(() => Math.random() - 0.5);
     gameState.studioOpportunity = pool[0];
@@ -1176,7 +1654,7 @@ function renderStudioDashboard() {
       <div class="studio-dash-header">
         <div>
           <h2 class="studio-dash-title">${gameState.company_name}</h2>
-          <p class="studio-dash-sub">${getOfficeDisplayName(gameState.office_tier)} · Level ${gameState.level} Dev · ${gameState.employees.length} crew</p>
+          <p class="studio-dash-sub">${getOfficeDisplayName(gameState.office_tier)} · ${HUD_COPY.imposter.icon} Imposter Tier ${gameState.level} (${getImposterTitle(gameState.level)}) · ${gameState.employees.length} crew pretending to help</p>
         </div>
         <div class="studio-dash-badges">
           <div class="studio-badge cash">$${parseFloat(gameState.cash).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
@@ -1271,10 +1749,12 @@ function runStudioAction(actionId) {
     if (gameState.cash < rent) { showToast(`Rent is $${rent}!`, "error"); return; }
     gameState.cash -= rent;
     gameState.rentOverdue = 0;
+    gameState.rentPaidCount = (gameState.rentPaidCount || 0) + 1;
     gameState.studioMorale = Math.min(100, gameState.studioMorale + 8);
     pushStudioDiary(`Rent paid ($${rent}). Landlord sent a passive-aggressive thank-you emoji.`);
-    addLog("Rent Paid", `Paid $${rent}. Morale restored slightly.`);
+    addLog("Rent Paid", `Paid $${rent}. Morale restored slightly. Landlord respect: fabricated.`);
     showToast(`Rent paid! Morale +8`, "success");
+    checkFunnyAchievements();
   } else if (actionId === "investor_pitch") {
     if (gameState.nerve < 5) { showToast("Pitch needs 5 nerve!", "error"); return; }
     gameState.nerve -= 5;
@@ -1389,6 +1869,7 @@ function suspendMiniGameForTabChange(nextTab) {
     clearInterval(miniGameTimer);
     miniGameTimer = null;
   }
+  stopArcadeMiniGame();
 
   const mg = activeMiniGame;
   activeMiniGame = null;
@@ -1435,22 +1916,26 @@ function updateUI() {
   const nerveBar = document.getElementById("header-nerve-bar");
 
   if (cashEl) cashEl.innerText = `$${parseFloat(gameState.cash).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  if (energyVal) energyVal.innerText = `${Math.floor(gameState.energy)} / ${gameState.max_energy}`;
+
+  if (energyVal) energyVal.innerText = `${Math.floor(gameState.energy)} / ${gameState.max_energy} ${HUD_COPY.caffeine.unit}`;
   if (energyBar) energyBar.style.width = `${(gameState.energy / gameState.max_energy) * 100}%`;
 
-  if (nerveVal) nerveVal.innerText = `${Math.floor(gameState.nerve)} / ${gameState.max_nerve}`;
+  if (nerveVal) nerveVal.innerText = `${Math.floor(gameState.nerve)} / ${gameState.max_nerve} ${HUD_COPY.sketch.unit}`;
   if (nerveBar) nerveBar.style.width = `${(gameState.nerve / gameState.max_nerve) * 100}%`;
 
-  // Dev Level & XP displays
   const levelVal = document.getElementById("header-level-val");
   const xpVal = document.getElementById("header-xp-val");
   const xpBar = document.getElementById("header-xp-bar");
+  const imposterTitleEl = document.getElementById("hud-imposter-title");
 
   if (levelVal) levelVal.innerText = gameState.level;
-  if (xpVal) xpVal.innerText = `${Math.floor(gameState.xp)} / ${gameState.xp_needed} XP`;
+  if (imposterTitleEl) imposterTitleEl.innerText = getImposterTitle(gameState.level);
+  if (xpVal) xpVal.innerText = `${Math.floor(gameState.xp)} / ${gameState.xp_needed} ${HUD_COPY.resume.unit}`;
   if (xpBar) xpBar.style.width = `${Math.min(100, (gameState.xp / gameState.xp_needed) * 100)}%`;
 
   ensureStudioMeta();
+
+  if (hudFlavorTimer % 2 === 0) refreshHudHumor();
 
   const companySection = document.getElementById("company-section");
   const companyVisible = companySection && companySection.style.display !== "none";
@@ -1506,90 +1991,18 @@ function renderTrainingGym() {
   if (!container) return;
 
   if (activeMiniGame && activeMiniGame.isTraining) {
-    let gameHtml = "";
-    if (activeMiniGame.type === 'code') {
-      gameHtml = `
-        <div style="background: rgba(0,0,0,0.4); border: 1px solid var(--color-cyan); padding: 20px; border-radius: 12px; grid-column: span 3; width: 100%;">
-          <h4 style="color:var(--color-cyan); margin-bottom: 8px;">⌨️ Coding Mini-game: Syntax Striker</h4>
-          <p style="font-size:0.85rem; color:var(--color-text-muted); margin-bottom:12px;">Type the following code snippet exactly as shown within the time limit:</p>
-          
-          <div style="background:#060608; border:1px solid rgba(255,255,255,0.1); padding:12px; border-radius:8px; font-family:monospace; font-size:1rem; color:#ffd700; text-align:center; margin-bottom:12px; letter-spacing:0.5px; user-select:none;">
-            ${activeMiniGame.target}
-          </div>
-
-          <input type="text" id="minigame-code-input" autocomplete="off" placeholder="Type it here..." style="width:100%; padding:12px; background:rgba(0,0,0,0.6); border:1px solid var(--border-glass); border-radius:8px; color:#fff; font-family:monospace; font-size:1rem; margin-bottom:12px;" oninput="submitCodeInput()">
-          
-          <div class="status-bar-track" style="height:6px; margin-bottom:12px;">
-            <div class="status-bar-fill" id="minigame-timer-bar" style="width:100%; height:100%; background:var(--color-cyan);"></div>
-          </div>
-          
-          <button class="btn-secondary" style="width:100%; border-color:rgba(255,23,68,0.3); color:#ff1744;" onclick="cancelMiniGame()">Cancel Mini-game</button>
-        </div>
-      `;
-    } else if (activeMiniGame.type === 'design') {
-      gameHtml = `
-        <div style="background: rgba(0,0,0,0.4); border: 1px solid var(--color-purple); padding: 20px; border-radius: 12px; grid-column: span 3; width: 100%;">
-          <h4 style="color:var(--color-purple); margin-bottom: 8px;">🎨 Design Mini-game: Color Matcher</h4>
-          <p style="font-size:0.85rem; color:var(--color-text-muted); margin-bottom:12px;">Stroop Effect! Click the button that matches the target color name:</p>
-          
-          <div style="font-size:1.6rem; font-weight:800; text-align:center; margin-bottom:15px; letter-spacing:1px; color: ${getRandomColorHex()};">
-            ${activeMiniGame.targetColor.name}
-          </div>
-
-          <div style="display:flex; gap:10px; margin-bottom:15px;">
-            ${activeMiniGame.buttons.map(btn => {
-              return `<button class="btn-primary" style="flex:1; background:${btn.hex}; border-color:${btn.hex}; color:#000;" onclick="selectDesignColor('${btn.name}')">${btn.name}</button>`;
-            }).join("")}
-          </div>
-
-          <div class="status-bar-track" style="height:6px; margin-bottom:12px;">
-            <div class="status-bar-fill" id="minigame-timer-bar" style="width:100%; height:100%; background:var(--color-purple);"></div>
-          </div>
-          
-          <button class="btn-secondary" style="width:100%; border-color:rgba(255,23,68,0.3); color:#ff1744;" onclick="cancelMiniGame()">Cancel Mini-game</button>
-        </div>
-      `;
-    } else if (activeMiniGame.type === 'polish') {
-      const buttons = [0, 1, 2, 3];
-      gameHtml = `
-        <div style="background: rgba(0,0,0,0.4); border: 1px solid #ffd700; padding: 20px; border-radius: 12px; grid-column: span 3; width: 100%;">
-          <h4 style="color:#ffd700; margin-bottom: 8px;">🐛 Polish Mini-game: Bug Squasher</h4>
-          <p style="font-size:0.85rem; color:var(--color-text-muted); margin-bottom:12px;">Click the button containing the BUG to squash it:</p>
-          
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:15px;">
-            ${buttons.map(i => {
-              const isBug = i === activeMiniGame.bugIndex;
-              return `<button class="btn-secondary" style="padding:16px; font-size:1rem; font-weight:bold;" onclick="clickBugButton(${i})">${isBug ? "🐛 BUG" : "Clean Line"}</button>`;
-            }).join("")}
-          </div>
-
-          <div class="status-bar-track" style="height:6px; margin-bottom:12px;">
-            <div class="status-bar-fill" id="minigame-timer-bar" style="width:100%; height:100%; background:#ffd700;"></div>
-          </div>
-          
-          <button class="btn-secondary" style="width:100%; border-color:rgba(255,23,68,0.3); color:#ff1744;" onclick="cancelMiniGame()">Cancel Mini-game</button>
-        </div>
-      `;
-    }
-
-    container.innerHTML = gameHtml;
-
-    if (activeMiniGame.type === 'code') {
-      setTimeout(() => {
-        const input = document.getElementById("minigame-code-input");
-        if (input) input.focus();
-      }, 50);
-    }
+    container.innerHTML = buildArcadeMiniGameHtml(activeMiniGame, "grid-column: span 3; width: 100%;");
+    mountActiveArcadeMiniGame();
     return;
   }
 
-  const xpCostText = gameState.level > 1 ? "-15 XP" : "FREE (mom pays tuition)";
+  const xpCostText = gameState.level > 1 ? "-15 bullet points" : "FREE (mom pays tuition)";
 
   container.innerHTML = `
     <div class="card-item" style="padding: 14px;">
       <div class="card-item-title" style="font-size: 0.95rem;">
         <span>Code Optimization Class</span>
-        <span style="color: #ffd700; display:flex; gap:8px;"><span>-10 ⚡</span> <span style="color:var(--color-cyan); font-weight:bold;">${xpCostText}</span></span>
+        <span style="color: #ffd700; display:flex; gap:8px;"><span>-10 ☕</span> <span style="color:var(--color-cyan); font-weight:bold;">${xpCostText}</span></span>
       </div>
       <div class="card-item-desc" style="font-size: 0.8rem; line-height:1.4;">
         Solve complex algorithm challenges. Coding skill increases points generated during sprints.<br>
@@ -1597,13 +2010,13 @@ function renderTrainingGym() {
           <strong>Syllabus Excerpt:</strong> Learn how to write O(N^3) nested loops and explain it to management as 'dynamic scaling'. Study why comments like <code>// do not touch this or server melts</code> are essential for job security.
         </span>
       </div>
-      <button class="btn-primary" style="padding: 10px;" onclick="trainSkill('coding_skill')">Train Coding</button>
+      <button class="btn-primary" style="padding: 10px;" onclick="trainSkill('coding_skill')">Train Coding Arcade</button>
     </div>
 
     <div class="card-item" style="padding: 14px;">
       <div class="card-item-title" style="font-size: 0.95rem;">
         <span>Design Theory Templates</span>
-        <span style="color: #ffd700; display:flex; gap:8px;"><span>-10 ⚡</span> <span style="color:var(--color-cyan); font-weight:bold;">${xpCostText}</span></span>
+        <span style="color: #ffd700; display:flex; gap:8px;"><span>-10 ☕</span> <span style="color:var(--color-cyan); font-weight:bold;">${xpCostText}</span></span>
       </div>
       <div class="card-item-desc" style="font-size: 0.8rem; line-height:1.4;">
         Study harmonic layout guidelines. Design skill contributes heavy design points to active games.<br>
@@ -1611,13 +2024,13 @@ function renderTrainingGym() {
           <strong>Syllabus Excerpt:</strong> Discover why using 12 neon shades of purple creates a 'cyberpunk layout' that distracts reviewers from collision detection failures. Learn the hex codes of wobbly loot boxes.
         </span>
       </div>
-      <button class="btn-primary" style="padding: 10px;" onclick="trainSkill('design_skill')">Train Design</button>
+      <button class="btn-primary" style="padding: 10px;" onclick="trainSkill('design_skill')">Train Design Arcade</button>
     </div>
 
     <div class="card-item" style="padding: 14px;">
       <div class="card-item-title" style="font-size: 0.95rem;">
         <span>Agile Lead Seminars</span>
-        <span style="color: #ffd700; display:flex; gap:8px;"><span>-10 ⚡</span> <span style="color:var(--color-cyan); font-weight:bold;">${xpCostText}</span></span>
+        <span style="color: #ffd700; display:flex; gap:8px;"><span>-10 ☕</span> <span style="color:var(--color-cyan); font-weight:bold;">${xpCostText}</span></span>
       </div>
       <div class="card-item-desc" style="font-size: 0.8rem; line-height:1.4;">
         Practice project management classes. Management skill boosts gig success and bug squashing.<br>
@@ -1625,7 +2038,16 @@ function renderTrainingGym() {
           <strong>Syllabus Excerpt:</strong> A 4-hour presentation on why talking about coding is mathematically more productive than coding. Learn how to convert 2 lines of edits into a 15-person standup meeting.
         </span>
       </div>
-      <button class="btn-primary" style="padding: 10px;" onclick="trainSkill('management_skill')">Train Management</button>
+      <button class="btn-primary" style="padding: 10px;" onclick="trainSkill('management_skill')">Train Management Arcade</button>
+    </div>
+    <div class="card-item arcade-pool-card" style="padding: 14px; grid-column: span 3;">
+      <div class="card-item-title" style="font-size: 0.95rem;">
+        <span>🕹️ Arcade Training Pool</span>
+        <span style="color: var(--color-cyan); font-size: 0.8rem;">${window.ArcadeMinigames ? Object.keys(window.ArcadeMinigames.GAMES).length : 0} games</span>
+      </div>
+      <div class="card-item-desc" style="font-size: 0.8rem; line-height:1.4;">
+        Each training session launches a random retro arcade mini-game — Snake, Space Invaders, Breakout, Tetris, Frogger, Whack-a-Bug, and more. Management said it's "gamified upskilling."
+      </div>
     </div>
   `;
 }
@@ -1633,11 +2055,11 @@ function renderTrainingGym() {
 function trainSkill(skillName) {
   const xpCost = gameState.level > 1 ? 15 : 0;
   if (gameState.xp < xpCost) {
-    showToast(`Requires ${xpCost} XP to train!`, "error");
+    showToast(`Requires ${xpCost} resume bullet points to train!`, "error");
     return;
   }
   if (gameState.energy < 10) {
-    showToast("Insufficient energy. Take a rest!", "error");
+    showToast("Caffeine reserves depleted. Nap or consume liquid regret.", "error");
     return;
   }
 
@@ -1656,16 +2078,16 @@ function runGig(gigId) {
   const xpCost = getGigXpCost(gigId);
 
   if (gameState.xp < xpCost) {
-    showToast(`Insufficient XP! Performing this gig requires ${xpCost} XP.`, "error");
+    showToast(`Need ${xpCost} more resume bullet points for this gig!`, "error");
     return;
   }
 
   if (gameState.nerve < gig.nerveCost) {
-    showToast("Not enough nerve! Wait for your focus to recharge.", "error");
+    showToast("Not enough sketch factor! Wait for your chutzpah to recharge.", "error");
     return;
   }
 
-  if (!confirm(`Are you sure you want to perform gig '${gig.name}'? Costs ${gig.nerveCost} Nerve and ${xpCost} XP.`)) {
+  if (!confirm(`Perform gig '${gig.name}'? Costs ${gig.nerveCost} chutzpah and ${xpCost} resume bullet points.`)) {
     return;
   }
 
@@ -1678,59 +2100,22 @@ function runGig(gigId) {
     return mg;
   };
 
-  if (gigId === "freelance_html") {
-    activeMiniGame = attachGigMeta({
-      type: "slider",
-      isGig: true,
-      gigId: gigId,
-      duration: 8000,
-      elapsed: 0,
-      needlePosition: 0,
-      needleDirection: 1,
-      needleSpeed: 4,
-      greenZoneStart: 38,
-      greenZoneEnd: 62
-    });
-  } else if (gigId === "crack_competitor") {
-    const { target, options } = generateBinaryMatcherState();
-    activeMiniGame = attachGigMeta({
-      type: "binary",
-      isGig: true,
-      gigId: gigId,
-      duration: 10000,
-      elapsed: 0,
-      targetSequence: target,
-      options: options
-    });
-  } else if (gigId === "ransomware") {
-    let coords = [];
-    for (let i = 1; i <= 4; i++) {
-      coords.push({
-        num: i,
-        top: Math.floor(Math.random() * 50) + 20,
-        left: Math.floor(Math.random() * 70) + 15
-      });
-    }
-    activeMiniGame = attachGigMeta({
-      type: "trace",
-      isGig: true,
-      gigId: gigId,
-      duration: 12000,
-      elapsed: 0,
-      currentNumber: 1,
-      coords: coords
-    });
-  } else if (gigId === "ddos_rival") {
-    activeMiniGame = attachGigMeta({
-      type: "ping",
-      isGig: true,
-      gigId: gigId,
-      duration: 7000,
-      elapsed: 0,
-      clicksCount: 0,
-      targetClicks: 15
-    });
-  }
+  const gigArcadeId = window.ArcadeMinigames
+    ? window.ArcadeMinigames.pickForGig(gigId)
+    : "breakout";
+  const gigDuration = window.ArcadeMinigames
+    ? window.ArcadeMinigames.getDuration(gigArcadeId)
+    : 55000;
+
+  activeMiniGame = attachGigMeta({
+    type: "arcade",
+    arcadeId: gigArcadeId,
+    isGig: true,
+    gigId: gigId,
+    duration: gigDuration,
+    elapsed: 0,
+    timeLeft: 100
+  });
 
   activateMiniGameTimer();
   renderGigsBoard();
@@ -2077,6 +2462,45 @@ function createGameProject() {
 let activeMiniGame = null;
 let miniGameTimer = null;
 
+function isArcadeMiniGame(mg) {
+  return mg && mg.type === "arcade";
+}
+
+function getMiniGameSprintType(mg) {
+  if (!mg) return "code";
+  return mg.sprintCategory || mg.type;
+}
+
+function getArcadeMeta(mg) {
+  if (!window.ArcadeMinigames || !mg?.arcadeId) return { title: "Arcade", emoji: "🎮" };
+  return window.ArcadeMinigames.getMeta(mg.arcadeId);
+}
+
+function buildArcadeMiniGameHtml(mg, extraStyle) {
+  if (!window.ArcadeMinigames) return "";
+  return window.ArcadeMinigames.renderShell(mg.arcadeId, extraStyle || "");
+}
+
+function mountActiveArcadeMiniGame() {
+  if (!isArcadeMiniGame(activeMiniGame) || !window.ArcadeMinigames) return;
+  const canvas = document.getElementById("arcade-canvas");
+  if (!canvas) return;
+  window.ArcadeMinigames.mount(canvas, activeMiniGame.arcadeId, {
+    onWin: () => {
+      if (miniGameTimer) clearInterval(miniGameTimer);
+      successMiniGame();
+    },
+    onLose: (reason) => {
+      if (miniGameTimer) clearInterval(miniGameTimer);
+      failMiniGame(reason || "Game Over");
+    }
+  });
+}
+
+function stopArcadeMiniGame() {
+  if (window.ArcadeMinigames) window.ArcadeMinigames.unmount();
+}
+
 function getRandomColorHex() {
   const hexes = ['#00e5ff', '#b388ff', '#ffd700'];
   return hexes[Math.floor(Math.random() * hexes.length)];
@@ -2087,54 +2511,33 @@ function startMiniGame(type, isTraining = false) {
   const xpCost = isTraining ? (gameState.level > 1 ? 15 : 0) : 0;
 
   if (gameState.energy < energyCost) {
-    showToast(`Insufficient energy. Requires ${energyCost} Energy!`, "error");
+    showToast(`Need ${energyCost} more mg of desperation (caffeine)!`, "error");
     return;
   }
   if (isTraining && gameState.xp < xpCost) {
-    showToast(`Insufficient XP. Requires ${xpCost} XP to train!`, "error");
+    showToast(`Need ${xpCost} resume bullet points to train!`, "error");
     return;
   }
 
   // Clear previous timer
   if (miniGameTimer) clearInterval(miniGameTimer);
 
+  const arcadeId = window.ArcadeMinigames
+    ? window.ArcadeMinigames.pickForCategory(type)
+    : "snake";
+  const arcadeDuration = window.ArcadeMinigames
+    ? window.ArcadeMinigames.getDuration(arcadeId)
+    : 55000;
+
   activeMiniGame = {
-    type: type,
+    type: "arcade",
+    arcadeId,
+    sprintCategory: type,
     isTraining: isTraining,
-    timeLeft: 100, // percentage
-    duration: type === 'code' ? (gameState.ai_behavior ? 25000 : 15000) : 10000, // ms
+    timeLeft: 100,
+    duration: arcadeDuration,
     elapsed: 0
   };
-
-  if (type === 'code') {
-    const snippets = [
-      'rm -rf / --no-preserve-root',
-      'const bugs = new Array(999);',
-      '// TODO: fix this before Friday',
-      'while(true) { console.log("help"); }',
-      '// Copied from StackOverflow',
-      'if (score === 10) rating = 1.0;',
-      'const database = "local_json_lol";',
-      '// It works on my machine',
-      'npm install left-pad',
-      'git commit -m "jerry-rigged fix"',
-      'sudo chmod -R 777 /',
-      '// Pray to the server gods',
-      'window.gameLoop = "pure_luck";'
-    ];
-    activeMiniGame.target = snippets[Math.floor(Math.random() * snippets.length)];
-  } else if (type === 'design') {
-    const colors = [
-      { name: 'CYAN', hex: '#00e5ff' },
-      { name: 'PURPLE', hex: '#b388ff' },
-      { name: 'GOLD', hex: '#ffd700' }
-    ];
-    activeMiniGame.targetColor = colors[Math.floor(Math.random() * colors.length)];
-    // Randomize buttons
-    activeMiniGame.buttons = [...colors].sort(() => Math.random() - 0.5);
-  } else if (type === 'polish') {
-    activeMiniGame.bugIndex = Math.floor(Math.random() * 4); // 4 buttons
-  }
 
   // Deduct energy & XP
   gameState.energy -= energyCost;
@@ -2175,6 +2578,7 @@ function startMiniGame(type, isTraining = false) {
 
 function cancelMiniGame() {
   if (miniGameTimer) clearInterval(miniGameTimer);
+  stopArcadeMiniGame();
   if (!activeMiniGame) return;
 
   const isTraining = activeMiniGame.isTraining;
@@ -2267,8 +2671,10 @@ function clickBugButton(clickedIndex) {
 
 function successMiniGame() {
   if (!activeMiniGame) return;
+  stopArcadeMiniGame();
   ChiptuneAudio.playSFX("success");
-  const type = activeMiniGame.type;
+  const type = getMiniGameSprintType(activeMiniGame);
+  const arcadeMeta = isArcadeMiniGame(activeMiniGame) ? getArcadeMeta(activeMiniGame) : null;
   const isTraining = activeMiniGame.isTraining;
   const isGig = activeMiniGame.isGig;
   const gigId = activeMiniGame.gigId;
@@ -2340,6 +2746,7 @@ function successMiniGame() {
   miniGameCombo++;
   const comboMult = Math.min(1.8, 1 + (miniGameCombo - 1) * 0.12);
   updateHudCombo(miniGameCombo);
+  checkFunnyAchievements();
 
   if (miniGameCombo >= 3) {
     ChiptuneAudio.playSFX("combo");
@@ -2348,26 +2755,28 @@ function successMiniGame() {
 
   const comboLabel = miniGameCombo >= 2 ? ` (${miniGameCombo}x COMBO!)` : "";
 
+  const arcadeLabel = arcadeMeta ? `${arcadeMeta.emoji} ${arcadeMeta.title}` : null;
+
   if (type === 'code') {
     const pointsGained = Math.ceil(target * comboMult);
     gameState.current_project.tech_points += pointsGained;
     gameState.coding_skill += 1;
 
-    addLog("Syntax Striker Success!", `Correctly typed code snippet. Gained +${pointsGained} Tech Points${comboLabel} and +1 Coding Skill.`);
-    showToast(`Code success! +${pointsGained} Tech${comboLabel}`, "success");
+    addLog(arcadeLabel ? `${arcadeLabel} Cleared!` : "Syntax Striker Success!", `Arcade sprint complete. Gained +${pointsGained} Tech Points${comboLabel} and +1 Coding Skill.`);
+    showToast(`Code arcade win! +${pointsGained} Tech${comboLabel}`, "success");
   } else if (type === 'design') {
     const pointsGained = Math.ceil(target * comboMult);
     gameState.current_project.design_points += pointsGained;
     gameState.design_skill += 1;
 
-    addLog("Color Matcher Success!", `Matched target design color resonance. Gained +${pointsGained} Design Points${comboLabel} and +1 Design Skill.`);
-    showToast(`Design success! +${pointsGained} Design${comboLabel}`, "success");
+    addLog(arcadeLabel ? `${arcadeLabel} Cleared!` : "Color Matcher Success!", `Arcade sprint complete. Gained +${pointsGained} Design Points${comboLabel} and +1 Design Skill.`);
+    showToast(`Design arcade win! +${pointsGained} Design${comboLabel}`, "success");
   } else if (type === 'polish') {
     const bugsRemoved = Math.floor((Math.random() * 8) + 8 + Math.floor(gameState.management_skill / 8)) * comboMult;
     gameState.current_project.bug_points = Math.max(0, gameState.current_project.bug_points - bugsRemoved);
     gameState.management_skill += 1;
 
-    addLog("Bug Squasher Success!", `Squashed compiler bugs. Removed -${Math.floor(bugsRemoved)} bugs${comboLabel} and gained +1 Management.`);
+    addLog(arcadeLabel ? `${arcadeLabel} Cleared!` : "Bug Squasher Success!", `Arcade polish run complete. Removed -${Math.floor(bugsRemoved)} bugs${comboLabel} and gained +1 Management.`);
     showToast(`Polished! -${Math.floor(bugsRemoved)} Bugs${comboLabel}`, "success");
   }
 
@@ -2386,8 +2795,9 @@ function successMiniGame() {
 
 function failMiniGame(reason) {
   if (!activeMiniGame) return;
+  stopArcadeMiniGame();
   ChiptuneAudio.playSFX("fail");
-  const type = activeMiniGame.type;
+  const type = getMiniGameSprintType(activeMiniGame);
   const isTraining = activeMiniGame.isTraining;
   const isGig = activeMiniGame.isGig;
   const gigId = activeMiniGame.gigId;
@@ -2473,7 +2883,7 @@ function runDevSprintAction(actionId) {
   const target = getTargetPointsForScale(proj.scale);
 
   if (actionId === "crunch") {
-    if (gameState.nerve < 3) { showToast("Need 3 Nerve to crunch!", "error"); return; }
+    if (gameState.nerve < 3) { showToast("Need 3 chutzpah to crunch!", "error"); return; }
     gameState.nerve -= 3;
     const boost = Math.ceil(target * 0.12);
     proj.tech_points += boost;
@@ -2553,89 +2963,17 @@ function renderProjectProgress() {
   const readyToShip = canReleaseProject(proj);
   const energyCost = getDevEnergyCost();
 
-  // Mini-game conditional rendering
-  if (activeMiniGame) {
-    let gameHtml = "";
-    if (activeMiniGame.type === 'code') {
-      gameHtml = `
-        <div style="background: rgba(0,0,0,0.4); border: 1px solid var(--color-cyan); padding: 20px; border-radius: 12px; margin-top: 15px;">
-          <h4 style="color:var(--color-cyan); margin-bottom: 8px;">⌨️ Coding Mini-game: Syntax Striker</h4>
-          <p style="font-size:0.85rem; color:var(--color-text-muted); margin-bottom:12px;">Type the following code snippet exactly as shown within the time limit:</p>
-          
-          <div style="background:#060608; border:1px solid rgba(255,255,255,0.1); padding:12px; border-radius:8px; font-family:monospace; font-size:1rem; color:#ffd700; text-align:center; margin-bottom:12px; letter-spacing:0.5px; user-select:none;">
-            ${activeMiniGame.target}
-          </div>
-
-          <input type="text" id="minigame-code-input" autocomplete="off" placeholder="Type it here..." style="width:100%; padding:12px; background:rgba(0,0,0,0.6); border:1px solid var(--border-glass); border-radius:8px; color:#fff; font-family:monospace; font-size:1rem; margin-bottom:12px;" oninput="submitCodeInput()">
-          
-          <div class="status-bar-track" style="height:6px; margin-bottom:12px;">
-            <div class="status-bar-fill" id="minigame-timer-bar" style="width:100%; height:100%; background:var(--color-cyan);"></div>
-          </div>
-          
-          <button class="btn-secondary" style="width:100%; border-color:rgba(255,23,68,0.3); color:#ff1744;" onclick="cancelMiniGame()">Cancel Mini-game</button>
-        </div>
-      `;
-    } else if (activeMiniGame.type === 'design') {
-      gameHtml = `
-        <div style="background: rgba(0,0,0,0.4); border: 1px solid var(--color-purple); padding: 20px; border-radius: 12px; margin-top: 15px;">
-          <h4 style="color:var(--color-purple); margin-bottom: 8px;">🎨 Design Mini-game: Color Matcher</h4>
-          <p style="font-size:0.85rem; color:var(--color-text-muted); margin-bottom:12px;">Stroop Effect! Click the button that matches the target color name:</p>
-          
-          <div style="font-size:1.6rem; font-weight:800; text-align:center; margin-bottom:15px; letter-spacing:1px; color: ${getRandomColorHex()};">
-            ${activeMiniGame.targetColor.name}
-          </div>
-
-          <div style="display:flex; gap:10px; margin-bottom:15px;">
-            ${activeMiniGame.buttons.map(btn => {
-        return `<button class="btn-primary" style="flex:1; background:${btn.hex}; border-color:${btn.hex}; color:#000;" onclick="selectDesignColor('${btn.name}')">${btn.name}</button>`;
-      }).join("")}
-          </div>
-
-          <div class="status-bar-track" style="height:6px; margin-bottom:12px;">
-            <div class="status-bar-fill" id="minigame-timer-bar" style="width:100%; height:100%; background:var(--color-purple);"></div>
-          </div>
-          
-          <button class="btn-secondary" style="width:100%; border-color:rgba(255,23,68,0.3); color:#ff1744;" onclick="cancelMiniGame()">Cancel Mini-game</button>
-        </div>
-      `;
-    } else if (activeMiniGame.type === 'polish') {
-      const buttons = [0, 1, 2, 3];
-      gameHtml = `
-        <div style="background: rgba(0,0,0,0.4); border: 1px solid #ffd700; padding: 20px; border-radius: 12px; margin-top: 15px;">
-          <h4 style="color:#ffd700; margin-bottom: 8px;">🐛 Polish Mini-game: Bug Squasher</h4>
-          <p style="font-size:0.85rem; color:var(--color-text-muted); margin-bottom:12px;">One cell hides the bug. The others are lying.</p>
-          
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:15px;">
-            ${buttons.map(i => {
-        return `<button class="btn-secondary" style="padding:16px; font-size:1.2rem; font-weight:bold;" onclick="clickBugButton(${i})">❓</button>`;
-      }).join("")}
-          </div>
-
-          <div class="status-bar-track" style="height:6px; margin-bottom:12px;">
-            <div class="status-bar-fill" id="minigame-timer-bar" style="width:100%; height:100%; background:#ffd700;"></div>
-          </div>
-          
-          <button class="btn-secondary" style="width:100%; border-color:rgba(255,23,68,0.3); color:#ff1744;" onclick="cancelMiniGame()">Cancel Mini-game</button>
-        </div>
-      `;
-    }
-
+  if (activeMiniGame && !activeMiniGame.isGig && !activeMiniGame.isStore) {
     devPanel.innerHTML = `
       <div class="develop-progress-card">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <h3 style="font-size:1.1rem; color:var(--color-cyan);">${proj.name}</h3>
           <span style="font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; color:var(--color-text-muted);">${proj.scale} Project</span>
         </div>
-        ${gameHtml}
+        ${buildArcadeMiniGameHtml(activeMiniGame, "margin-top: 15px;")}
       </div>
     `;
-
-    if (activeMiniGame.type === 'code') {
-      setTimeout(() => {
-        const input = document.getElementById("minigame-code-input");
-        if (input) input.focus();
-      }, 50);
-    }
+    mountActiveArcadeMiniGame();
     return;
   }
 
@@ -2685,19 +3023,26 @@ function renderProjectProgress() {
 
       <div class="dev-board-grid" style="margin-top:4px;">
         <div>
-          <h4 class="dev-section-label">⚡ Dev Sprints (Mini-games)</h4>
-          <p class="dev-section-hint">${energyCost} energy per sprint · Ship at 90% with ≤8 bugs</p>
+          <h4 class="dev-section-label">⚡ Dev Sprints (Arcade Mini-games)</h4>
+          <p class="dev-section-hint">${energyCost} ☕ caffeine per sprint · ${window.ArcadeMinigames ? Object.keys(window.ArcadeMinigames.GAMES).length : 17} retro arcade games · Ship at 90% with ≤8 bugs (lawyers waived reading the fine print)</p>
           <div class="dev-sprint-row">
-            <button class="btn-primary dev-sprint-btn" onclick="startMiniGame('code')">⌨️ Code</button>
-            <button class="btn-primary dev-sprint-btn" onclick="startMiniGame('design')">🎨 Design</button>
-            <button class="btn-primary dev-sprint-btn" onclick="startMiniGame('polish')">🔧 Polish</button>
+            <button class="btn-primary dev-sprint-btn" onclick="startMiniGame('code')" title="Snake, Space Invaders, Breakout, Asteroids...">⌨️ Code Arcade</button>
+            <button class="btn-primary dev-sprint-btn" onclick="startMiniGame('design')" title="Pong, Tetris, Frogger, Memory Match...">🎨 Design Arcade</button>
+            <button class="btn-primary dev-sprint-btn" onclick="startMiniGame('polish')" title="Whack-a-Bug, Pac-Dots, Minesweeper...">🔧 Polish Arcade</button>
+          </div>
+          <div class="arcade-pool-preview">
+            ${window.ArcadeMinigames ? ["code", "design", "polish"].map(cat => {
+              const games = window.ArcadeMinigames.listForCategory(cat);
+              const label = cat === "code" ? "Code" : cat === "design" ? "Design" : "Polish";
+              return `<span class="arcade-pool-chip" data-cat="${cat}">${label}: ${games.map(g => g.emoji).join("")}</span>`;
+            }).join("") : ""}
           </div>
 
           <h4 class="dev-section-label" style="margin-top:14px;">🛠️ Production Actions</h4>
           <div class="dev-action-grid">
-            <button class="btn-secondary dev-action-btn" onclick="runDevSprintAction('crunch')">Crunch Weekend<br><small>-3 🎯 nerve</small></button>
+            <button class="btn-secondary dev-action-btn" onclick="runDevSprintAction('crunch')">Crunch Weekend<br><small>-3 🕶️ chutzpah</small></button>
             <button class="btn-secondary dev-action-btn" onclick="runDevSprintAction('refactor')">Refactor Pass<br><small>-$200</small></button>
-            <button class="btn-secondary dev-action-btn" onclick="runDevSprintAction('playtest')">Playtest<br><small>-8 ⚡</small></button>
+            <button class="btn-secondary dev-action-btn" onclick="runDevSprintAction('playtest')">Playtest<br><small>-8 ☕ caffeine</small></button>
             <button class="btn-secondary dev-action-btn" onclick="runDevSprintAction('scope_creep')">Scope Creep<br><small>-$100</small></button>
             <button class="btn-secondary dev-action-btn" onclick="runDevSprintAction('focus_group')">Focus Group<br><small>-$350 · -10 XP</small></button>
             <button class="btn-secondary dev-action-btn" onclick="runDevSprintAction('asset_store')">Asset Store<br><small>-$75</small></button>
@@ -2844,6 +3189,7 @@ function releaseGameProject() {
   if (!Array.isArray(gameState.portfolio)) gameState.portfolio = [];
   gameState.portfolio.push({ ...releasedGame });
   gameState.games_released += 1;
+  checkFunnyAchievements();
 
   // XP Gains
   let baseXP = 20;
@@ -3262,6 +3608,19 @@ function runActivity(activityType) {
       showToast("You already upgraded to Ergonomic Chairs!", "info");
       return;
     }
+  } else if (activityType === "pretend_work") {
+    cost = 0;
+    label = "Pretend to Work";
+  } else if (activityType === "buzzword_standup") {
+    cost = 0;
+    label = "Buzzword Standup";
+  } else if (activityType === "office_plant") {
+    cost = 75;
+    label = "Fake Office Plant";
+    if (gameState.officePlant) {
+      showToast("The plastic fern is already photosynthesizing cosplay!", "info");
+      return;
+    }
   }
 
   if (gameState.cash < cost) {
@@ -3273,18 +3632,21 @@ function runActivity(activityType) {
   if (activityType === "pizza_party") xpCost = 10;
   else if (activityType === "hackathon") xpCost = 25;
   else if (activityType === "dev_con") xpCost = 50;
+  else if (activityType === "buzzword_standup") xpCost = 5;
 
   if (gameState.xp < xpCost) {
-    showToast(`Insufficient XP! Hosting this activity requires ${xpCost} XP.`, "error");
+    showToast(`Need ${xpCost} resume bullet points for this!`, "error");
     return;
   }
 
-  if (!confirm(`Are you sure you want to start '${label}'? Costs $${cost} and ${xpCost} XP.`)) {
+  const costLabel = cost > 0 ? `$${cost}` : "FREE";
+  const xpLabel = xpCost > 0 ? `${xpCost} bullet points` : "no bullet points";
+  if (activityType !== "pretend_work" && !confirm(`Start '${label}'? Costs ${costLabel} and ${xpLabel}.`)) {
     return;
   }
 
   gameState.cash -= cost;
-  gameState.xp -= xpCost;
+  if (xpCost > 0) gameState.xp -= xpCost;
 
   ensureStudioMeta();
   if (activityType === "pizza_party") {
@@ -3320,8 +3682,32 @@ function runActivity(activityType) {
       btn.disabled = true;
       btn.innerText = "Purchased";
     }
+  } else if (activityType === "pretend_work") {
+    gameState.energy = Math.min(gameState.max_energy, gameState.energy + 8);
+    gameState.caffeinePeakCount = (gameState.caffeinePeakCount || 0) + 1;
+    gainXP(3);
+    pushStudioDiary("Pretended to work. Manager sent a thumbs-up emoji. No code written.");
+    addLog("Pretend to Work", "Alt-tabbed convincingly. +8 caffeine, +3 resume padding.");
+    showToast("🖥️ Looking busy! +8 caffeine, +3 pad", "success");
+  } else if (activityType === "buzzword_standup") {
+    gameState.studioMorale = Math.min(100, gameState.studioMorale + 12);
+    gameState.studioBuzz = Math.min(100, gameState.studioBuzz + 6);
+    const phrase = BUZZWORD_PHRASES[Math.floor(Math.random() * BUZZWORD_PHRASES.length)];
+    pushStudioDiary(`Standup topic: ${phrase}. Attendees confused but inspired.`);
+    addLog("Buzzword Standup", `45-minute synergy sermon. +12 morale, +6 buzz.`);
+    showToast(`📢 Standup complete! "${phrase}"`, "success");
+  } else if (activityType === "office_plant") {
+    gameState.officePlant = true;
+    gameState.studioMorale = Math.min(100, gameState.studioMorale + 5);
+    pushStudioDiary("Plastic fern installed. Wellness KPI green. Plant status: decorative.");
+    addLog("Office Plant", "Purchased fake fern. Permanent +8% caffeine recovery.");
+    showToast("🪴 Plant acquired! Wellness theater enabled.", "success");
+    const plantBtn = document.getElementById("btn-plant-activity");
+    if (plantBtn) { plantBtn.disabled = true; plantBtn.innerText = "Photosynthesizing"; }
+    checkFunnyAchievements();
   }
 
+  checkFunnyAchievements();
   saveGame();
   updateUI();
 }
@@ -3947,6 +4333,7 @@ window.runPostMortem = runPostMortem;
 window.launchRemaster = launchRemaster;
 window.startSequelProject = startSequelProject;
 window.runStudioAction = runStudioAction;
+window.runChaosAction = runChaosAction;
 window.renderStudioDashboard = renderStudioDashboard;
 
 // TOAST NOTIFICATIONS
@@ -3982,7 +4369,15 @@ function updateHudCombo(combo) {
   if (!el) return;
   if (combo >= 2) {
     el.style.display = "block";
-    el.innerText = `🔥 ${combo}x COMBO`;
+    const quips = [
+      "management calls it synergy",
+      "HR filing this under 'culture'",
+      "definitely not coping",
+      "productivity or panic? yes",
+      "streak sponsored by caffeine"
+    ];
+    const quip = quips[Math.min(combo - 2, quips.length - 1)];
+    el.innerText = `🔥 ${combo}x COMBO — ${quip}`;
   } else {
     el.style.display = "none";
   }
@@ -4026,11 +4421,11 @@ function nukeGameProject() {
     return;
   }
   
-  // Stop active mini-games
   if (miniGameTimer) {
     clearInterval(miniGameTimer);
     miniGameTimer = null;
   }
+  stopArcadeMiniGame();
   activeMiniGame = null;
   
   // If it was post-release, remove from active games list so sales stop!
@@ -4043,6 +4438,7 @@ function nukeGameProject() {
 
   gameState.current_project = null;
 
+  unlockStudioBadge("first_nuke");
   addLog("PROJECT NUKED", `'${gameName}' was vaporized. Store delisted. Portfolio entry sent to /dev/null (not really — we fixed that).`);
   
   saveGame();
@@ -4193,7 +4589,13 @@ function generateLiveChatMessage() {
       "LUL 😂",
       "Anyone here playing Minesweeper?",
       "They probably ran out of coffee again ☕",
-      "Fired employee #1? Savage LUL 😂"
+      "Fired employee #1? Savage LUL 😂",
+      "CEO just said 'AI blockchain synergy' unironically MonkaS",
+      "touch grass? in THIS economy? 💀",
+      "speedrun any% studio bankruptcy when?",
+      "the neon background has more personality than the roadmap",
+      "who broke prod? it was DNS again wasn't it",
+      "morale survey results: 'tired' written 47 times"
     ];
   }
 
@@ -4390,7 +4792,10 @@ function renderGigsBoard() {
   if (!container) return;
 
   if (activeMiniGame && activeMiniGame.isGig) {
-    if (activeMiniGame.type === 'slider') {
+    if (activeMiniGame.type === 'arcade') {
+      container.innerHTML = buildArcadeMiniGameHtml(activeMiniGame, "grid-column: span 1; width: 100%; text-align: center; box-sizing: border-box;");
+      mountActiveArcadeMiniGame();
+    } else if (activeMiniGame.type === 'slider') {
       container.innerHTML = `
         <div style="background: rgba(0,0,0,0.4); border: 2px solid var(--color-cyan); padding: 20px; border-radius: 12px; grid-column: span 1; width: 100%; text-align: center; box-sizing: border-box;">
           <h4 style="color: var(--color-cyan); margin-bottom: 8px; font-family: 'Press Start 2P', monospace; font-size: 0.8rem;">📐 Slider Centering: CSS Alignment</h4>
@@ -4501,7 +4906,7 @@ function renderGigsBoard() {
       <div class="card-item">
         <div class="card-item-title">
           <span>${dossier.title}</span>
-          <span style="color: #ff1744; display:flex; gap:8px;"><span>-${gig.nerveCost} 🎯</span> <span style="color:var(--color-cyan); font-weight:bold;">-${xpCost} XP</span></span>
+          <span style="color: #ff1744; display:flex; gap:8px;"><span>-${gig.nerveCost} 🕶️</span> <span style="color:var(--color-cyan); font-weight:bold;">-${xpCost} pad</span></span>
         </div>
         <div class="card-item-desc" style="line-height:1.4;">
           ${dossier.desc}<br>
@@ -4604,6 +5009,8 @@ function finishGig(gigId, wasSuccess) {
     showToast(`Gig Success! +$${payout}${bonusNote}`, "success");
     if (window.SynthwaveAudio) SynthwaveAudio.playSFX("cash");
 
+    gameState.gigsCompleted = (gameState.gigsCompleted || 0) + 1;
+    checkFunnyAchievements();
     gainXP(xpRewardGained);
   } else {
     const penalty = Math.floor(gig.rewardMin * (0.25 + (1 - gig.successRate) * 0.45));

@@ -20,16 +20,25 @@
   <!-- 3.5 Synthwave soundtrack engine -->
   <script defer src="synthwave-audio.js"></script>
 
+  <!-- 3.9 Arcade mini-games engine (canvas games for sprints/training/gigs) -->
+  <script defer src="arcade-minigames.js"></script>
+
   <!-- 4. Main Game logic (depends on api.js and supabase.js) -->
   <script defer src="game.js"></script>
 </head>
 
-<body class="synthwave-body">
-  <div class="synthwave-bg" aria-hidden="true">
-    <div class="synth-sun"></div>
-    <div class="synth-mountains"></div>
-    <div class="synth-grid-floor"></div>
-    <div class="scanlines"></div>
+<body class="neon-body synthwave-body">
+  <div class="neon-void" aria-hidden="true">
+    <div class="void-mesh"></div>
+    <div class="void-mesh void-mesh-alt"></div>
+    <div class="void-stars"></div>
+    <div class="void-horizon"></div>
+    <div class="void-city" id="void-city"></div>
+    <div class="void-rain"></div>
+    <div class="void-neon-lines"></div>
+    <div class="void-floor-reflection"></div>
+    <div class="void-scanlines"></div>
+    <div class="void-vignette"></div>
   </div>
 
   <div id="review-modal" class="modal-overlay" style="display: none;">
@@ -55,8 +64,8 @@
   <div class="app-wrapper">
     <header class="synth-header">
       <div class="logo-container">
-        <h1 class="logo-title">DEV<span>_END</span></h1>
-        <p class="logo-subtitle">NEON GARAGE TYCOON // 1986</p>
+        <h1 class="logo-title" id="logo-title-easter" title="Click for existential dread">DEV<span>_END</span></h1>
+        <p class="logo-subtitle">CYBER GARAGE TYCOON // EST. YESTERDAY // SHIPS TOMORROW (MAYBE)</p>
       </div>
       <nav class="nav-tabs nav-tabs-hidden" aria-hidden="true">
         <a href="index.html?tab=company" class="nav-tab">Company</a>
@@ -74,39 +83,67 @@
       </div>
     </header>
 
-    <section class="glass-panel stats-dashboard synth-stats" style="padding: 16px 24px;">
-      <div class="stat-card" style="box-shadow: none; background: transparent; border: none; padding: 0;">
-        <span class="stat-label">Studio Cash Reserves</span>
-        <span class="stat-value" id="header-cash" style="color: #39ff14;">$500.00</span>
+    <section class="glass-panel stats-dashboard synth-stats hud-panel" style="padding: 14px 20px;">
+      <div class="hud-top-row">
+        <div class="stat-card hud-cash-card">
+          <span class="stat-label">💸 Runway (Probably)</span>
+          <span class="stat-value" id="header-cash" style="color: #39ff14;">$500.00</span>
+          <span class="hud-stat-flavor">Audited by nobody. Trusted by investors anyway.</span>
+        </div>
+
+        <div class="status-bar-container hud-bar-block">
+          <div class="status-bar-header">
+            <span>☕ Caffeine Reserves</span>
+            <span id="header-energy-val">100 / 100 mg of desperation</span>
+          </div>
+          <div class="status-bar-track">
+            <div class="status-bar-fill energy" id="header-energy-bar" style="width: 100%;"></div>
+          </div>
+          <span class="hud-stat-flavor" id="hud-caffeine-flavor">Jitters within industry-standard parameters.</span>
+        </div>
+
+        <div class="status-bar-container hud-bar-block">
+          <div class="status-bar-header">
+            <span>🕶️ Sketch Factor</span>
+            <span id="header-nerve-val">10 / 10 chutzpah</span>
+          </div>
+          <div class="status-bar-track">
+            <div class="status-bar-fill nerve" id="header-nerve-bar" style="width: 100%;"></div>
+          </div>
+          <span class="hud-stat-flavor" id="hud-sketch-flavor">Morally flexible. Terms of Service unread.</span>
+        </div>
+
+        <div class="status-bar-container hud-bar-block">
+          <div class="status-bar-header">
+            <span>🎭 Imposter Tier: <strong id="header-level-val">1</strong></span>
+            <span id="header-xp-val">0 / 100 bullet points</span>
+          </div>
+          <div class="status-bar-track">
+            <div class="status-bar-fill xp" id="header-xp-bar" style="width: 0%; background: linear-gradient(90deg, #39ff14, #00e5ff); box-shadow: 0 0 8px rgba(57, 255, 20, 0.4);"></div>
+          </div>
+          <span class="hud-stat-flavor"><span id="hud-imposter-title">Junior Copy-Paster</span> · <span id="hud-resume-flavor">Another line item for LinkedIn nobody will read.</span></span>
+        </div>
       </div>
 
-      <div class="status-bar-container" style="flex: 1;">
-        <div class="status-bar-header">
-          <span>⚡ Coding Energy</span>
-          <span id="header-energy-val">100 / 100</span>
-        </div>
-        <div class="status-bar-track">
-          <div class="status-bar-fill energy" id="header-energy-bar" style="width: 100%;"></div>
-        </div>
+      <div class="hud-status-banner" id="hud-status-banner">No active crises. Suspicious. Investigate immediately.</div>
+
+      <div class="hud-vitals-row" id="hud-vitals-row">
+        <span class="hud-vital-chip">📅 Standups today: <strong>3</strong> (2 were about lunch)</span>
+        <span class="hud-vital-chip">🌐 SO tabs open: <strong>18</strong></span>
+        <span class="hud-vital-chip">😶 Morale: <strong>52%</strong> (survey optional)</span>
+        <span class="hud-vital-chip">🐛 Prod bugs: <strong>¯\_(ツ)_/¯</strong></span>
+        <span class="hud-vital-chip">📧 Unread: <strong>847</strong></span>
       </div>
 
-      <div class="status-bar-container" style="flex: 1;">
-        <div class="status-bar-header">
-          <span>🎯 Nerve Focus</span>
-          <span id="header-nerve-val">10 / 10</span>
-        </div>
-        <div class="status-bar-track">
-          <div class="status-bar-fill nerve" id="header-nerve-bar" style="width: 100%;"></div>
-        </div>
+      <div class="hud-mandate-row" id="hud-mandate-row">
+        <span class="hud-mandate-label">📜 CORPORATE MANDATE</span>
+        <span class="hud-mandate-text" id="hud-mandate-text">All bugs are now 'unexpected user journeys'. Do not fix.</span>
       </div>
 
-      <div class="status-bar-container" style="flex: 1;">
-        <div class="status-bar-header">
-          <span>✨ Dev Level: <strong id="header-level-val">1</strong></span>
-          <span id="header-xp-val">0 / 100 XP</span>
-        </div>
-        <div class="status-bar-track">
-          <div class="status-bar-fill xp" id="header-xp-bar" style="width: 0%; background: linear-gradient(90deg, #39ff14, #00e5ff); box-shadow: 0 0 8px rgba(57, 255, 20, 0.4);"></div>
+      <div class="hud-ticker-wrap" aria-live="polite">
+        <span class="hud-ticker-label">STUDIO BROADCAST</span>
+        <div class="hud-ticker-track">
+          <span class="hud-ticker-text" id="hud-ticker-text">⚠️ STUDIO STATUS: All metrics are vibes-based and non-refundable.</span>
         </div>
       </div>
     </section>
@@ -117,31 +154,31 @@
         <button type="button" class="zone-node" data-tab="company">
           <span class="zone-icon">🏢</span>
           <span class="zone-label">STUDIO</span>
-          <span class="zone-desc">Sales &amp; portfolio</span>
+          <span class="zone-desc">Money &amp; delusion</span>
           <span class="zone-pulse" id="zone-pulse-company"></span>
         </button>
         <button type="button" class="zone-node" data-tab="develop">
           <span class="zone-icon">💾</span>
           <span class="zone-label">DEV LAB</span>
-          <span class="zone-desc">Build games</span>
+          <span class="zone-desc">Ship bugs</span>
           <span class="zone-pulse lit" id="zone-pulse-develop"></span>
         </button>
         <button type="button" class="zone-node active" data-tab="gigs">
           <span class="zone-icon">⚡</span>
           <span class="zone-label">GIGS</span>
-          <span class="zone-desc">Train &amp; hustle</span>
+          <span class="zone-desc">Arcade &amp; crime</span>
           <span class="zone-pulse" id="zone-pulse-gigs"></span>
         </button>
         <button type="button" class="zone-node" data-tab="staff">
           <span class="zone-icon">👥</span>
           <span class="zone-label">CREW</span>
-          <span class="zone-desc">Hire &amp; research</span>
+          <span class="zone-desc">Blame &amp; hire</span>
           <span class="zone-pulse"></span>
         </button>
         <button type="button" class="zone-node" data-tab="leaderboard">
           <span class="zone-icon">🏆</span>
           <span class="zone-label">RANKS</span>
-          <span class="zone-desc">Net worth</span>
+          <span class="zone-desc">Humblebrag</span>
           <span class="zone-pulse"></span>
         </button>
         <a href="signup.html" class="zone-node zone-node-link">
@@ -158,7 +195,7 @@
         <div class="panel-title">
           <span>Studio Command Center</span>
         </div>
-        <p class="dev-board-page-tagline">Morale, reputation, rent, contracts, marketing wars, and the portfolio that keeps the lights on (barely).</p>
+        <p class="dev-board-page-tagline">Morale metrics are vibes-based. Rent is real. The portfolio is mostly hope with a splash of revenue.</p>
         <div id="studio-dashboard-content" class="studio-dashboard-layout"></div>
       </section>
     </main>
@@ -171,7 +208,7 @@
         <div class="panel-title">
           <span>Game Development Board</span>
         </div>
-        <p class="dev-board-page-tagline">Sprint mini-games, production actions, milestones, and a full post-release live-ops hub — the project doesn't end at ship.</p>
+        <p class="dev-board-page-tagline">17 arcade sprints, production chaos, milestones nobody asked for, and live-ops until the servers cry.</p>
         
         <div id="develop-panel-content" class="develop-panel-layout">
           <!-- Loaded dynamically via game.js -->
@@ -233,7 +270,7 @@
               <span style="color: #39ff14;">$50</span>
             </div>
             <div class="card-item-desc" style="font-size: 0.8rem; line-height:1.35;">
-              A carbonated cocktail of taurine, caffeine, and pure desperation. Instantly restores <strong>+25 Energy</strong>.<br>
+              A carbonated cocktail of taurine, caffeine, and pure desperation. Instantly restores <strong>+25 mg of desperation</strong>.<br>
               <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block; margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
                 ⚠️ <strong>WARNING:</strong> Highly radioactive. Side effects include seeing memory leaks in 4D space, rapid finger twitching, and typing compile loops in your sleep. Daily value of caffeine: 900%.
               </span>
@@ -247,7 +284,7 @@
               <span style="color: #39ff14;">$20</span>
             </div>
             <div class="card-item-desc" style="font-size: 0.8rem; line-height:1.35;">
-              Brewed last Tuesday in a machine that has not been descaled since the Dot-Com crash. Restores <strong>+10 Energy</strong>.<br>
+              Brewed last Tuesday in a machine that has not been descaled since the Dot-Com crash. Restores <strong>+10 mg of desperation</strong>.<br>
               <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block; margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
                 ⚠️ <strong>Surgeon General Warning:</strong> Tastes like hot copper coins, industrial solvent, and broken promises. Morale boost is zero, but it is wet.
               </span>
@@ -261,7 +298,7 @@
               <span style="color: #39ff14;">$100</span>
             </div>
             <div class="card-item-desc" style="font-size: 0.8rem; line-height:1.35;">
-              Bought from a sketchy pop-up banner on an unindexed forum. Instantly restores <strong>+5 Nerve Focus</strong>.<br>
+              Bought from a sketchy pop-up banner on an unindexed forum. Instantly restores <strong>+5 chutzpah</strong>.<br>
               <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block; margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
                 ⚠️ <strong>DISCLAIMER:</strong> Ingredients list is written in wingdings. Guaranteed to lock you in an 8-hour loop staring at CSS centering tutorials.
               </span>
@@ -280,7 +317,7 @@
               <span style="color: #ff1744;">-$150</span>
             </div>
             <div class="card-item-desc" style="font-size: 0.8rem; line-height: 1.35;">
-              Morale booster: order wobbly, lukewarm cheese pizzas from a generic budget outlet. Restores <strong>+35 Energy</strong>.<br>
+              Morale booster: order wobbly, lukewarm cheese pizzas from a generic budget outlet. Restores <strong>+35 mg of desperation</strong>.<br>
               <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block; margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
                 Morale remains at absolute zero. The cardboard box is structurally more appetizing than the crust. Developers are too full to write resignation letters.
               </span>
@@ -322,12 +359,68 @@
               <span style="color: #ff1744;">-$5,000</span>
             </div>
             <div class="card-item-desc" style="font-size: 0.8rem; line-height: 1.35;">
-              racing bucket seats designed for high-G maneuvers but used exclusively for typing console logs. <strong>+50% Energy recovery speed</strong>.<br>
+              racing bucket seats designed for high-G maneuvers but used exclusively for typing console logs. <strong>+50% caffeine recovery speed</strong>.<br>
               <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block; margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
                 Guaranteed to increase productivity by making your lower back hurt in a futuristic, neon-colored way.
               </span>
             </div>
             <button class="btn-primary" style="padding: 10px; font-size: 0.85rem;" id="btn-chairs-activity" onclick="runActivity('chairs')">Purchase Chairs</button>
+          </div>
+
+          <div class="card-item chaos-activity-card" style="padding: 14px;">
+            <div class="card-item-title" style="font-size: 0.9rem;">
+              <span>🖥️ Pretend to Work (Tab Switching)</span>
+              <span style="color: #39ff14;">FREE</span>
+            </div>
+            <div class="card-item-desc" style="font-size: 0.8rem; line-height: 1.35;">
+              Alt-tab between IDE and a spreadsheet for 20 minutes. Gain <strong>+8 mg desperation</strong> and <strong>+3 resume bullet points</strong>. Productivity: theatrical.<br>
+              <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block; margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
+                Manager thinks you're crushing it. You are crushing snacks.
+              </span>
+            </div>
+            <button class="btn-primary" style="padding: 10px; font-size: 0.85rem;" onclick="runActivity('pretend_work')">Look Busy</button>
+          </div>
+
+          <div class="card-item chaos-activity-card" style="padding: 14px;">
+            <div class="card-item-title" style="font-size: 0.9rem;">
+              <span>🎰 Blame Roulette</span>
+              <span style="color: #39ff14;">FREE</span>
+            </div>
+            <div class="card-item-desc" style="font-size: 0.8rem; line-height: 1.35;">
+              Spin the wheel of accountability. Someone else is definitely responsible for the production incident.<br>
+              <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block; margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
+                Outcomes include: intern, DNS, solar flares, and 'works on my machine'.
+              </span>
+            </div>
+            <button class="btn-secondary" style="padding: 10px; font-size: 0.85rem;" onclick="runChaosAction('blame_roulette')">Spin Wheel</button>
+          </div>
+
+          <div class="card-item chaos-activity-card" style="padding: 14px;">
+            <div class="card-item-title" style="font-size: 0.9rem;">
+              <span>📢 Buzzword Standup</span>
+              <span style="color: #ff1744;">-5 pad</span>
+            </div>
+            <div class="card-item-desc" style="font-size: 0.8rem; line-height: 1.35;">
+              Host a 45-minute standup about synergy, blockchain, and AI-powered agile NFTs. <strong>+12 morale</strong>, <strong>+6 buzz</strong>.<br>
+              <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block; margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
+                Zero lines of code written. Maximum LinkedIn content generated.
+              </span>
+            </div>
+            <button class="btn-primary" style="padding: 10px; font-size: 0.85rem;" onclick="runActivity('buzzword_standup')">Host Standup</button>
+          </div>
+
+          <div class="card-item chaos-activity-card" style="padding: 14px;">
+            <div class="card-item-title" style="font-size: 0.9rem;">
+              <span>🪴 Buy Office Plant (Fake)</span>
+              <span style="color: #ff1744;">-$75</span>
+            </div>
+            <div class="card-item-desc" style="font-size: 0.8rem; line-height: 1.35;">
+              Plastic fern that screams wellness culture. Permanent <strong>+2% morale recovery</strong> from photosynthesis cosplay.<br>
+              <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block; margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
+                Dies emotionally every quarter. Revived with dusting.
+              </span>
+            </div>
+            <button class="btn-primary" style="padding: 10px; font-size: 0.85rem;" id="btn-plant-activity" onclick="runActivity('office_plant')">Buy Plant</button>
           </div>
         </div>
       </section>
@@ -484,6 +577,18 @@
 
       <aside class="feed-rail">
         <div id="hud-combo" class="hud-combo" style="display:none;"></div>
+        <div class="hud-sidebar-quip" id="hud-sidebar-quip">Today's forecast: 90% chance of scope creep before lunch.</div>
+        <div class="chaos-panel glass-panel">
+          <div class="chaos-panel-title">🎪 STUDIO CHAOS</div>
+          <div class="chaos-btn-grid">
+            <button type="button" class="chaos-btn" onclick="runChaosAction('slack_here')">@here</button>
+            <button type="button" class="chaos-btn" onclick="runChaosAction('buzzword')">Buzzword</button>
+            <button type="button" class="chaos-btn" onclick="runChaosAction('touch_grass')">Touch Grass</button>
+            <button type="button" class="chaos-btn" onclick="runChaosAction('ceo_thought')">CEO Brain</button>
+          </div>
+          <div class="ceo-thought-bubble" id="ceo-thought-bubble">"We should AI the blockchain synergy."</div>
+        </div>
+        <div class="badge-wall" id="badge-wall" title="Questionable achievements"></div>
         <button id="hud-music-btn" class="synth-btn-mini music-rail" onclick="toggleMusic()">🎵 SYNTH: OFF</button>
         <div id="now-playing-track" class="now-playing">■ SILENCE</div>
 
@@ -508,7 +613,8 @@
     </div>
 
     <footer class="synth-footer">
-      <p>© DEV_END 1986 — SYNTHWAVE GARAGE EDITION — POWERED BY STACK OVERFLOW &amp; REGRET</p>
+      <p>© DEV_END — CYBER GARAGE EDITION — FUELED BY CAFFEINE, CHUTZPAH &amp; UNREAD SLACK THREADS</p>
+      <p class="footer-sub">No developers were harmed during crunch. They were merely spiritually rearranged.</p>
     </footer>
   </div>
 </body>
