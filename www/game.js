@@ -1657,7 +1657,14 @@ const DEV_DIARY_POOL = {
   post_release: [
     "Players discovered a speedrun strat involving the pause menu.",
     "Discord is debating whether the tutorial is a hate crime.",
-    "Influencer called it 'mid' then bought the season pass anyway."
+    "Influencer called it 'mid' then bought the season pass anyway.",
+    "CEO played the game on stream. Died in tutorial. Blamed netcode.",
+    "Analytics show 94% of players never left the options menu. We added more options.",
+    "Speedrunner beat the game in 4 minutes using a ladder that was never intended to exist.",
+    "Player review: '10/10 would get stuck in geometry again.'",
+    "Community manager posted 'we hear you' 17 times. Nobody knows what we heard.",
+    "Metacritic user score diverged from critic score. Both are wrong.",
+    "Day 3 patch notes: fixed crash when player has hopes and dreams."
   ]
 };
 
@@ -1697,7 +1704,92 @@ function ensureProjectMeta(proj) {
     { id: "sequel", label: "Franchise Sequel", done: false }
   ];
   proj.supportTickets = proj.supportTickets ?? [];
+  proj.playCount = proj.playCount ?? 0;
+  proj.platformerPlayed = proj.platformerPlayed ?? false;
+  proj.bestPlatformerScore = proj.bestPlatformerScore ?? 0;
+  proj.playerReviews = proj.playerReviews ?? [];
   return proj;
+}
+
+let shippedGameActive = false;
+let shippedGameStarted = false;
+
+const POST_RELEASE_KNOWN_ISSUES = [
+  "Tutorial soft-lock if you read the lore.",
+  "Boss becomes invincible when streamers are watching.",
+  "Inventory sorts itself by vibes, not alphabetically.",
+  "Photo mode captures your browser tabs in reflections.",
+  "Multiplayer voice chat echoes your imposter syndrome.",
+  "Achievement pop-ups pause the game during boss fights.",
+  "Minimap shows the wrong continent 12% of the time.",
+  "Cutscene skip button skips to another cutscene."
+];
+
+const CEO_HOT_TAKES = [
+  "Players don't want fun — they want engagement metrics that look fun.",
+  "If it's not broken, ship DLC that fixes it for $9.99.",
+  "Our roadmap is agile. Translation: we have Post-its and fear.",
+  "Every bug is a community event if you brand it right.",
+  "The game is free-to-feel. Premium emotions sold separately."
+];
+
+const SPEEDRUN_FAKE_NAMES = ["xXPatchNotesXx", "AnyPercentAndy", "LagWizard", "SkipCutsceneSue", "BufferOverflowBen", "RNG_Prayer"];
+
+function getPostReleaseTelemetry(proj) {
+  if (proj.telemetrySnapshot) return proj.telemetrySnapshot;
+  const rating = proj.rating || 5;
+  const plays = proj.playCount || 0;
+  proj.telemetrySnapshot = [
+    { label: "Crash rate", value: `${(42 - rating * 3 + randInt(0, 8)).toFixed(1)}%`, note: "Mostly when alt-tabbing to reality" },
+    { label: "Stuck in tutorial", value: `${randInt(61, 94)}%`, note: "Tutorial has no exit door" },
+    { label: "Avg session", value: `${randInt(4, 47)} min`, note: "Or until guilt kicks in" },
+    { label: "Players who finished", value: `${randInt(3, 18)}%`, note: "Rest are 'exploring the menu'" },
+    { label: "Dev playtests", value: `${plays}`, note: plays ? "You are the QA department now" : "Ship first, play never" },
+    { label: "Wishlist conversions", value: `${randInt(12, 38)}%`, note: "Other 62% were bots with feelings" }
+  ];
+  return proj.telemetrySnapshot;
+}
+
+function randInt(lo, hi) {
+  return Math.floor(Math.random() * (hi - lo + 1)) + lo;
+}
+
+function getKnownIssuesList(proj) {
+  const shuffled = [...POST_RELEASE_KNOWN_ISSUES].sort(() => Math.random() - 0.5);
+  const count = proj.rating >= 7 ? 3 : proj.rating < 5 ? 5 : 4;
+  return shuffled.slice(0, count);
+}
+
+function getCeoHotTake(proj) {
+  const base = CEO_HOT_TAKES[randInt(0, CEO_HOT_TAKES.length - 1)];
+  return `${base} — regarding '${proj.name}', obviously.`;
+}
+
+function getFakeSpeedrunLeaderboard(proj) {
+  const times = ["1:04:22", "58:07", "42:15", "39:88", "37:02", "0:04:20"];
+  return SPEEDRUN_FAKE_NAMES.map((name, i) => ({
+    rank: i + 1,
+    name,
+    time: times[i],
+    note: i === 0 ? "Any% (menu glitch)" : i === 5 ? "TAS — dev build" : "Glitchless* (*lies)"
+  })).slice(0, 4);
+}
+
+function generatePlayerReview(proj, stats, won) {
+  const name = proj.name;
+  const handles = ["TrueFan42", "PatchNotesEnjoyer", "RefundArcheologist", "SkillIssueKing", "DayOneHero"];
+  const user = handles[randInt(0, handles.length - 1)];
+  let text;
+  if (won && stats.collected >= stats.totalFeatures) {
+    text = `Played ${name} in-game. Collected every feature. This is either art or a cry for help. 9/10.`;
+  } else if (won) {
+    text = `Beat ${name} but missed some features. Just like our roadmap. Solid 7/10.`;
+  } else if (stats.collected >= 3) {
+    text = `Died in ${name} after grabbing ${stats.collected} features. Felt like my sprint planning meeting. 6/10.`;
+  } else {
+    text = `${name} platformer section harder than the real game's netcode. Respect. 5/10.`;
+  }
+  return { user, text, score: won ? randInt(7, 10) : randInt(4, 7), playedAt: new Date().toLocaleTimeString().split(" ")[0] };
 }
 
 function getDevPhaseId(progressPercent) {
@@ -4065,9 +4157,129 @@ function runActivity(activityType) {
 }
 
 // --- Post-Release Dashboard & Day-One Patching ---
+
+function launchShippedGame() {
+  if (!gameState.current_project || gameState.current_project.phase !== "post_release") return;
+  shippedGameActive = true;
+  shippedGameStarted = false;
+  renderShippedGamePanel();
+}
+
+function exitShippedGame() {
+  if (window.ShippedPlatformer) window.ShippedPlatformer.unmount();
+  shippedGameActive = false;
+  shippedGameStarted = false;
+  renderPostReleaseDashboard();
+}
+
+function renderShippedGamePanel() {
+  const devPanel = document.getElementById("develop-panel-content");
+  if (!devPanel || !gameState.current_project || !window.ShippedPlatformer) return;
+  const proj = ensureProjectMeta(gameState.current_project);
+  devPanel.innerHTML = `
+    <div class="play-game-fullscreen-hub">
+      <div class="play-game-fullscreen-bar">
+        <button class="btn-secondary play-game-back-btn" onclick="exitShippedGame()">← Back to Live Ops</button>
+        <span class="play-game-fullscreen-hint">You are now playtesting your own shipped game. Meta.</span>
+      </div>
+      ${window.ShippedPlatformer.renderShell(proj, { started: shippedGameStarted })}
+    </div>
+  `;
+}
+
+function startShippedGameSession() {
+  if (!shippedGameActive || shippedGameStarted) return;
+  const overlay = document.getElementById("shipped-start-overlay");
+  const countdownEl = document.getElementById("shipped-countdown");
+  const startBtn = overlay ? overlay.querySelector(".arcade-start-btn") : null;
+  if (!overlay || !countdownEl) return;
+  if (startBtn) startBtn.disabled = true;
+
+  const steps = ["3", "2", "1", "GO!"];
+  let step = 0;
+  countdownEl.hidden = false;
+  countdownEl.textContent = steps[step];
+
+  const tick = () => {
+    step++;
+    if (step < steps.length) {
+      countdownEl.textContent = steps[step];
+      setTimeout(tick, 650);
+      return;
+    }
+    overlay.classList.add("arcade-start-overlay--gone");
+    shippedGameStarted = true;
+    const badge = document.querySelector(".play-game-badge");
+    if (badge) badge.textContent = "LIVE";
+    mountShippedPlatformer();
+  };
+  setTimeout(tick, 650);
+}
+
+function mountShippedPlatformer() {
+  if (!window.ShippedPlatformer || !gameState.current_project) return;
+  const canvas = document.getElementById("shipped-platformer-canvas");
+  const proj = ensureProjectMeta(gameState.current_project);
+  if (!canvas) return;
+  window.ShippedPlatformer.mount(canvas, proj, {
+    onWin: (_reason, stats) => onShippedGameEnd("win", stats),
+    onLose: (reason, stats) => onShippedGameEnd("lose", stats, reason)
+  });
+}
+
+function onShippedGameEnd(result, stats, failReason) {
+  const proj = ensureProjectMeta(gameState.current_project);
+  if (!proj) return;
+
+  proj.playCount = (proj.playCount || 0) + 1;
+  proj.platformerPlayed = true;
+  const score = stats.score || 0;
+  if (score > (proj.bestPlatformerScore || 0)) proj.bestPlatformerScore = score;
+
+  const review = generatePlayerReview(proj, stats, result === "win");
+  proj.playerReviews = proj.playerReviews || [];
+  proj.playerReviews.unshift(review);
+  if (proj.playerReviews.length > 6) proj.playerReviews.pop();
+
+  if (result === "win") {
+    proj.legacyScore = (proj.legacyScore || 0) + 2;
+    if (stats.collected >= stats.totalFeatures) proj.hypeMeter = Math.min(100, (proj.hypeMeter || 0) + 8);
+    spawnFloatText("SHIPPED!", "gold", true);
+    spawnFloatText(`+${score} SCORE`, "cyan");
+    addLog("Playtest Victory", `You beat '${proj.name}' (the game inside the game). Score: ${score}. Community pretends to notice.`);
+    pushDevDiary(proj, "post_release", `Studio founder cleared the in-game platformer. ${review.user} left a ${review.score}/10 review. Ego restored.`);
+    showToast(`You shipped it again! Score: ${score}`, "success");
+    if (proj.cachedTweets) {
+      proj.cachedTweets.unshift({
+        user: review.user,
+        text: review.text
+      });
+      if (proj.cachedTweets.length > 8) proj.cachedTweets.pop();
+    }
+  } else {
+    spawnFloatText("GAME OVER", "red", true);
+    addLog("Playtest Failure", failReason || "You died in your own game. The irony writes itself.");
+    pushDevDiary(proj, "post_release", `Founder died in '${proj.name}' platformer section. ${failReason || "Skill issue logged."}`);
+    showToast(failReason || "You died in your own game.", "error");
+  }
+
+  if (window.SynthwaveAudio) SynthwaveAudio.playSFX(result === "win" ? "cash" : "fail");
+  saveGame();
+  shippedGameStarted = false;
+  setTimeout(() => {
+    exitShippedGame();
+    updateUI();
+  }, 1200);
+}
+
 function renderPostReleaseDashboard() {
   const devPanel = document.getElementById("develop-panel-content");
   if (!devPanel || !gameState.current_project) return;
+
+  if (shippedGameActive) {
+    renderShippedGamePanel();
+    return;
+  }
 
   const proj = ensureProjectMeta(gameState.current_project);
   
@@ -4166,16 +4378,77 @@ function renderPostReleaseDashboard() {
     <div class="dev-diary-entry"><span class="dev-diary-time">[${d.time}]</span> ${d.text}</div>
   `).join("");
 
+  const telemetry = getPostReleaseTelemetry(proj);
+  const telemetryHtml = telemetry.map(t => `
+    <div class="telemetry-row">
+      <span class="telemetry-label">${t.label}</span>
+      <strong class="telemetry-value">${t.value}</strong>
+      <span class="telemetry-note">${t.note}</span>
+    </div>
+  `).join("");
+
+  const knownIssuesHtml = getKnownIssuesList(proj).map(issue => `
+    <div class="known-issue-line">🐛 ${issue} <span class="known-issue-status">Won't fix (feature)</span></div>
+  `).join("");
+
+  const speedrunBoard = getFakeSpeedrunLeaderboard(proj);
+  const speedrunHtml = speedrunBoard.map(r => `
+    <div class="speedrun-row">
+      <span class="speedrun-rank">#${r.rank}</span>
+      <span class="speedrun-name">${r.name}</span>
+      <span class="speedrun-time">${r.time}</span>
+      <span class="speedrun-note">${r.note}</span>
+    </div>
+  `).join("");
+
+  const playerReviewsHtml = (proj.playerReviews || []).length
+    ? proj.playerReviews.slice(0, 4).map(r => `
+      <div class="player-review-line">
+        <strong>@${r.user}</strong> <span class="player-review-score">${r.score}/10</span>
+        <p>"${r.text}"</p>
+        <span class="player-review-time">played ${r.playedAt || "recently"}</span>
+      </div>
+    `).join("")
+    : `<p class="dev-section-hint">No player reviews yet. Hit <strong>Play Game</strong> to generate organic-ish feedback from yourself.</p>`;
+
+  const playFlavor = window.ShippedPlatformer ? window.ShippedPlatformer.getFlavor(proj) : { tagline: "The game you shipped. Now playable. Unfortunately." };
+  const bestScore = proj.bestPlatformerScore || 0;
+  const playCount = proj.playCount || 0;
+
   devPanel.innerHTML = `
     <div class="develop-progress-card post-release-hub">
       <div class="dev-board-header post-release-header">
         <div>
           <h3 class="dev-board-title">${proj.name} <span class="post-release-tag">LIVE OPS</span></h3>
-          <span class="dev-board-subtitle">${proj.scale} · ${proj.genre}/${proj.topic} · Legacy ${proj.legacyScore || 0} · DLC×${proj.dlcCount || 0}</span>
+          <span class="dev-board-subtitle">${proj.scale} · ${proj.genre}/${proj.topic} · Legacy ${proj.legacyScore || 0} · DLC×${proj.dlcCount || 0} · Plays×${playCount}</span>
         </div>
         <div class="post-release-badges">
           <div class="reviewer-score-badge" style="width:52px; height:52px; border-color:${badgeColor}; color:${badgeColor}; background:${badgeBg};">${proj.rating.toFixed(1)}</div>
           <div class="sentiment-badge" style="border-color:${sentimentColor}; color:${sentimentColor};">${sentiment}%<small>sentiment</small></div>
+        </div>
+      </div>
+
+      <div class="play-game-hub">
+        <div class="play-game-hub-copy">
+          <h4 class="dev-section-label">🎮 Play The Game</h4>
+          <p class="play-game-pitch">${playFlavor.tagline}</p>
+          <p class="play-game-stats">Dev playtests: <strong>${playCount}</strong> · Best run: <strong>${bestScore || "—"}</strong> · Status: <strong>${proj.platformerPlayed ? "You have suffered for your art" : "Unplayed by management"}</strong></p>
+        </div>
+        <button class="btn-primary play-game-launch-btn" onclick="launchShippedGame()">▶ PLAY GAME</button>
+      </div>
+
+      <div class="post-release-telemetry-hub">
+        <div class="dev-board-card compact telemetry-card">
+          <h4 class="dev-section-label">📊 Absurd Telemetry</h4>
+          <div class="telemetry-list">${telemetryHtml}</div>
+        </div>
+        <div class="dev-board-card compact">
+          <h4 class="dev-section-label">🧠 CEO Hot Take</h4>
+          <p class="ceo-hot-take">"${getCeoHotTake(proj)}"</p>
+        </div>
+        <div class="dev-board-card compact">
+          <h4 class="dev-section-label">🏁 Speedrun Board</h4>
+          <div class="speedrun-list">${speedrunHtml}</div>
         </div>
       </div>
 
@@ -4208,6 +4481,11 @@ function renderPostReleaseDashboard() {
             <h4 class="dev-section-label">📓 Post-Launch Diary</h4>
             <div class="dev-diary-feed">${diaryHtml || "<em>Silence on the dev blog. Concerning.</em>"}</div>
           </div>
+
+          <div class="dev-board-card compact">
+            <h4 class="dev-section-label">⭐ Player Reviews (After Playing)</h4>
+            <div class="player-review-list">${playerReviewsHtml}</div>
+          </div>
         </div>
 
         <div class="post-release-col">
@@ -4237,6 +4515,11 @@ function renderPostReleaseDashboard() {
           <div class="dev-board-card compact">
             <h4 class="dev-section-label">🏆 Trophy Case</h4>
             <div class="awards-row">${awardsHtml}</div>
+          </div>
+
+          <div class="dev-board-card compact">
+            <h4 class="dev-section-label">⚠️ Known Issues (Shipped)</h4>
+            <div class="known-issues-list">${knownIssuesHtml}</div>
           </div>
         </div>
       </div>
@@ -5347,6 +5630,9 @@ function finishGig(gigId, wasSuccess) {
 
 window.cancelMiniGame = cancelMiniGame;
 window.startArcadeSession = startArcadeSession;
+window.launchShippedGame = launchShippedGame;
+window.exitShippedGame = exitShippedGame;
+window.startShippedGameSession = startShippedGameSession;
 window.stopCoffeePour = stopCoffeePour;
 window.stopGigSlider = stopGigSlider;
 window.clickGigBinary = clickGigBinary;
