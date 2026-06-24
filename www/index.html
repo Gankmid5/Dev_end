@@ -58,19 +58,19 @@
 
   <div id="review-modal" class="modal-overlay" style="display: none;">
     <div class="glass-panel review-modal-content">
-      <h2 id="review-game-title" style="color: var(--color-cyan); text-align: center; margin-bottom: 5px; font-size: 1.6rem;">Super Quest</h2>
-      <p id="review-game-meta" style="text-align: center; color: var(--color-text-muted); font-size: 0.85rem; margin-bottom: 20px; font-weight: 500;">RPG / Cyberpunk | Rating: 8.5/10</p>
-      <div id="reviewers-cards-container" style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px;"></div>
-      <button class="btn-primary" style="width: 100%;" onclick="closeReviewModal()">Back to Studio</button>
+      <h2 id="review-game-title" class="modal-title">Super Quest</h2>
+      <p id="review-game-meta" class="modal-meta">RPG / Cyberpunk | Rating: 8.5/10</p>
+      <div id="reviewers-cards-container" class="modal-cards"></div>
+      <button class="btn-primary" onclick="closeReviewModal()">Back to Studio</button>
     </div>
   </div>
 
   <div id="nuke-modal" class="modal-overlay" style="display: none;">
-    <div class="glass-panel review-modal-content" style="border-color: #ff1744; box-shadow: 0 0 25px rgba(255, 23, 68, 0.25);">
-      <h2 id="nuke-game-title" style="color: #ff1744; text-align: center; margin-bottom: 5px; font-size: 1.6rem; font-weight: 800; text-shadow: 0 0 10px rgba(255, 23, 68, 0.4);">💥 Project Nuked!</h2>
-      <p id="nuke-game-meta" style="text-align: center; color: var(--color-text-muted); font-size: 0.85rem; margin-bottom: 20px; font-weight: 500;">The internet reacts to the cancellation.</p>
-      <div id="nuke-reactions-container" style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px;"></div>
-      <button class="btn-primary" style="width: 100%; background: #ff1744; border: 1px solid #ff1744; color: #fff; box-shadow: 0 4px 15px rgba(255, 23, 68, 0.35);" onclick="closeNukeModal()">Acknowledge Disaster</button>
+    <div class="glass-panel review-modal-content modal-nuke">
+      <h2 id="nuke-game-title" class="modal-title modal-title--danger">💥 Project Nuked!</h2>
+      <p id="nuke-game-meta" class="modal-meta">The internet reacts to the cancellation.</p>
+      <div id="nuke-reactions-container" class="modal-cards"></div>
+      <button class="btn-primary modal-btn-danger" onclick="closeNukeModal()">Acknowledge Disaster</button>
     </div>
   </div>
 
@@ -98,11 +98,11 @@
       </div>
     </header>
 
-    <section class="glass-panel stats-dashboard synth-stats hud-panel" style="padding: 14px 20px;">
+    <section class="glass-panel stats-dashboard synth-stats hud-panel">
       <div class="hud-top-row">
         <div class="stat-card hud-cash-card">
           <span class="stat-label">💸 Runway (Probably)</span>
-          <span class="stat-value" id="header-cash" style="color: #39ff14;">$500.00</span>
+          <span class="stat-value cash-green" id="header-cash">$500.00</span>
           <span class="hud-stat-flavor">Audited by nobody. Trusted by investors anyway.</span>
         </div>
 
@@ -206,11 +206,11 @@
 
       <div class="zone-main" id="zone-main">
     <main class="main-layout main-single" id="company-section" style="display: none;">
-      <section class="glass-panel studio-dashboard-shell" style="gap: 12px;">
+      <section class="glass-panel studio-dashboard-shell section-gap-tight">
         <div class="panel-title">
-          <span>Studio Command Center</span>
+          <span><span class="panel-title-icon">🏢</span> Studio Command Center</span>
         </div>
-        <p class="dev-board-page-tagline">Morale metrics are vibes-based. Rent is real. The portfolio is mostly hope with a splash of revenue.</p>
+        <p class="section-tagline">Morale metrics are vibes-based. Rent is real. The portfolio is mostly hope with a splash of revenue.</p>
         <div id="studio-dashboard-content" class="studio-dashboard-layout"></div>
       </section>
     </main>
@@ -219,11 +219,11 @@
     <!-- Tab 2: Develop Game                 -->
     <!-- ═══════════════════════════════════ -->
     <main class="main-layout" id="develop-section" style="display: none;">
-      <section class="glass-panel" style="grid-column: span 2;">
+      <section class="glass-panel section-gap">
         <div class="panel-title">
-          <span>Game Development Board</span>
+          <span><span class="panel-title-icon">💾</span> Game Development Board</span>
         </div>
-        <p class="dev-board-page-tagline">17 arcade sprints, production chaos, milestones nobody asked for, and live-ops until the servers cry.</p>
+        <p class="section-tagline">17 arcade sprints, production chaos, milestones nobody asked for, and live-ops until the servers cry.</p>
         
         <div id="develop-panel-content" class="develop-panel-layout">
           <!-- Loaded dynamically via game.js -->
@@ -234,13 +234,13 @@
     <!-- ═══════════════════════════════════ -->
     <!-- Tab 3: Gigs & Training (Gym/Crimes) -->
     <!-- ═══════════════════════════════════ -->
-    <main class="main-layout" id="gigs-section">
-      <!-- Training Gym (Energy) & Shop -->
-      <section class="glass-panel" style="gap: 16px;">
+    <main class="main-layout gigs-zone-layout" id="gigs-section">
+      <section class="glass-panel section-gap">
         <div class="panel-title">
-          <span>Developer Workout Gym</span>
+          <span><span class="panel-title-icon">🏋️</span> Developer Workout Gym</span>
         </div>
-        <div id="training-gym-grid" class="action-grid" style="grid-template-columns: 1fr; gap: 15px;">
+        <p class="panel-tagline">Train skills via retro arcade mini-games. Management calls it "gamified upskilling."</p>
+        <div id="training-gym-grid" class="training-grid">
           <div class="card-item" style="padding: 14px;">
             <div class="card-item-title" style="font-size: 0.95rem;">
               <span>Code Optimization Class</span>
@@ -275,10 +275,10 @@
           </div>
         </div>
 
-        <div class="panel-title" style="border: none; padding-top: 15px; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.05);">
-          <span>Developer Store (Buy Consumables)</span>
+        <div class="panel-title panel-divider">
+          <span><span class="panel-title-icon">🛒</span> Developer Store</span>
         </div>
-        <div id="store-items-grid" class="action-grid" style="grid-template-columns: 1fr; gap: 15px;">
+        <div id="store-items-grid" class="store-grid">
           <div class="card-item" style="padding: 14px;">
             <div class="card-item-title" style="font-size: 0.9rem;">
               <span>Java Volt Extra-Battery Acid</span>
@@ -322,10 +322,10 @@
           </div>
         </div>
 
-        <div class="panel-title" style="border: none; padding-top: 15px; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.05);">
-          <span>Studio & Team Activities</span>
+        <div class="panel-title panel-divider">
+          <span><span class="panel-title-icon">🎪</span> Studio &amp; Team Activities</span>
         </div>
-        <div class="action-grid" style="grid-template-columns: 1fr; gap: 15px;" id="activities-grid">
+        <div class="activities-grid" id="activities-grid">
           <div class="card-item" style="padding: 14px;">
             <div class="card-item-title" style="font-size: 0.9rem;">
               <span>🍕 Host Soggy Pizza Party</span>
@@ -440,12 +440,12 @@
         </div>
       </section>
 
-      <!-- Gigs Board (Nerve) -->
-      <section class="glass-panel" style="gap: 16px;">
+      <section class="glass-panel section-gap">
         <div class="panel-title">
-          <span>Developer Gig Board (Crimes)</span>
+          <span><span class="panel-title-icon">⚡</span> Gig Board (Crimes)</span>
         </div>
-        <div id="gigs-board-grid" class="action-grid" style="grid-template-columns: 1fr; gap: 15px;">
+        <p class="panel-tagline">Freelance fixes, DRM cracks, and ethically flexible side hustles. Arcade mini-games gate success.</p>
+        <div id="gigs-board-grid" class="action-grid-single">
           <div class="card-item">
             <div class="card-item-title">
               <span>Freelance HTML Edits</span>
@@ -524,53 +524,44 @@
     <!-- ═══════════════════════════════════ -->
     <!-- Tab 4: Staff & Office Upgrades      -->
     <!-- ═══════════════════════════════════ -->
-    <main class="main-layout" id="staff-section" style="display: none; grid-template-columns: 1fr 1fr;">
-      <!-- Hire Developers and Office spaces -->
-      <section class="glass-panel" style="gap: 16px;">
+    <main class="main-layout staff-zone-layout" id="staff-section" style="display: none;">
+      <section class="glass-panel section-gap">
         <div class="panel-title">
-          <span>Office Expansion & Premise Upgrades</span>
+          <span><span class="panel-title-icon">🏗️</span> Office Expansion</span>
         </div>
-        <div id="staff-capacity-status" style="font-size:0.85rem; color:var(--color-text-muted);">
+        <div id="staff-capacity-status" class="staff-capacity-bar">
           Office Capacity: 0 / 0 staff.
         </div>
-        <div style="display:flex; flex-direction:column; gap:12px;" id="office-upgrade-grid">
-          <!-- Loaded dynamically via game.js -->
-        </div>
+        <div class="staff-stack" id="office-upgrade-grid"></div>
 
-        <div class="panel-title" style="border:none; padding-top:10px;">
-          <span>Talent Recruitment (Hire Employees)</span>
+        <div class="panel-title panel-divider">
+          <span><span class="panel-title-icon">📋</span> Talent Recruitment</span>
         </div>
-        <div style="display:flex; flex-direction:column; gap:12px;" id="staff-hire-grid">
-          <!-- Loaded dynamically via game.js -->
-        </div>
+        <div class="staff-stack" id="staff-hire-grid"></div>
       </section>
 
-      <!-- Active employees list & Research lab -->
-      <section class="glass-panel" style="gap: 16px;">
+      <section class="glass-panel section-gap">
         <div class="panel-title">
-          <span>Current Active Team</span>
+          <span><span class="panel-title-icon">👥</span> Active Team</span>
         </div>
-        <div style="display:flex; flex-direction:column; gap:8px;" id="active-staff-list">
-          <!-- Loaded dynamically via game.js -->
-        </div>
+        <div class="staff-stack" id="active-staff-list"></div>
 
-        <div class="panel-title" style="border: none; padding-top: 15px; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.05);">
-          <span>Research Laboratory</span>
+        <div class="panel-title panel-divider">
+          <span><span class="panel-title-icon">🔬</span> Research Laboratory</span>
         </div>
-        <div style="display:flex; flex-direction:column; gap:12px;" id="research-upgrades-list">
-          <!-- Loaded dynamically via game.js -->
-        </div>
+        <div class="staff-stack" id="research-upgrades-list"></div>
       </section>
     </main>
 
     <!-- ═══════════════════════════════════ -->
     <!-- Tab 5: Leaderboard                  -->
     <!-- ═══════════════════════════════════ -->
-    <main class="main-layout" id="leaderboard-section" style="display: none;">
-      <section class="glass-panel" style="grid-column: span 2;">
+    <main class="main-layout main-single" id="leaderboard-section" style="display: none;">
+      <section class="glass-panel section-gap">
         <div class="panel-title">
-          <span>Global Net Worth Leaderboard</span>
+          <span><span class="panel-title-icon">🏆</span> Global Net Worth Leaderboard</span>
         </div>
+        <p class="panel-tagline">Humblebrag leaderboard. Net worth may include imaginary valuation multiples.</p>
         <div class="history-container">
           <table class="history-table">
             <thead>

@@ -1605,7 +1605,7 @@ function renderStudioMeter(label, value, color) {
   return `
     <div class="studio-meter">
       <div class="studio-meter-head"><span>${label}</span><span>${value}%</span></div>
-      <div class="status-bar-track" style="height:5px;"><div class="status-bar-fill" style="width:${value}%; height:100%; background:${color};"></div></div>
+      <div class="status-bar-track studio-meter-track"><div class="studio-meter-fill" style="width:${value}%; background:${color};"></div></div>
     </div>
   `;
 }
@@ -1626,9 +1626,9 @@ function renderStudioDashboard() {
     ? `<div class="studio-project-snap">
         <strong>Active:</strong> ${gameState.current_project.name}
         <span class="studio-snap-phase">${gameState.current_project.phase === "post_release" ? "LIVE OPS" : "IN DEV"}</span>
-        <button class="btn-secondary" style="padding:4px 10px; font-size:0.68rem;" onclick="switchTab('develop')">Open Dev Board →</button>
+        <button class="btn-secondary btn-inline" onclick="switchTab('develop')">Open Dev Board →</button>
       </div>`
-    : `<div class="studio-project-snap muted">No active project — <button class="btn-secondary" style="padding:4px 10px; font-size:0.68rem;" onclick="switchTab('develop')">Start one →</button></div>`;
+    : `<div class="studio-project-snap muted">No active project — <button class="btn-secondary btn-inline" onclick="switchTab('develop')">Start one →</button></div>`;
 
   const activeGamesHtml = gameState.active_games.length === 0
     ? `<p class="studio-empty">No products on shelves. The warehouse echoes with unused hype.</p>`
@@ -2026,53 +2026,47 @@ function renderTrainingGym() {
   const xpCostText = gameState.level > 1 ? "-15 bullet points" : "FREE (mom pays tuition)";
 
   container.innerHTML = `
-    <div class="card-item" style="padding: 14px;">
-      <div class="card-item-title" style="font-size: 0.95rem;">
+    <div class="card-item card-compact training-card-code">
+      <div class="card-item-title card-title-lg">
         <span>Code Optimization Class</span>
-        <span style="color: #ffd700; display:flex; gap:8px;"><span>-10 ☕</span> <span style="color:var(--color-cyan); font-weight:bold;">${xpCostText}</span></span>
+        <span class="cost-row"><span class="cost-gold">-10 ☕</span> <span class="cost-cyan">${xpCostText}</span></span>
       </div>
-      <div class="card-item-desc" style="font-size: 0.8rem; line-height:1.4;">
-        Solve complex algorithm challenges. Coding skill increases points generated during sprints.<br>
-        <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block; margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
-          <strong>Syllabus Excerpt:</strong> Learn how to write O(N^3) nested loops and explain it to management as 'dynamic scaling'. Study why comments like <code>// do not touch this or server melts</code> are essential for job security.
-        </span>
+      <div class="card-item-desc card-desc-sm">
+        Solve complex algorithm challenges. Coding skill increases points generated during sprints.
+        <span class="card-footnote"><strong>Syllabus Excerpt:</strong> Learn how to write O(N^3) nested loops and explain it to management as 'dynamic scaling'. Study why comments like <code>// do not touch this or server melts</code> are essential for job security.</span>
       </div>
-      <button class="btn-primary" style="padding: 10px;" onclick="trainSkill('coding_skill')">Train Coding Arcade</button>
+      <button class="btn-primary btn-sm" onclick="trainSkill('coding_skill')">Train Coding Arcade</button>
     </div>
 
-    <div class="card-item" style="padding: 14px;">
-      <div class="card-item-title" style="font-size: 0.95rem;">
+    <div class="card-item card-compact training-card-design">
+      <div class="card-item-title card-title-lg">
         <span>Design Theory Templates</span>
-        <span style="color: #ffd700; display:flex; gap:8px;"><span>-10 ☕</span> <span style="color:var(--color-cyan); font-weight:bold;">${xpCostText}</span></span>
+        <span class="cost-row"><span class="cost-gold">-10 ☕</span> <span class="cost-cyan">${xpCostText}</span></span>
       </div>
-      <div class="card-item-desc" style="font-size: 0.8rem; line-height:1.4;">
-        Study harmonic layout guidelines. Design skill contributes heavy design points to active games.<br>
-        <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block; margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
-          <strong>Syllabus Excerpt:</strong> Discover why using 12 neon shades of purple creates a 'cyberpunk layout' that distracts reviewers from collision detection failures. Learn the hex codes of wobbly loot boxes.
-        </span>
+      <div class="card-item-desc card-desc-sm">
+        Study harmonic layout guidelines. Design skill contributes heavy design points to active games.
+        <span class="card-footnote"><strong>Syllabus Excerpt:</strong> Discover why using 12 neon shades of purple creates a 'cyberpunk layout' that distracts reviewers from collision detection failures. Learn the hex codes of wobbly loot boxes.</span>
       </div>
-      <button class="btn-primary" style="padding: 10px;" onclick="trainSkill('design_skill')">Train Design Arcade</button>
+      <button class="btn-primary btn-sm" onclick="trainSkill('design_skill')">Train Design Arcade</button>
     </div>
 
-    <div class="card-item" style="padding: 14px;">
-      <div class="card-item-title" style="font-size: 0.95rem;">
+    <div class="card-item card-compact training-card-mgmt">
+      <div class="card-item-title card-title-lg">
         <span>Agile Lead Seminars</span>
-        <span style="color: #ffd700; display:flex; gap:8px;"><span>-10 ☕</span> <span style="color:var(--color-cyan); font-weight:bold;">${xpCostText}</span></span>
+        <span class="cost-row"><span class="cost-gold">-10 ☕</span> <span class="cost-cyan">${xpCostText}</span></span>
       </div>
-      <div class="card-item-desc" style="font-size: 0.8rem; line-height:1.4;">
-        Practice project management classes. Management skill boosts gig success and bug squashing.<br>
-        <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block; margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
-          <strong>Syllabus Excerpt:</strong> A 4-hour presentation on why talking about coding is mathematically more productive than coding. Learn how to convert 2 lines of edits into a 15-person standup meeting.
-        </span>
+      <div class="card-item-desc card-desc-sm">
+        Practice project management classes. Management skill boosts gig success and bug squashing.
+        <span class="card-footnote"><strong>Syllabus Excerpt:</strong> A 4-hour presentation on why talking about coding is mathematically more productive than coding. Learn how to convert 2 lines of edits into a 15-person standup meeting.</span>
       </div>
-      <button class="btn-primary" style="padding: 10px;" onclick="trainSkill('management_skill')">Train Management Arcade</button>
+      <button class="btn-primary btn-sm" onclick="trainSkill('management_skill')">Train Management Arcade</button>
     </div>
-    <div class="card-item arcade-pool-card" style="padding: 14px; grid-column: span 3;">
-      <div class="card-item-title" style="font-size: 0.95rem;">
+    <div class="card-item card-compact arcade-pool-card">
+      <div class="card-item-title card-title-lg">
         <span>🕹️ Arcade Training Pool</span>
-        <span style="color: var(--color-cyan); font-size: 0.8rem;">${window.ArcadeMinigames ? Object.keys(window.ArcadeMinigames.GAMES).length : 0} games</span>
+        <span class="cost-cyan">${window.ArcadeMinigames ? Object.keys(window.ArcadeMinigames.GAMES).length : 0} games</span>
       </div>
-      <div class="card-item-desc" style="font-size: 0.8rem; line-height:1.4;">
+      <div class="card-item-desc card-desc-sm">
         Each training session launches a random retro arcade mini-game — Snake, Space Invaders, Breakout, Tetris, Frogger, Whack-a-Bug, and more. Management said it's "gamified upskilling."
       </div>
     </div>
@@ -2156,8 +2150,8 @@ function renderStaffPanel() {
 
   if (staffContainer) {
     staffContainer.innerHTML = `
-      Office: <strong>${gameState.office_tier}</strong> | 
-      Capacity: <strong>${gameState.employees.length} / ${officeCapacity}</strong> staff members hired.
+      Office: <strong>${gameState.office_tier}</strong> ·
+      Capacity: <strong>${gameState.employees.length} / ${officeCapacity}</strong> crew on payroll
     `;
   }
 
@@ -2169,17 +2163,16 @@ function renderStaffPanel() {
       const isOwned = gameState.office_tier === tierKey;
       const canAfford = gameState.cash >= tier.cost;
       return `
-        <div class="card-item" style="${isOwned ? "border-color:var(--color-cyan);" : ""}">
-          <div class="card-item-title">
+        <div class="card-item card-compact${isOwned ? " card-owned" : ""}">
+          <div class="card-item-title card-title-md">
             <span>${tier.name}</span>
-            <span>${tier.cost > 0 ? `$${tier.cost.toLocaleString()}` : "Free"}</span>
+            <span class="${tier.cost > 0 ? "cost-green" : "cost-free"}">${tier.cost > 0 ? `$${tier.cost.toLocaleString()}` : "Free"}</span>
           </div>
-          <div class="card-item-desc" style="font-size:0.76rem; margin:6px 0; color:var(--color-text-muted); line-height:1.35;">
-            ${tier.desc}<br><br>
-            Staff Capacity: <strong>${tier.capacity}</strong> employees.<br>
-            Dev Speed Multiplier: <strong>${tier.speedMult}x</strong> speed.
+          <div class="card-item-desc card-desc-sm">
+            ${tier.desc}
+            <span class="card-footnote">Staff Capacity: <strong>${tier.capacity}</strong> · Dev Speed: <strong>${tier.speedMult}x</strong></span>
           </div>
-          <button class="btn-primary" style="padding: 10px;" ${isOwned || !canAfford ? "disabled" : ""} onclick="buyOffice('${tierKey}')">
+          <button class="btn-primary btn-sm" ${isOwned || !canAfford ? "disabled" : ""} onclick="buyOffice('${tierKey}')">
             ${isOwned ? "Owned" : "Upgrade"}
           </button>
         </div>
@@ -2196,22 +2189,18 @@ function renderStaffPanel() {
       const canAfford = gameState.cash >= emp.cost;
       const atCapacity = gameState.employees.length >= officeCapacity;
       return `
-        <div class="card-item">
-          <div class="card-item-title">
+        <div class="card-item card-compact">
+          <div class="card-item-title card-title-md">
             <span>${emp.name}</span>
-            <span>$${emp.cost.toLocaleString()}</span>
+            <span class="cost-green">$${emp.cost.toLocaleString()}</span>
           </div>
-          <div class="card-item-desc" style="font-size:0.76rem; margin:6px 0; color:var(--color-text-muted); line-height:1.35;">
-            ${emp.desc}<br><br>
-            Passively Generates:<br>
-            Tech: <strong>+${emp.techRate}/s</strong> | Design: <strong>+${emp.designRate}/s</strong><br>
-            Salary: <strong>$${emp.salary}/minute</strong>
+          <div class="card-item-desc card-desc-sm">
+            ${emp.desc}
+            <span class="card-footnote">Tech: <strong>+${emp.techRate}/s</strong> · Design: <strong>+${emp.designRate}/s</strong> · Salary: <strong>$${emp.salary}/min</strong></span>
           </div>
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
-            <span style="font-size:0.8rem; color:var(--color-text-muted);">Active Staff: ${hiredCount}</span>
-            <button class="btn-secondary" ${atCapacity || !canAfford ? "disabled" : ""} onclick="hireEmployee('${empKey}')">
-              Hire
-            </button>
+          <div class="staff-hire-footer">
+            <span class="staff-hire-count">Active: ${hiredCount}</span>
+            <button class="btn-secondary btn-sm" ${atCapacity || !canAfford ? "disabled" : ""} onclick="hireEmployee('${empKey}')">Hire</button>
           </div>
         </div>
       `;
@@ -2222,7 +2211,7 @@ function renderStaffPanel() {
   const activeStaffList = document.getElementById("active-staff-list");
   if (activeStaffList) {
     if (gameState.employees.length === 0) {
-      activeStaffList.innerHTML = `<div style="text-align:center; font-style:italic; color:var(--color-text-muted); padding:20px;">No hired employees on team.</div>`;
+      activeStaffList.innerHTML = `<div class="staff-empty">No hired employees on team. The office is just you and regret.</div>`;
     } else {
       activeStaffList.innerHTML = gameState.employees.map((emp, index) => {
         const info = EMPLOYEES_INFO[emp.id];
@@ -2232,9 +2221,7 @@ function renderStaffPanel() {
               <span class="staff-name">${info.name} (ID: #${index + 1})</span>
               <span class="staff-details">Salary: $${info.salary}/min | Tech: +${info.techRate}/s | Design: +${info.designRate}/s</span>
             </div>
-            <button class="btn-secondary" style="border-color:rgba(255, 23, 68, 0.3); color:#ff1744; padding:6px 12px; font-size:0.75rem;" onclick="fireEmployee(${index})">
-              Fire
-            </button>
+            <button class="btn-secondary btn-danger-outline btn-inline" onclick="fireEmployee(${index})">Fire</button>
           </div>
         `;
       }).join("");
@@ -2320,17 +2307,17 @@ function renderDevelopPanel() {
       </div>
       <div class="dev-board-grid">
         <div class="dev-board-card">
-          <h3 style="margin-bottom:12px;">📋 New Project Brief</h3>
+          <h3 class="form-section-title">📋 New Project Brief</h3>
           
           <div class="form-group">
             <label class="form-label">Game Title</label>
-            <div style="display:flex; gap:10px;">
-              <input type="text" id="game-name-input" placeholder="Title of your game..." style="flex:1;">
+            <div class="input-row">
+              <input type="text" id="game-name-input" placeholder="Title of your game...">
               <button class="btn-secondary" id="random-name-btn">🎲 Random</button>
             </div>
           </div>
 
-          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+          <div class="form-row-2">
             <div class="form-group">
               <label class="form-label">Genre Selection</label>
               <select id="genre-select">
@@ -2356,7 +2343,7 @@ function renderDevelopPanel() {
 
           <div id="synergy-preview" class="synergy-preview-box">Synergy preview loading...</div>
 
-          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+          <div class="form-row-2">
             <div class="form-group">
               <label class="form-label">Target Platform</label>
               <select id="platform-select">
@@ -2376,7 +2363,7 @@ function renderDevelopPanel() {
             </div>
           </div>
 
-          <button class="btn-primary" style="margin-top:10px;" onclick="createGameProject()">
+          <button class="btn-primary btn-sm" style="margin-top:10px;" onclick="createGameProject()">
             💻 Start Development Project
           </button>
         </div>
@@ -3527,15 +3514,13 @@ function renderResearchLab() {
   container.innerHTML = upgrades.map(upg => {
     const canAfford = gameState.research_points >= upg.cost;
     return `
-      <div class="card-item" style="${upg.owned ? "border-color:var(--color-cyan);" : ""}">
-        <div class="card-item-title">
+      <div class="card-item card-compact${upg.owned ? " card-owned" : ""}">
+        <div class="card-item-title card-title-md">
           <span>${upg.name}</span>
-          <span style="color:var(--color-cyan);">${upg.owned ? "Researched" : `${upg.cost} RP`}</span>
+          <span class="cost-cyan">${upg.owned ? "Researched" : `${upg.cost} RP`}</span>
         </div>
-        <div class="card-item-desc">
-          ${upg.desc}
-        </div>
-        <button class="btn-primary" ${upg.owned || !canAfford ? "disabled" : ""} onclick="buyResearch('${upg.id}')">
+        <div class="card-item-desc card-desc-sm">${upg.desc}</div>
+        <button class="btn-primary btn-sm" ${upg.owned || !canAfford ? "disabled" : ""} onclick="buyResearch('${upg.id}')">
           ${upg.owned ? "Researched" : "Buy Research"}
         </button>
       </div>
@@ -4775,22 +4760,19 @@ function renderDeveloperStore() {
 
   if (activeMiniGame && activeMiniGame.isStore) {
     container.innerHTML = `
-      <div style="background: rgba(0,0,0,0.4); border: 2px solid var(--color-gold); padding: 20px; border-radius: 12px; grid-column: span 1; width: 100%; text-align: center; box-sizing: border-box;">
-        <h4 style="color: var(--color-gold); margin-bottom: 8px; font-family: 'Press Start 2P', monospace; font-size: 0.8rem;">☕ Pouring Mini-game: Caffeine Brew</h4>
-        <p style="font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 15px;">Pour/Consume when the wobbly pointer is inside the green zone to double your recovery!</p>
-        
-        <div style="position: relative; height: 30px; background: #222; border: 2px solid #555; border-radius: 6px; margin-bottom: 20px; overflow: hidden;">
-          <div style="position: absolute; left: ${activeMiniGame.greenZoneStart}%; width: ${activeMiniGame.greenZoneEnd - activeMiniGame.greenZoneStart}%; height: 100%; background: #39ff14; opacity: 0.6; box-shadow: 0 0 10px #39ff14;"></div>
-          <div id="minigame-pour-needle" style="position: absolute; left: ${activeMiniGame.pointerPosition}%; width: 6px; height: 100%; background: #ff1744; border-radius: 3px; transform: translateX(-50%); box-shadow: 0 0 8px #ff1744; transition: left 0.05s linear;"></div>
+      <div class="mini-game-panel mini-game-panel--gold">
+        <h4 class="mini-game-title">☕ Pouring Mini-game: Caffeine Brew</h4>
+        <p class="mini-game-hint">Pour when the wobbly pointer is inside the green zone to double your recovery!</p>
+        <div class="mini-game-track">
+          <div class="mini-game-zone" style="left:${activeMiniGame.greenZoneStart}%; width:${activeMiniGame.greenZoneEnd - activeMiniGame.greenZoneStart}%;"></div>
+          <div id="minigame-pour-needle" class="mini-game-needle mini-game-needle--red" style="left:${activeMiniGame.pointerPosition}%;"></div>
         </div>
-
-        <div style="display: flex; gap: 10px; margin-bottom: 12px;">
-          <button class="btn-primary" style="flex: 1; padding: 12px; font-size: 1rem;" onclick="stopCoffeePour()">POUR / BREW</button>
-          <button class="btn-secondary" style="flex: 1; padding: 12px; border-color: rgba(255,23,68,0.3); color:#ff1744;" onclick="cancelMiniGame()">ABORT</button>
+        <div class="mini-game-actions">
+          <button class="btn-primary" onclick="stopCoffeePour()">POUR / BREW</button>
+          <button class="btn-secondary btn-danger-outline" onclick="cancelMiniGame()">ABORT</button>
         </div>
-
-        <div class="status-bar-track" style="height: 6px;">
-          <div class="status-bar-fill" id="minigame-timer-bar" style="width: 100%; height: 100%; background: var(--color-gold);"></div>
+        <div class="status-bar-track mini-game-timer">
+          <div class="status-bar-fill" id="minigame-timer-bar" style="width:100%; background:var(--color-gold);"></div>
         </div>
       </div>
     `;
@@ -4798,46 +4780,40 @@ function renderDeveloperStore() {
   }
 
   container.innerHTML = `
-    <div class="card-item" style="padding: 14px;">
-      <div class="card-item-title" style="font-size: 0.9rem;">
+    <div class="card-item card-compact store-card">
+      <div class="card-item-title card-title-md">
         <span>Java Volt Extra-Battery Acid</span>
-        <span style="color: #39ff14;">$50</span>
+        <span class="cost-green">$50</span>
       </div>
-      <div class="card-item-desc" style="font-size: 0.8rem; line-height:1.35;">
-        A carbonated cocktail of taurine, caffeine, and pure desperation. Instantly restores <strong>+25 Energy</strong>.<br>
-        <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block; margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
-          ⚠️ <strong>WARNING:</strong> Highly radioactive. Side effects include seeing memory leaks in 4D space, rapid finger twitching, and typing compile loops in your sleep. Daily value of caffeine: 900%.
-        </span>
+      <div class="card-item-desc card-desc-sm">
+        A carbonated cocktail of taurine, caffeine, and pure desperation. Instantly restores <strong>+25 Energy</strong>.
+        <span class="card-footnote">⚠️ <strong>WARNING:</strong> Highly radioactive. Side effects include seeing memory leaks in 4D space, rapid finger twitching, and typing compile loops in your sleep.</span>
       </div>
-      <button class="btn-primary" style="padding: 10px; font-size: 0.85rem;" onclick="buyItem('energy_drink')">Buy & Consume</button>
+      <button class="btn-primary btn-sm" onclick="buyItem('energy_drink')">Buy &amp; Consume</button>
     </div>
 
-    <div class="card-item" style="padding: 14px;">
-      <div class="card-item-title" style="font-size: 0.9rem;">
+    <div class="card-item card-compact store-card">
+      <div class="card-item-title card-title-md">
         <span>Lukewarm Office Drip Coffee</span>
-        <span style="color: #39ff14;">$20</span>
+        <span class="cost-green">$20</span>
       </div>
-      <div class="card-item-desc" style="font-size: 0.8rem; line-height:1.35;">
-        Brewed last Tuesday in a machine that has not been descaled since the Dot-Com crash. Restores <strong>+10 Energy</strong>.<br>
-        <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block; margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
-          ⚠️ <strong>Surgeon General Warning:</strong> Tastes like hot copper coins, industrial solvent, and broken promises. Morale boost is zero, but it is wet.
-        </span>
+      <div class="card-item-desc card-desc-sm">
+        Brewed last Tuesday in a machine that has not been descaled since the Dot-Com crash. Restores <strong>+10 Energy</strong>.
+        <span class="card-footnote">⚠️ Tastes like hot copper coins, industrial solvent, and broken promises. Morale boost is zero, but it is wet.</span>
       </div>
-      <button class="btn-primary" style="padding: 10px; font-size: 0.85rem;" onclick="buyItem('coffee')">Buy & Consume</button>
+      <button class="btn-primary btn-sm" onclick="buyItem('coffee')">Buy &amp; Consume</button>
     </div>
 
-    <div class="card-item" style="padding: 14px;">
-      <div class="card-item-title" style="font-size: 0.9rem;">
+    <div class="card-item card-compact store-card">
+      <div class="card-item-title card-title-md">
         <span>Sus Nootropic Focus Pill</span>
-        <span style="color: #39ff14;">$100</span>
+        <span class="cost-green">$100</span>
       </div>
-      <div class="card-item-desc" style="font-size: 0.8rem; line-height:1.35;">
-        Bought from a sketchy pop-up banner on an unindexed forum. Instantly restores <strong>+5 Nerve Focus</strong>.<br>
-        <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block; margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
-          ⚠️ <strong>DISCLAIMER:</strong> Ingredients list is written in wingdings. Guaranteed to lock you in an 8-hour loop staring at CSS centering tutorials.
-        </span>
+      <div class="card-item-desc card-desc-sm">
+        Bought from a sketchy pop-up banner on an unindexed forum. Instantly restores <strong>+5 Nerve Focus</strong>.
+        <span class="card-footnote">⚠️ Ingredients list is written in wingdings. Guaranteed to lock you in an 8-hour loop staring at CSS centering tutorials.</span>
       </div>
-      <button class="btn-primary" style="padding: 10px; font-size: 0.85rem;" onclick="buyItem('nootropic')">Buy & Consume</button>
+      <button class="btn-primary btn-sm" onclick="buyItem('nootropic')">Buy &amp; Consume</button>
     </div>
   `;
 }
@@ -4851,100 +4827,72 @@ function renderGigsBoard() {
       container.innerHTML = buildArcadeMiniGameHtml(activeMiniGame, "grid-column: span 1; width: 100%; text-align: center; box-sizing: border-box;");
     } else if (activeMiniGame.type === 'slider') {
       container.innerHTML = `
-        <div style="background: rgba(0,0,0,0.4); border: 2px solid var(--color-cyan); padding: 20px; border-radius: 12px; grid-column: span 1; width: 100%; text-align: center; box-sizing: border-box;">
-          <h4 style="color: var(--color-cyan); margin-bottom: 8px; font-family: 'Press Start 2P', monospace; font-size: 0.8rem;">📐 Slider Centering: CSS Alignment</h4>
-          <p style="font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 15px;">Lock the needle directly inside the center green zone to align the Luigi pizzeria layout!</p>
-
-          <div style="position: relative; height: 30px; background: #222; border: 2px solid #555; border-radius: 6px; margin-bottom: 20px; overflow: hidden;">
-            <div style="position: absolute; left: ${activeMiniGame.greenZoneStart}%; width: ${activeMiniGame.greenZoneEnd - activeMiniGame.greenZoneStart}%; height: 100%; background: #39ff14; opacity: 0.6; box-shadow: 0 0 10px #39ff14;"></div>
-            <div id="minigame-slider-needle" style="position: absolute; left: ${activeMiniGame.needlePosition}%; width: 6px; height: 100%; background: #00e5ff; border-radius: 3px; transform: translateX(-50%); box-shadow: 0 0 8px #00e5ff; transition: left 0.05s linear;"></div>
+        <div class="mini-game-panel">
+          <h4 class="mini-game-title">📐 Slider Centering: CSS Alignment</h4>
+          <p class="mini-game-hint">Lock the needle inside the green zone to align the Luigi pizzeria layout!</p>
+          <div class="mini-game-track">
+            <div class="mini-game-zone" style="left:${activeMiniGame.greenZoneStart}%; width:${activeMiniGame.greenZoneEnd - activeMiniGame.greenZoneStart}%;"></div>
+            <div id="minigame-slider-needle" class="mini-game-needle mini-game-needle--cyan" style="left:${activeMiniGame.needlePosition}%;"></div>
           </div>
-
-          <div style="display: flex; gap: 10px; margin-bottom: 12px;">
-            <button class="btn-primary" style="flex: 1; padding: 12px; font-size: 1rem;" onclick="stopGigSlider()">LOCK ALIGNMENT</button>
-            <button class="btn-secondary" style="flex: 1; padding: 12px; border-color: rgba(255,23,68,0.3); color:#ff1744;" onclick="cancelMiniGame()">ABORT</button>
+          <div class="mini-game-actions">
+            <button class="btn-primary" onclick="stopGigSlider()">LOCK ALIGNMENT</button>
+            <button class="btn-secondary btn-danger-outline" onclick="cancelMiniGame()">ABORT</button>
           </div>
-
-          <div class="status-bar-track" style="height: 6px;">
-            <div class="status-bar-fill" id="minigame-timer-bar" style="width: 100%; height: 100%; background: var(--color-cyan);"></div>
+          <div class="status-bar-track mini-game-timer">
+            <div class="status-bar-fill" id="minigame-timer-bar" style="width:100%; background:var(--color-cyan);"></div>
           </div>
         </div>
       `;
     } else if (activeMiniGame.type === 'binary') {
       container.innerHTML = `
-        <div style="background: rgba(0,0,0,0.4); border: 2px solid var(--color-purple); padding: 20px; border-radius: 12px; grid-column: span 1; width: 100%; text-align: center; box-sizing: border-box;">
-          <h4 style="color: var(--color-purple); margin-bottom: 8px; font-family: 'Press Start 2P', monospace; font-size: 0.8rem;">💾 DRM Crack: Binary Matcher</h4>
-          <p style="font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 15px;">Click the button that matches the target key to crack the rival's DRM:</p>
-
-          <div style="font-size: 1.8rem; font-weight: 800; color: #ffd700; margin-bottom: 20px; font-family: monospace; letter-spacing: 2px;">
-            TARGET: ${activeMiniGame.targetSequence}
+        <div class="mini-game-panel mini-game-panel--purple">
+          <h4 class="mini-game-title">💾 DRM Crack: Binary Matcher</h4>
+          <p class="mini-game-hint">Click the button that matches the target key to crack the rival's DRM:</p>
+          <div class="binary-target">TARGET: ${activeMiniGame.targetSequence}</div>
+          <div class="binary-options">
+            ${activeMiniGame.options.map(opt => `<button class="btn-primary" onclick="clickGigBinary('${opt}')">${opt}</button>`).join("")}
           </div>
-
-          <div style="display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 15px;">
-            ${activeMiniGame.options.map(opt => {
-              return `<button class="btn-primary" style="padding: 12px; font-size: 1rem; font-family: monospace;" onclick="clickGigBinary('${opt}')">${opt}</button>`;
-            }).join("")}
+          <div class="mini-game-actions">
+            <button class="btn-secondary btn-danger-outline" onclick="cancelMiniGame()">ABORT</button>
           </div>
-
-          <div style="display: flex; gap: 10px; margin-bottom: 12px;">
-            <button class="btn-secondary" style="width: 100%; padding: 12px; border-color: rgba(255,23,68,0.3); color:#ff1744;" onclick="cancelMiniGame()">ABORT</button>
-          </div>
-
-          <div class="status-bar-track" style="height: 6px;">
-            <div class="status-bar-fill" id="minigame-timer-bar" style="width: 100%; height: 100%; background: var(--color-purple);"></div>
+          <div class="status-bar-track mini-game-timer">
+            <div class="status-bar-fill" id="minigame-timer-bar" style="width:100%; background:var(--color-purple);"></div>
           </div>
         </div>
       `;
     } else if (activeMiniGame.type === 'trace') {
       container.innerHTML = `
-        <div style="background: rgba(0,0,0,0.5); border: 2px solid #ff1744; padding: 20px; border-radius: 12px; grid-column: span 1; width: 100%; text-align: center; box-sizing: border-box;">
-          <h4 style="color: #ff1744; margin-bottom: 8px; font-family: 'Press Start 2P', monospace; font-size: 0.8rem;">🎯 Ransomware: Trace Evader</h4>
-          <p style="font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 15px;">Locate and click the numbers 1, 2, 3, 4 in ascending order to bypass security tracing!</p>
-
-          <div style="position: relative; height: 180px; background: #08080a; border: 2px dashed #ff1744; border-radius: 8px; margin-bottom: 15px; overflow: hidden;">
+        <div class="mini-game-panel mini-game-panel--red">
+          <h4 class="mini-game-title">🎯 Ransomware: Trace Evader</h4>
+          <p class="mini-game-hint">Click numbers 1, 2, 3, 4 in ascending order to bypass security tracing!</p>
+          <div class="trace-board">
             ${activeMiniGame.coords.map(coord => {
               const isNext = coord.num === activeMiniGame.currentNumber;
               const isClicked = coord.num < activeMiniGame.currentNumber;
-              const opacity = isClicked ? 0.2 : 1;
-              const pointerEvents = isClicked ? 'none' : 'auto';
-              const borderGlow = isNext ? 'box-shadow: 0 0 10px #39ff14; border-color: #39ff14; color: #39ff14;' : 'border-color: #ff1744; color: #ff1744;';
-              return `
-                <button class="btn-primary" style="position: absolute; top: ${coord.top}%; left: ${coord.left}%; padding: 8px 14px; font-size: 1.1rem; border-radius: 50% !important; min-width: 40px; min-height: 40px; transform: translate(-50%, -50%); transition: all 0.2s ease-in-out; opacity: ${opacity}; pointer-events: ${pointerEvents}; ${borderGlow}" onclick="clickGigMatrix(${coord.num})">
-                  ${coord.num}
-                </button>
-              `;
+              const cls = isClicked ? "trace-node done" : (isNext ? "trace-node next" : "trace-node");
+              return `<button class="btn-primary ${cls}" style="top:${coord.top}%; left:${coord.left}%;" onclick="clickGigMatrix(${coord.num})">${coord.num}</button>`;
             }).join("")}
           </div>
-
-          <div style="display: flex; gap: 10px; margin-bottom: 12px;">
-            <button class="btn-secondary" style="width: 100%; padding: 12px; border-color: rgba(255,23,68,0.3); color:#ff1744;" onclick="cancelMiniGame()">ABORT</button>
+          <div class="mini-game-actions">
+            <button class="btn-secondary btn-danger-outline" onclick="cancelMiniGame()">ABORT</button>
           </div>
-
-          <div class="status-bar-track" style="height: 6px;">
-            <div class="status-bar-fill" id="minigame-timer-bar" style="width: 100%; height: 100%; background: #ff1744;"></div>
+          <div class="status-bar-track mini-game-timer">
+            <div class="status-bar-fill" id="minigame-timer-bar" style="width:100%; background:#ff1744;"></div>
           </div>
         </div>
       `;
     } else if (activeMiniGame.type === 'ping') {
       container.innerHTML = `
-        <div style="background: rgba(0,0,0,0.4); border: 2px solid #ffd700; padding: 20px; border-radius: 12px; grid-column: span 1; width: 100%; text-align: center; box-sizing: border-box;">
-          <h4 style="color: #ffd700; margin-bottom: 8px; font-family: 'Press Start 2P', monospace; font-size: 0.8rem;">⚡ DDoS platform: Ping Spammer</h4>
-          <p style="font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 15px;">Spam the PING button ${activeMiniGame.targetClicks} times to overwhelm their database cluster!</p>
-
-          <div style="font-size: 2.2rem; font-weight: 800; color: #ffd700; margin-bottom: 15px; font-family: monospace;">
-            ${activeMiniGame.clicksCount} / ${activeMiniGame.targetClicks}
+        <div class="mini-game-panel mini-game-panel--gold">
+          <h4 class="mini-game-title">⚡ DDoS Platform: Ping Spammer</h4>
+          <p class="mini-game-hint">Spam the PING button ${activeMiniGame.targetClicks} times to overwhelm their database cluster!</p>
+          <div class="mini-game-counter">${activeMiniGame.clicksCount} / ${activeMiniGame.targetClicks}</div>
+          <button class="btn-primary mini-game-ping-btn" onclick="clickGigPing()">💥 PING!</button>
+          <div class="mini-game-actions">
+            <button class="btn-secondary btn-danger-outline" onclick="cancelMiniGame()">ABORT</button>
           </div>
-
-          <button class="btn-primary" style="width: 100%; padding: 20px; font-size: 1.3rem; margin-bottom: 15px; background: #ffd700; color: #000; font-family: 'Press Start 2P', monospace;" onclick="clickGigPing()">
-            💥 PING!
-          </button>
-
-          <div style="display: flex; gap: 10px; margin-bottom: 12px;">
-            <button class="btn-secondary" style="width: 100%; padding: 12px; border-color: rgba(255,23,68,0.3); color:#ff1744;" onclick="cancelMiniGame()">ABORT</button>
-          </div>
-
-          <div class="status-bar-track" style="height: 6px;">
-            <div class="status-bar-fill" id="minigame-timer-bar" style="width: 100%; height: 100%; background: #ffd700;"></div>
+          <div class="status-bar-track mini-game-timer">
+            <div class="status-bar-fill" id="minigame-timer-bar" style="width:100%; background:#ffd700;"></div>
           </div>
         </div>
       `;
@@ -4957,22 +4905,20 @@ function renderGigsBoard() {
     const xpCost = getGigXpCost(gig.id);
     const successPct = Math.round(gig.successRate * 100);
     return `
-      <div class="card-item">
-        <div class="card-item-title">
+      <div class="card-item card-compact gig-card">
+        <div class="card-item-title card-title-md">
           <span>${dossier.title}</span>
-          <span style="color: #ff1744; display:flex; gap:8px;"><span>-${gig.nerveCost} 🕶️</span> <span style="color:var(--color-cyan); font-weight:bold;">-${xpCost} pad</span></span>
+          <span class="cost-row"><span class="cost-red">-${gig.nerveCost} 🕶️</span> <span class="cost-cyan">-${xpCost} pad</span></span>
         </div>
-        <div class="card-item-desc" style="line-height:1.4;">
-          ${dossier.desc}<br>
-          <span style="font-size: 0.75rem; color: var(--color-text-muted); display: block; margin-top: 4px; font-style: italic;">
-            <strong>Dossier:</strong> ${dossier.dossier}
-          </span>
+        <div class="card-item-desc card-desc-sm">
+          ${dossier.desc}
+          <span class="card-dossier"><strong>Dossier:</strong> ${dossier.dossier}</span>
         </div>
         <div class="card-item-meta">
-          <span>💵 Payout: $${gig.rewardMin.toLocaleString()} - $${gig.rewardMax.toLocaleString()}</span>
-          <span>📈 Client Reliability: ${successPct}%</span>
+          <span>💵 $${gig.rewardMin.toLocaleString()} – $${gig.rewardMax.toLocaleString()}</span>
+          <span>📈 ${successPct}% reliability</span>
         </div>
-        <button class="btn-primary" onclick="runGig('${gig.id}')">Perform Gig</button>
+        <button class="btn-primary btn-sm" onclick="runGig('${gig.id}')">Perform Gig</button>
       </div>
     `;
   }).join("");
