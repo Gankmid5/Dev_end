@@ -150,6 +150,7 @@ let gameState = {
 let consoleLogs = [];
 let localSaveTimer = 0;
 let paySalaryTimer = 0;
+let studioRentTimer = 0;
 
 // Mini-game combo streak (resets on fail)
 let miniGameCombo = 0;
@@ -279,6 +280,8 @@ function switchTab(tabName) {
     renderTrainingGym();
     renderDeveloperStore();
     renderGigsBoard();
+  } else if (tabName === "company") {
+    renderStudioDashboard();
   }
 
   if (window.SynthwaveAudio) {
@@ -335,6 +338,7 @@ async function loadProfileFromServer() {
       gameState.xp_needed = backup.xp_needed ?? 100;
     }
 
+    ensureStudioMeta();
     addLog("Cloud profile synced.", `Welcome back, ${profile.username}.`);
   } catch (err) {
     console.warn("Could not sync cloud profile, loading local backup:", err);
@@ -365,6 +369,7 @@ function loadProfileFromLocal() {
   }
 
   addLog("Guest local profile loaded.", "Progress is stored on this device.");
+  ensureStudioMeta();
 }
 
 function gainXP(amount) {
@@ -629,6 +634,21 @@ function gameTick() {
     }
   }
 
+  // 4b. Rent pressure (every 90 ticks)
+  studioRentTimer++;
+  if (studioRentTimer >= 90) {
+    studioRentTimer = 0;
+    ensureStudioMeta();
+    gameState.rentOverdue += 1;
+    if (gameState.rentOverdue >= 2) {
+      gameState.studioMorale = Math.max(0, gameState.studioMorale - 4);
+      if (gameState.rentOverdue === 2) {
+        pushStudioDiary("Rent overdue. Landlord left a voicemail composed entirely of sighs.");
+        addLog("Rent Overdue", `Pay $${getStudioRentCost()} in Studio dashboard to avoid morale collapse.`);
+      }
+    }
+  }
+
   // 5. Periodic Auto Save (every 10 ticks)
   localSaveTimer++;
   if (localSaveTimer >= 10) {
@@ -691,6 +711,19 @@ function triggerRandomEvent() {
         addLog("Random Event", "No staff to blame. You drank the intern's imaginary latte and gained +6 Energy.");
         showToast("🫠 Solo dev coping! +6 Energy", "info");
       }
+    },
+    () => {
+      ensureStudioMeta();
+      gameState.studioMorale = Math.min(100, gameState.studioMorale + 6);
+      pushStudioDiary("Surprise donut delivery from a former playtester. Morale suspiciously up.");
+      addLog("Random Event", "Mystery donuts appeared. +6 studio morale.");
+      showToast("🍩 Donut diplomacy! +6 Morale", "success");
+    },
+    () => {
+      ensureStudioMeta();
+      gameState.studioReputation = Math.min(100, gameState.studioReputation + 3);
+      addLog("Random Event", "Local blog called your studio 'ones to watch'. +3 Reputation.");
+      showToast("📰 Press mention! +3 Rep", "info");
     }
   ];
 
@@ -755,7 +788,6 @@ function getGameIncomePerTick(game) {
 }
 
 let developPanelRefreshCounter = 0;
-let activeGamesRefreshCounter = 0;
 let formInputsInitialized = false;
 
 function getGigXpCost(gigId) {
@@ -970,6 +1002,382 @@ function initPostReleaseState(proj) {
   pushDevDiary(proj, "post_release");
 }
 
+let studioDashboardRefreshCounter = 0;
+
+const STUDIO_DIARY_POOL = [
+  "Landlord inspected the garage. Classified pizza boxes as 'structural elements'.",
+  "Investor asked for ARR. You showed them active Steam sales and prayed.",
+  "Team stand-up lasted 47 minutes. Nothing stood up.",
+  "Accounting discovered the coffee budget exceeds the shader budget.",
+  "Press inquiry: 'Is your game a soulslike?' You said yes. It is a spreadsheet.",
+  "HR filed a complaint about HR not existing.",
+  "Merch shipment arrived: 400 shirts that say 'It compiles on my machine'.",
+  "Industry analyst called the studio 'promisingly chaotic'.",
+  "Parent company (Mom) threatened to revoke Wi-Fi unless dishes are done.",
+  "Franchise fan demanded sequel. You demanded they buy the DLC first."
+];
+
+const STUDIO_LEASE_CLAUSES = {
+  Garage: {
+    title: "Garage Rental & Co-Sign Lease (Landlord: Mom/Dad)",
+    body: "SECTION 4.2 (MILDEW & SODIUM): Pizza box tower max height 4 boxes. SECTION 9.1 (MORALE NOISE): Git screaming banned 10PM–7AM. SECTION 12.0 (RENT): $50/month or emotional support."
+  },
+  CoWorking: {
+    title: "Co-Working Membership (Landlord: WeWork Clone)",
+    body: "SECTION 2.1: One desk, three founders, infinite pitch decks. SECTION 5.0: Matcha allowance is one cup per fiscal quarter. Rent: $200/month billed as 'community vibes'."
+  },
+  IndieStudio: {
+    title: "Hipster Loft Lease (Landlord: Artisan REIT)",
+    body: "SECTION 1.0: Exposed brick is load-bearing for morale only. SECTION 7.3: Arcade machine may remain broken for aesthetic purposes. Rent: $800/month."
+  },
+  MegaCampus: {
+    title: "Mega-Corp Bunker Sublease (Landlord: Evil Holdings LLC)",
+    body: "SECTION 0.1: Slides mandatory. SECTION 3.3: Micro-greens subsidized; joy is not. SECTION 99.9: All bugs are 'feature flags'. Rent: $2,500/month."
+  }
+};
+
+const STUDIO_OPPORTUNITY_POOL = [
+  { title: "Indie Publisher Advance", cash: 900, repReq: 15, xp: 0, blurb: "They want 40% of everything forever. Standard." },
+  { title: "Mobile Port Contract", cash: 450, repReq: 8, xp: 20, blurb: "Port to phone. Add ads. Remove fun. Profit?" },
+  { title: "Game Jam Sponsorship", cash: 200, repReq: 5, xp: 35, blurb: "Brand your logo on 48-hour suffering." },
+  { title: "VC Office Hours", cash: 1500, repReq: 25, xp: 0, blurb: "Investor wants 'AI blockchain metaverse RPG'." },
+  { title: "Merch Licensing Deal", cash: 350, repReq: 10, xp: 10, blurb: "Sell mugs that say 'Have you tried turning it off and on again?'" },
+  { title: "Platform Feature Slot", cash: 600, repReq: 18, xp: 15, blurb: "Front page placement next to a farming sim." }
+];
+
+function ensureStudioMeta() {
+  gameState.studioMorale = gameState.studioMorale ?? 55;
+  gameState.studioReputation = gameState.studioReputation ?? 12;
+  gameState.studioBuzz = gameState.studioBuzz ?? 0;
+  gameState.studioDiary = gameState.studioDiary ?? [];
+  gameState.studioAwards = gameState.studioAwards ?? [];
+  gameState.rentOverdue = gameState.rentOverdue ?? 0;
+  gameState.investorMeetings = gameState.investorMeetings ?? 0;
+  if (!gameState.studioOpportunity) generateStudioOpportunity();
+}
+
+function pushStudioDiary(text) {
+  ensureStudioMeta();
+  gameState.studioDiary.unshift({
+    time: new Date().toLocaleTimeString().split(" ")[0],
+    text: text || STUDIO_DIARY_POOL[Math.floor(Math.random() * STUDIO_DIARY_POOL.length)]
+  });
+  if (gameState.studioDiary.length > 10) gameState.studioDiary.pop();
+}
+
+function generateStudioOpportunity() {
+  ensureStudioMeta();
+  const pool = [...STUDIO_OPPORTUNITY_POOL].sort(() => Math.random() - 0.5);
+  gameState.studioOpportunity = pool[0];
+}
+
+function getStudioRentCost() {
+  const rents = { Garage: 50, CoWorking: 200, IndieStudio: 800, MegaCampus: 2500 };
+  return rents[gameState.office_tier] || 50;
+}
+
+function getStudioPassiveIncome() {
+  return gameState.active_games.reduce((sum, g) => sum + getGameIncomePerTick(g), 0);
+}
+
+function getStudioLegacyTotal() {
+  let total = 0;
+  (gameState.portfolio || []).forEach(g => { total += g.legacyScore || Math.round((g.rating || 5) * 8); });
+  if (gameState.current_project?.legacyScore) total += gameState.current_project.legacyScore;
+  return total;
+}
+
+function getLeaseClause(tier) {
+  return STUDIO_LEASE_CLAUSES[tier] || STUDIO_LEASE_CLAUSES.Garage;
+}
+
+function renderStudioMeter(label, value, color) {
+  return `
+    <div class="studio-meter">
+      <div class="studio-meter-head"><span>${label}</span><span>${value}%</span></div>
+      <div class="status-bar-track" style="height:5px;"><div class="status-bar-fill" style="width:${value}%; height:100%; background:${color};"></div></div>
+    </div>
+  `;
+}
+
+function renderStudioDashboard() {
+  const container = document.getElementById("studio-dashboard-content");
+  if (!container) return;
+  ensureStudioMeta();
+
+  const passive = getStudioPassiveIncome();
+  const legacy = getStudioLegacyTotal();
+  const lease = getLeaseClause(gameState.office_tier);
+  const rent = getStudioRentCost();
+  const avgSkill = Math.round((gameState.coding_skill + gameState.design_skill + gameState.management_skill) / 3);
+  const opp = gameState.studioOpportunity;
+
+  const projectSnap = gameState.current_project
+    ? `<div class="studio-project-snap">
+        <strong>Active:</strong> ${gameState.current_project.name}
+        <span class="studio-snap-phase">${gameState.current_project.phase === "post_release" ? "LIVE OPS" : "IN DEV"}</span>
+        <button class="btn-secondary" style="padding:4px 10px; font-size:0.68rem;" onclick="switchTab('develop')">Open Dev Board →</button>
+      </div>`
+    : `<div class="studio-project-snap muted">No active project — <button class="btn-secondary" style="padding:4px 10px; font-size:0.68rem;" onclick="switchTab('develop')">Start one →</button></div>`;
+
+  const activeGamesHtml = gameState.active_games.length === 0
+    ? `<p class="studio-empty">No products on shelves. The warehouse echoes with unused hype.</p>`
+    : gameState.active_games.map((game, index) => {
+      const remaining = Math.max(0, GAME_SHELF_LIFE - game.age);
+      const agePct = Math.min(100, (game.age / GAME_SHELF_LIFE) * 100);
+      const income = getGameIncomePerTick(game);
+      return `
+        <div class="studio-product-card">
+          <div class="studio-product-head">
+            <span><strong>${game.name}</strong> <small>${game.genre}/${game.topic}</small></span>
+            <span class="studio-income">+$${income.toFixed(1)}/s</span>
+          </div>
+          <div class="studio-product-meta">★ ${game.rating.toFixed(1)} · ${game.totalSold.toLocaleString()} sold · ${remaining}s shelf</div>
+          <div class="status-bar-track" style="height:4px; margin:6px 0;"><div class="status-bar-fill" style="width:${100 - agePct}%; height:100%; background:var(--color-cyan);"></div></div>
+          <div class="studio-marketing-row">
+            <button class="btn-secondary studio-mkt-btn" onclick="runMarketing(${index}, 'social')">📱 Social $200</button>
+            <button class="btn-secondary studio-mkt-btn" onclick="runMarketing(${index}, 'pr')">📰 PR $800</button>
+            <button class="btn-secondary studio-mkt-btn" onclick="runMarketing(${index}, 'steam')">🎮 Steam $400</button>
+            <button class="btn-secondary studio-mkt-btn" onclick="runMarketing(${index}, 'influencer')">📹 Creator $350</button>
+          </div>
+        </div>`;
+    }).join("");
+
+  const portfolioHtml = (!gameState.portfolio || gameState.portfolio.length === 0)
+    ? `<p class="studio-empty">Portfolio empty. History is written by shipped builds (and deleted branches).</p>`
+    : [...gameState.portfolio].reverse().map(game => {
+      const leg = game.legacyScore || Math.round((game.rating || 5) * 8);
+      return `
+        <div class="studio-portfolio-card">
+          <div><strong>${game.name}</strong> <small>${game.genre}/${game.topic}</small>
+            <div class="studio-product-meta">★ ${(game.rating || 0).toFixed(1)} · Legacy ${leg}</div>
+          </div>
+          <div class="studio-portfolio-stats">
+            <div>${parseInt(game.totalSold || 0).toLocaleString()} sold</div>
+            <div class="studio-income">$${parseFloat(game.totalRevenue || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+          </div>
+        </div>`;
+    }).join("");
+
+  const diaryHtml = gameState.studioDiary.slice(0, 6).map(d =>
+    `<div class="dev-diary-entry"><span class="dev-diary-time">[${d.time}]</span> ${d.text}</div>`
+  ).join("") || `<p class="studio-empty">Studio chronicle blank. Make decisions to generate corporate lore.</p>`;
+
+  const awardsHtml = gameState.studioAwards.length
+    ? gameState.studioAwards.map(a => `<span class="award-chip">🏆 ${a}</span>`).join("")
+    : `<span class="studio-empty">No studio awards yet. Ship hits, pay rent on time, fool investors.</span>`;
+
+  container.innerHTML = `
+    <div class="studio-dashboard-hub">
+      <div class="studio-dash-header">
+        <div>
+          <h2 class="studio-dash-title">${gameState.company_name}</h2>
+          <p class="studio-dash-sub">${getOfficeDisplayName(gameState.office_tier)} · Level ${gameState.level} Dev · ${gameState.employees.length} crew</p>
+        </div>
+        <div class="studio-dash-badges">
+          <div class="studio-badge cash">$${parseFloat(gameState.cash).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+          <div class="studio-badge worth">NW $${parseFloat(gameState.net_worth).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+          <div class="studio-badge passive">+$${passive.toFixed(1)}/s</div>
+        </div>
+      </div>
+
+      ${projectSnap}
+
+      <div class="studio-pulse-grid">
+        ${renderStudioMeter("Morale", gameState.studioMorale, "#b388ff")}
+        ${renderStudioMeter("Reputation", Math.min(100, gameState.studioReputation), "#00e5ff")}
+        ${renderStudioMeter("Industry Buzz", Math.min(100, gameState.studioBuzz), "#ffd700")}
+      </div>
+
+      <div class="studio-stats-grid">
+        <div class="studio-stat"><span>Games Shipped</span><strong>${gameState.games_released}</strong></div>
+        <div class="studio-stat"><span>Copies Sold</span><strong>${parseInt(gameState.games_sold).toLocaleString()}</strong></div>
+        <div class="studio-stat"><span>Research</span><strong>${Math.floor(gameState.research_points)} RP</strong></div>
+        <div class="studio-stat"><span>Avg Skill</span><strong>${avgSkill}</strong></div>
+        <div class="studio-stat"><span>Legacy Score</span><strong>${legacy}</strong></div>
+        <div class="studio-stat"><span>Rent Due</span><strong style="color:${gameState.rentOverdue > 0 ? "#ff1744" : "#39ff14"}">$${rent}${gameState.rentOverdue > 0 ? " (!)" : ""}</strong></div>
+      </div>
+
+      <div class="studio-board-grid">
+        <div class="studio-board-col">
+          <div class="dev-board-card compact">
+            <h4 class="dev-section-label">📦 Active Product Sales</h4>
+            <div class="studio-product-list">${activeGamesHtml}</div>
+          </div>
+          <div class="dev-board-card compact">
+            <h4 class="dev-section-label">📚 Studio Portfolio</h4>
+            <div class="studio-portfolio-list">${portfolioHtml}</div>
+          </div>
+        </div>
+
+        <div class="studio-board-col">
+          <div class="dev-board-card compact lease-card">
+            <h4 class="dev-section-label">📜 ${lease.title}</h4>
+            <p class="lease-body">${lease.body}</p>
+            <button class="btn-secondary" style="margin-top:8px; font-size:0.75rem;" onclick="runStudioAction('pay_rent')">Pay Rent ($${rent})</button>
+          </div>
+
+          <div class="dev-board-card compact">
+            <h4 class="dev-section-label">💼 Incoming Opportunity</h4>
+            ${opp ? `
+              <p class="opp-title">${opp.title}</p>
+              <p class="opp-blurb">${opp.blurb}</p>
+              <p class="opp-meta">+$${opp.cash} · Rep ${opp.repReq}+ · ${opp.xp ? opp.xp + " XP" : "no XP"}</p>
+              <div style="display:flex; gap:8px; margin-top:8px;">
+                <button class="btn-primary" style="flex:1; font-size:0.72rem;" onclick="runStudioAction('accept_opportunity')">Sign Deal</button>
+                <button class="btn-secondary" style="font-size:0.72rem;" onclick="runStudioAction('decline_opportunity')">Pass</button>
+              </div>
+            ` : `<p class="studio-empty">No deals in inbox. Buzz around to attract vultures.</p>`}
+          </div>
+
+          <div class="dev-board-card compact">
+            <h4 class="dev-section-label">🏢 Studio Operations</h4>
+            <div class="studio-ops-grid">
+              <button class="btn-secondary studio-ops-btn" onclick="runStudioAction('investor_pitch')">Investor Pitch<br><small>-5 🎯</small></button>
+              <button class="btn-secondary studio-ops-btn" onclick="runStudioAction('rebrand')">Rebrand<br><small>-$500</small></button>
+              <button class="btn-secondary studio-ops-btn" onclick="runStudioAction('merch')">Merch Drop<br><small>-$150</small></button>
+              <button class="btn-secondary studio-ops-btn" onclick="runStudioAction('cleanup')">Clean Office<br><small>-$75</small></button>
+              <button class="btn-secondary studio-ops-btn" onclick="runStudioAction('networking')">Industry Mixer<br><small>-20 XP</small></button>
+              <button class="btn-secondary studio-ops-btn" onclick="runStudioAction('showcase')">Sales Showcase<br><small>-$200</small></button>
+              <button class="btn-secondary studio-ops-btn" onclick="runStudioAction('tax_audit')">Tax Audit<br><small>Free chaos</small></button>
+              <button class="btn-secondary studio-ops-btn" onclick="runStudioAction('rename')">Rename Studio<br><small>Free ego</small></button>
+            </div>
+          </div>
+
+          <div class="dev-board-card compact">
+            <h4 class="dev-section-label">🏆 Studio Trophy Wall</h4>
+            <div class="awards-row">${awardsHtml}</div>
+          </div>
+
+          <div class="dev-board-card compact">
+            <h4 class="dev-section-label">📓 Studio Chronicle</h4>
+            <div class="dev-diary-feed">${diaryHtml}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function runStudioAction(actionId) {
+  ensureStudioMeta();
+  const rent = getStudioRentCost();
+
+  if (actionId === "pay_rent") {
+    if (gameState.cash < rent) { showToast(`Rent is $${rent}!`, "error"); return; }
+    gameState.cash -= rent;
+    gameState.rentOverdue = 0;
+    gameState.studioMorale = Math.min(100, gameState.studioMorale + 8);
+    pushStudioDiary(`Rent paid ($${rent}). Landlord sent a passive-aggressive thank-you emoji.`);
+    addLog("Rent Paid", `Paid $${rent}. Morale restored slightly.`);
+    showToast(`Rent paid! Morale +8`, "success");
+  } else if (actionId === "investor_pitch") {
+    if (gameState.nerve < 5) { showToast("Pitch needs 5 nerve!", "error"); return; }
+    gameState.nerve -= 5;
+    gameState.investorMeetings += 1;
+    const success = gameState.studioReputation >= 10 + gameState.investorMeetings * 2;
+    if (success) {
+      const payout = 200 + gameState.studioReputation * 25 + gameState.investorMeetings * 50;
+      gameState.cash += payout;
+      gameState.studioBuzz = Math.min(100, gameState.studioBuzz + 10);
+      pushStudioDiary(`Investor meeting #${gameState.investorMeetings}: they said 'interesting' — finance for 'yes'. +$${payout}.`);
+      addLog("Investor Pitch", `Secured $${payout} in 'strategic runway extension'.`);
+      showToast(`Investor hooked! +$${payout}`, "success");
+      if (window.SynthwaveAudio) SynthwaveAudio.playSFX("cash");
+    } else {
+      gameState.studioReputation = Math.max(0, gameState.studioReputation - 2);
+      pushStudioDiary("Investor asked for users, revenue, and a soul. You had two spreadsheets.");
+      showToast("Pitch flopped. Reputation -2", "warning");
+    }
+  } else if (actionId === "rebrand") {
+    if (gameState.cash < 500) { showToast("Rebrand costs $500!", "error"); return; }
+    gameState.cash -= 500;
+    gameState.studioReputation = Math.min(100, gameState.studioReputation + 8);
+    gameState.studioBuzz = Math.min(100, gameState.studioBuzz + 12);
+    const names = ["Neon Crunch Interactive", "Hyperbolic Games", "Bug Feature Studios", "Live Service Trauma LLC"];
+    gameState.company_name = names[Math.floor(Math.random() * names.length)];
+    pushStudioDiary(`Rebranded to '${gameState.company_name}'. Same bugs, fresher logo.`);
+    addLog("Studio Rebrand", `Now operating as '${gameState.company_name}'.`);
+    showToast("Rebrand complete! Rep +8", "success");
+  } else if (actionId === "merch") {
+    if (gameState.cash < 150) { showToast("Merch costs $150!", "error"); return; }
+    if (gameState.games_released < 1) { showToast("Ship a game before selling hoodies!", "error"); return; }
+    gameState.cash -= 150;
+    const sales = 80 + gameState.games_released * 40 + Math.floor(gameState.studioBuzz * 2);
+    gameState.cash += sales;
+    gameState.studioBuzz = Math.min(100, gameState.studioBuzz + 6);
+    pushStudioDiary(`Merch drop sold ${Math.floor(sales / 15)} hoodies that say 'Day One Patch Soon™'.`);
+    addLog("Merch Drop", `Earned $${sales} from questionable apparel.`);
+    showToast(`Merch sold! +$${sales}`, "success");
+  } else if (actionId === "cleanup") {
+    if (gameState.cash < 75) { showToast("Cleanup costs $75!", "error"); return; }
+    gameState.cash -= 75;
+    gameState.studioMorale = Math.min(100, gameState.studioMorale + 12);
+    pushStudioDiary("Office cleaned. Found three keyboards, two hopes, one working mouse.");
+    showToast("Office sparkles! Morale +12", "success");
+  } else if (actionId === "networking") {
+    if (gameState.xp < 20) { showToast("Mixer costs 20 XP!", "error"); return; }
+    gameState.xp -= 20;
+    gameState.studioReputation = Math.min(100, gameState.studioReputation + 6);
+    gameState.studioBuzz = Math.min(100, gameState.studioBuzz + 8);
+    pushStudioDiary("Industry mixer: exchanged 14 LinkedIn requests and zero business cards.");
+    showToast("Networking done! Rep +6", "info");
+  } else if (actionId === "showcase") {
+    if (gameState.cash < 200) { showToast("Showcase costs $200!", "error"); return; }
+    if (gameState.active_games.length === 0) { showToast("No active games to showcase!", "error"); return; }
+    gameState.cash -= 200;
+    gameState.active_games.forEach(g => { g.initialSalesRate = Math.ceil(g.initialSalesRate * 1.12); });
+    gameState.studioBuzz = Math.min(100, gameState.studioBuzz + 15);
+    pushStudioDiary("Studio showcase streamed to 47 viewers (44 bots, 3 humans).");
+    addLog("Studio Showcase", "All active titles got +12% sales velocity.");
+    showToast("Showcase hype! All games boosted.", "success");
+  } else if (actionId === "tax_audit") {
+    const roll = Math.random();
+    if (roll < 0.4) {
+      const fine = Math.floor(50 + gameState.cash * 0.05);
+      gameState.cash = Math.max(0, gameState.cash - fine);
+      pushStudioDiary(`Tax audit found 'miscellaneous Steam keys' expense. Fine: $${fine}.`);
+      showToast(`Audit fine: -$${fine}`, "warning");
+    } else {
+      const refund = Math.floor(60 + Math.random() * 120);
+      gameState.cash += refund;
+      pushStudioDiary(`Auditor confused by your depreciation of 'good intentions'. Refund: $${refund}.`);
+      showToast(`Audit refund! +$${refund}`, "success");
+    }
+  } else if (actionId === "rename") {
+    const newName = prompt("New studio name:", gameState.company_name);
+    if (newName && newName.trim()) {
+      gameState.company_name = newName.trim().substring(0, 40);
+      pushStudioDiary(`Studio renamed to '${gameState.company_name}'. Trademark pending/emotional.`);
+      showToast("Studio renamed!", "info");
+    }
+  } else if (actionId === "accept_opportunity") {
+    const o = gameState.studioOpportunity;
+    if (!o) return;
+    if (gameState.studioReputation < o.repReq) { showToast(`Need ${o.repReq} reputation!`, "error"); return; }
+    if (o.xp && gameState.xp < o.xp) { showToast(`Need ${o.xp} XP!`, "error"); return; }
+    if (o.xp) gameState.xp -= o.xp;
+    gameState.cash += o.cash;
+    gameState.studioReputation = Math.min(100, gameState.studioReputation + 5);
+    gameState.studioBuzz = Math.min(100, gameState.studioBuzz + 10);
+    pushStudioDiary(`Signed '${o.title}'. Lawyers high-fived (legally distinct from a handshake).`);
+    addLog("Contract Signed", `${o.title}: +$${o.cash}.`);
+    showToast(`Deal signed! +$${o.cash}`, "success");
+    if (window.SynthwaveAudio) SynthwaveAudio.playSFX("cash");
+    gameState.studioOpportunity = null;
+    generateStudioOpportunity();
+  } else if (actionId === "decline_opportunity") {
+    pushStudioDiary(`Passed on '${gameState.studioOpportunity?.title}'. They'll be back with worse terms.`);
+    gameState.studioOpportunity = null;
+    generateStudioOpportunity();
+    showToast("Opportunity declined. New one inbound.", "info");
+  }
+
+  saveGame();
+  renderStudioDashboard();
+  updateUI();
+}
+
 function suspendMiniGameForTabChange(nextTab) {
   if (!activeMiniGame) return;
 
@@ -1038,77 +1446,12 @@ function updateUI() {
   if (xpVal) xpVal.innerText = `${Math.floor(gameState.xp)} / ${gameState.xp_needed} XP`;
   if (xpBar) xpBar.style.width = `${Math.min(100, (gameState.xp / gameState.xp_needed) * 100)}%`;
 
-  // Dashboard indicators
-  const dbCompanyName = document.getElementById("db-company-name");
-  const dbOfficeName = document.getElementById("db-office-name");
-  const dbNetWorth = document.getElementById("db-net-worth");
-  const dbReleased = document.getElementById("db-released");
-  const dbSold = document.getElementById("db-sold");
-  const dbEmployees = document.getElementById("db-employees");
-  const dbResearch = document.getElementById("db-research");
+  ensureStudioMeta();
 
-  if (dbCompanyName) dbCompanyName.innerText = gameState.company_name;
-  if (dbOfficeName) dbOfficeName.innerText = getOfficeDisplayName(gameState.office_tier);
-  if (dbNetWorth) dbNetWorth.innerText = `$${parseFloat(gameState.net_worth).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  if (dbReleased) dbReleased.innerText = gameState.games_released;
-  if (dbSold) dbSold.innerText = parseInt(gameState.games_sold).toLocaleString();
-  if (dbEmployees) dbEmployees.innerText = gameState.employees.length;
-  if (dbResearch) dbResearch.innerText = Math.floor(gameState.research_points);
-
-  // Active games list render (throttled — full re-render every 4 ticks)
-  const activeGamesContainer = document.getElementById("active-games-list");
-  if (activeGamesContainer && activeGamesRefreshCounter++ % 4 === 0) {
-    if (gameState.active_games.length === 0) {
-      activeGamesContainer.innerHTML = `<div class="terminal-line" style="color: var(--color-text-muted); font-style: italic;">No active products generating sales. The shelf is as empty as your sprint backlog.</div>`;
-    } else {
-      activeGamesContainer.innerHTML = gameState.active_games.map((game, index) => {
-        const remainingTicks = Math.max(0, GAME_SHELF_LIFE - game.age);
-        const agePercent = Math.min(100, (game.age / GAME_SHELF_LIFE) * 100);
-        const curIncome = getGameIncomePerTick(game);
-        return `
-          <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); padding: 12px; border-radius: 10px; margin-bottom: 8px;">
-            <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:0.9rem;">
-              <span>${game.name} (${game.genre}/${game.topic})</span>
-              <span style="color:#39ff14;">+ $${curIncome.toFixed(1)}/s</span>
-            </div>
-            <div style="font-size:0.75rem; color:var(--color-text-muted); margin-top:4px; display:flex; justify-content:space-between;">
-              <span>Rating: ${game.rating.toFixed(1)}/10 | Sold: ${game.totalSold.toLocaleString()} copies</span>
-              <span>Shelf Life: ${remainingTicks}s left</span>
-            </div>
-            <div class="status-bar-track" style="height: 4px; margin-top: 6px;">
-              <div class="status-bar-fill" style="width: ${100 - agePercent}%; height:100%; background: var(--color-cyan);"></div>
-            </div>
-            <div style="display:flex; gap:8px; margin-top:8px;">
-              <button class="btn-secondary" style="padding:4px 8px; font-size:0.7rem; flex:1;" onclick="runMarketing(${index}, 'social')">📱 Social Hype ($200)</button>
-              <button class="btn-secondary" style="padding:4px 8px; font-size:0.7rem; flex:1;" onclick="runMarketing(${index}, 'pr')">📰 PR Blitz ($800)</button>
-            </div>
-          </div>
-        `;
-      }).join("");
-    }
-  }
-
-  // Portfolio list render
-  const portfolioContainer = document.getElementById("portfolio-games-list");
-  if (portfolioContainer) {
-    if (!gameState.portfolio || gameState.portfolio.length === 0) {
-      portfolioContainer.innerHTML = `<div class="terminal-line" style="color: var(--color-text-muted); font-style: italic;">No games published yet. Go to 'Develop Game' to start!</div>`;
-    } else {
-      portfolioContainer.innerHTML = gameState.portfolio.map(game => {
-        return `
-          <div style="background: rgba(255,255,255,0.005); border: 1px solid rgba(255,255,255,0.02); padding: 10px; border-radius: 8px; display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom: 6px;">
-            <div>
-              <strong>${game.name}</strong> (${game.genre}/${game.topic})
-              <div style="font-size:0.7rem; color:var(--color-text-muted); margin-top:2px;">Rating: ${game.rating.toFixed(1)}/10</div>
-            </div>
-            <div style="text-align:right;">
-              <div>Sold: ${parseInt(game.totalSold).toLocaleString()} copies</div>
-              <div style="font-size:0.7rem; color:#39ff14; margin-top:2px;">Rev: $${parseFloat(game.totalRevenue || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-            </div>
-          </div>
-        `;
-      }).reverse().join("");
-    }
+  const companySection = document.getElementById("company-section");
+  const companyVisible = companySection && companySection.style.display !== "none";
+  if (companyVisible && studioDashboardRefreshCounter++ % 4 === 0) {
+    renderStudioDashboard();
   }
 
   const developSection = document.getElementById("develop-section");
@@ -1146,6 +1489,10 @@ function updateZonePulse() {
   const gigsPulse = document.getElementById("zone-pulse-gigs");
   if (gigsPulse) {
     gigsPulse.classList.toggle("lit", gameState.energy >= 5 || gameState.nerve >= 2);
+  }
+  const companyPulse = document.getElementById("zone-pulse-company");
+  if (companyPulse) {
+    companyPulse.classList.toggle("lit", gameState.active_games.length > 0 || gameState.rentOverdue > 0);
   }
 }
 
@@ -1489,6 +1836,7 @@ function buyOffice(tierKey) {
 
   gameState.cash -= tier.cost;
   gameState.office_tier = tierKey;
+  pushStudioDiary(`Moved to ${tier.name}. ${tier.desc.substring(0, 80)}...`);
 
   addLog("Office Upgraded", `Moved studio premises to ${tier.name}. Cash spent: $${tier.cost}.`);
   showToast(`Moved to ${tier.name}!`, "success");
@@ -2513,6 +2861,21 @@ function releaseGameProject() {
     "Your mom just asked if this will finally make you move out."
   ];
   const quip = releaseQuips[Math.floor(Math.random() * releaseQuips.length)];
+  ensureStudioMeta();
+  gameState.studioReputation = Math.min(100, gameState.studioReputation + Math.round(rating));
+  gameState.studioBuzz = Math.min(100, gameState.studioBuzz + 15);
+  gameState.studioMorale = Math.min(100, gameState.studioMorale + 10);
+  pushStudioDiary(`Shipped '${proj.name}' at ${rating.toFixed(1)}/10. Champagne flat; dreams fizzy.`);
+  if (gameState.games_released === 1 && !gameState.studioAwards.includes("First Ship")) {
+    gameState.studioAwards.push("First Ship");
+  }
+  if (rating >= 8.5 && !gameState.studioAwards.includes("Critical Darling")) {
+    gameState.studioAwards.push("Critical Darling");
+  }
+  if (gameState.games_released >= 5 && !gameState.studioAwards.includes("Serial Shipper")) {
+    gameState.studioAwards.push("Serial Shipper");
+  }
+
   addLog("Game Released!", `'${proj.name}' hit the shelves! Max revenue cap: $${cap.toLocaleString()}. +${totalXPGained} XP. ${quip}`);
   showToast(`🚀 Shipped '${proj.name}' at ${rating.toFixed(1)}/10! ${quip}`, "success");
 
@@ -2668,15 +3031,27 @@ function runMarketing(gameIndex, campaignType) {
   if (campaignType === "social") {
     cost = 200;
     multiplier = 1.25;
-    ageReduction = 30; // Extend life by 30 ticks
+    ageReduction = 30;
     label = "Social Media Hype";
     xpCost = 5;
   } else if (campaignType === "pr") {
     cost = 800;
     multiplier = 1.60;
-    ageReduction = 80; // Extend life by 80 ticks
+    ageReduction = 80;
     label = "PR Blitz Campaign";
     xpCost = 15;
+  } else if (campaignType === "steam") {
+    cost = 400;
+    multiplier = 1.40;
+    ageReduction = 50;
+    label = "Steam Featured Slot";
+    xpCost = 12;
+  } else if (campaignType === "influencer") {
+    cost = 350;
+    multiplier = 1.35;
+    ageReduction = 40;
+    label = "Influencer Sponsorship";
+    xpCost = 10;
   }
 
   if (gameState.cash < cost) {
@@ -2705,10 +3080,15 @@ function runMarketing(gameIndex, campaignType) {
     portItem.initialSalesRate = game.initialSalesRate;
   }
 
+  ensureStudioMeta();
+  gameState.studioBuzz = Math.min(100, gameState.studioBuzz + 5);
+  pushStudioDiary(`Marketing push for '${game.name}' via ${label}. Buzz accumulates like technical debt.`);
+
   addLog("Marketing Campaign Launched", `Promoted '${game.name}' via ${label} for $${cost}. Sales rate boosted by +${Math.round((multiplier - 1) * 100)}% and shelf life extended.`);
   showToast(`Launched ${label}! Sales boosted`, "success");
 
   saveGame();
+  renderStudioDashboard();
   updateUI();
 }
 
@@ -2902,22 +3282,32 @@ function runActivity(activityType) {
   gameState.cash -= cost;
   gameState.xp -= xpCost;
 
+  ensureStudioMeta();
   if (activityType === "pizza_party") {
     gameState.energy = Math.min(gameState.max_energy, gameState.energy + energyGain);
+    gameState.studioMorale = Math.min(100, gameState.studioMorale + 10);
+    pushStudioDiary("Pizza party hosted. Morale up; digestion down.");
     addLog("Hosted Pizza Party", `Spent $${cost} and 10 XP to host a pizza party. Gained +35 Energy.`);
     showToast("Wood-fired pizzas delivered! +35 Energy", "success");
   } else if (activityType === "hackathon") {
     gameState.research_points += researchGain;
+    gameState.studioBuzz = Math.min(100, gameState.studioBuzz + 8);
+    pushStudioDiary("Hackathon ended. 3 prototypes, 47 energy drinks, 1 working demo.");
     addLog("Started Hackathon", `Spent $${cost} and 25 XP to organize a hackathon. Gained +15 Research Points.`);
     showToast("24h hackathon complete! Devs saw God, then a linter. +15 RP", "success");
   } else if (activityType === "dev_con") {
     gameState.research_points += researchGain;
     gameState.coding_skill += skillGain;
     gameState.design_skill += skillGain;
+    gameState.studioReputation = Math.min(100, gameState.studioReputation + 5);
+    gameState.studioBuzz = Math.min(100, gameState.studioBuzz + 12);
+    pushStudioDiary("DevCon loot: stickers, anxiety, and one good contact.");
     addLog("Attended DevCon", `Spent $${cost} and 50 XP to attend DevCon. Gained +20 Research Points and +5 Coding & Design.`);
     showToast("DevCon complete! +20 RP, +5 Skills", "success");
   } else if (activityType === "chairs") {
     gameState.ergonomic_chairs = true;
+    gameState.studioMorale = Math.min(100, gameState.studioMorale + 15);
+    pushStudioDiary("Ergonomic chairs installed. Lower backs cautiously optimistic.");
     addLog("Ergonomic Chairs Upgraded", `Spent $${cost} on posture chairs. Active Energy recovery increased by 50% permanently.`);
     showToast("Chairs installed! +50% Energy recovery speed", "success");
     
@@ -3552,6 +3942,8 @@ window.refreshSocialFeed = refreshSocialFeed;
 window.runPostMortem = runPostMortem;
 window.launchRemaster = launchRemaster;
 window.startSequelProject = startSequelProject;
+window.runStudioAction = runStudioAction;
+window.renderStudioDashboard = renderStudioDashboard;
 
 // TOAST NOTIFICATIONS
 function showToast(message, type = "info") {

@@ -154,65 +154,12 @@
 
       <div class="zone-main" id="zone-main">
     <main class="main-layout main-single" id="company-section" style="display: none;">
-      <!-- Left side: Studio status and releases -->
-      <section class="glass-panel" style="gap: 16px;">
+      <section class="glass-panel studio-dashboard-shell" style="gap: 12px;">
         <div class="panel-title">
-          <span>Studio Dashboard</span>
-          <span class="count" id="db-company-name">Garage Devs</span>
+          <span>Studio Command Center</span>
         </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-          <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); padding: 12px; border-radius: 12px;">
-            <div style="font-size:0.75rem; color:var(--color-text-muted); text-transform:uppercase;">Net Worth</div>
-            <div style="font-size:1.3rem; font-weight:bold; margin-top:4px;" id="db-net-worth">$500.00</div>
-          </div>
-          <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); padding: 12px; border-radius: 12px;">
-            <div style="font-size:0.75rem; color:var(--color-text-muted); text-transform:uppercase;">Office Tier</div>
-            <div style="font-size:1.3rem; font-weight:bold; margin-top:4px;" id="db-office-name">Garage</div>
-          </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; text-align: center;">
-          <div style="background: rgba(255,255,255,0.005); border: 1px solid rgba(255,255,255,0.02); padding: 10px; border-radius: 8px;">
-            <div style="font-size:0.68rem; color:var(--color-text-muted); text-transform:uppercase;">Games</div>
-            <div style="font-size:1rem; font-weight:bold; margin-top:2px;" id="db-released">0</div>
-          </div>
-          <div style="background: rgba(255,255,255,0.005); border: 1px solid rgba(255,255,255,0.02); padding: 10px; border-radius: 8px;">
-            <div style="font-size:0.68rem; color:var(--color-text-muted); text-transform:uppercase;">Copies Sold</div>
-            <div style="font-size:1rem; font-weight:bold; margin-top:2px;" id="db-sold">0</div>
-          </div>
-          <div style="background: rgba(255,255,255,0.005); border: 1px solid rgba(255,255,255,0.02); padding: 10px; border-radius: 8px;">
-            <div style="font-size:0.68rem; color:var(--color-text-muted); text-transform:uppercase;">Staff</div>
-            <div style="font-size:1rem; font-weight:bold; margin-top:2px;" id="db-employees">0</div>
-          </div>
-          <div style="background: rgba(255,255,255,0.005); border: 1px solid rgba(255,255,255,0.02); padding: 10px; border-radius: 8px;">
-            <div style="font-size:0.68rem; color:var(--color-text-muted); text-transform:uppercase;">Research</div>
-            <div style="font-size:1rem; font-weight:bold; margin-top:2px;" id="db-research">0</div>
-          </div>
-        </div>
-
-        <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.04); padding: 12px; border-radius: 12px; font-size: 0.78rem; line-height: 1.4; color: var(--color-text-muted);">
-          <strong style="color: var(--color-cyan); display: block; margin-bottom: 6px; font-size: 0.85rem;">📜 Garage Rental &amp; Co-Sign Lease Agreement (Landlord: Mom/Dad)</strong>
-          <span style="font-style: italic;">SECTION 4.2 (MILDEW &amp; SODIUM COMPLIANCE):</span> Tenant (Garage Intern) agrees to maintain an empty pizza box tower height of no greater than four (4) boxes. Landlord reserves the right to confiscate wobbly desk chairs if laundry chores are ignored.<br>
-          <span style="font-style: italic;">SECTION 9.1 (MORALE NOISE ORDINANCE):</span> Crying loudly after Git merge conflicts, compiling errors, or DB drops is strictly prohibited between 10:00 PM and 7:00 AM.
-        </div>
-
-        <div class="panel-title" style="border: none; padding-top: 10px; padding-bottom: 0;">
-          <span>Active Product Sales</span>
-        </div>
-        
-        <div id="active-games-list" style="display:flex; flex-direction:column; gap:8px;">
-          <!-- Loaded dynamically via game.js -->
-          <div class="terminal-line" style="color: var(--color-text-muted); font-style: italic;">No active products generating sales. Customer support complaints are currently routing to our automated recycling bin. 99% of ticket volumes concern minor pixel displacement issues on 8K monitors.</div>
-        </div>
-
-        <div class="panel-title" style="border: none; padding-top: 15px; padding-bottom: 0; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.05);">
-          <span>Studio Portfolio (Releases)</span>
-        </div>
-        <div id="portfolio-games-list" style="display:flex; flex-direction:column; gap:8px; max-height: 200px; overflow-y: auto;">
-          <!-- Loaded dynamically via game.js -->
-          <div class="terminal-line" style="color: var(--color-text-muted); font-style: italic;">No games published yet. Please proceed to the 'Develop Game' board to formulate a project, sign away your sanity, and start crunch time!</div>
-        </div>
+        <p class="dev-board-page-tagline">Morale, reputation, rent, contracts, marketing wars, and the portfolio that keeps the lights on (barely).</p>
+        <div id="studio-dashboard-content" class="studio-dashboard-layout"></div>
       </section>
     </main>
 
