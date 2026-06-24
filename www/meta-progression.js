@@ -298,7 +298,7 @@
         </div>
         <div class="meta-act-pipeline">${actPips}</div>
         ${engineRow}
-        <p class="meta-arc-next">${next ? `Next: <strong>${next.label}</strong> — ${next.hint}` : "Arc complete. Ship the capstone."}</p>
+        <p class="meta-arc-next">${next ? `Next: <strong>${next.label}</strong>` : "Ship the capstone."}</p>
         <div class="meta-arc-actions">${nextBtn}</div>
         ${capstoneBlock}
       </div>

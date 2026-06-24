@@ -101,6 +101,17 @@ const SYNERGIES = {
   "Simulation-Game Dev": 1.3
 };
 
+const STUDIO_ACTIVITIES = [
+  { id: "pizza_party", emoji: "🍕", label: "Pizza Party", cost: "$150", reward: "+35 ☕", fn: "runActivity('pizza_party')" },
+  { id: "hackathon", emoji: "💡", label: "Hackathon", cost: "$500", reward: "+15 RP", fn: "runActivity('hackathon')" },
+  { id: "dev_con", emoji: "🎟️", label: "DevCon", cost: "$1,200", reward: "+20 RP · +5 skills", fn: "runActivity('dev_con')" },
+  { id: "chairs", emoji: "🛋️", label: "Ergo Chairs", cost: "$5,000", reward: "+50% caffeine regen", fn: "runActivity('chairs')", btnId: "btn-chairs-activity", owned: () => gameState.ergonomic_chairs, ownedLabel: "Owned" },
+  { id: "pretend_work", emoji: "🖥️", label: "Look Busy", cost: "FREE", reward: "+8 ☕ · +3 XP", fn: "runActivity('pretend_work')" },
+  { id: "buzzword_standup", emoji: "📢", label: "Standup", cost: "5 pad", reward: "+12 morale", fn: "runActivity('buzzword_standup')" },
+  { id: "office_plant", emoji: "🪴", label: "Fake Plant", cost: "$75", reward: "+recovery", fn: "runActivity('office_plant')", btnId: "btn-plant-activity", owned: () => gameState.officePlant, ownedLabel: "Owned" },
+  { id: "blame", emoji: "🎰", label: "Blame Wheel", cost: "FREE", reward: "Chaos", fn: "runChaosAction('blame_roulette')", secondary: true }
+];
+
 const GIGS = [
   { id: "freelance_html", name: "Center a CSS Div for Local Pizzeria", nerveCost: 2, successRate: 0.95, rewardMin: 50, rewardMax: 100, skillRequired: "coding_skill", xpReward: 1, label: "Literally the hardest task in computer science. Tweak CSS alignment for $50." },
   { id: "crack_competitor", name: "Crack Rival Studio's DRM", nerveCost: 4, successRate: 0.75, rewardMin: 200, rewardMax: 400, skillRequired: "coding_skill", xpReward: 2, label: "Bypass their 99 layers of digital security to leak their source code comments." },
@@ -888,9 +899,7 @@ function switchTab(tabName) {
   } else if (tabName === "develop") {
     renderDevelopPanel();
   } else if (tabName === "gigs") {
-    renderTrainingGym();
-    renderDeveloperStore();
-    renderGigsBoard();
+    renderGigsZone();
   } else if (tabName === "company") {
     renderStudioDashboard();
   }
@@ -1028,7 +1037,7 @@ function gainXP(amount) {
     // If Gigs tab is active, redraw the training gym to show updated XP cost labels
     const gigsSection = document.getElementById("gigs-section");
     if (gigsSection && gigsSection.style.display !== "none") {
-      renderTrainingGym();
+      renderGigsZone();
     }
   } else {
     addLog("Resume Padding", `+${amount} ${HUD_COPY.resume.unit} added. Recruiters mildly interested.`, "loot");
@@ -2594,7 +2603,6 @@ function renderStudioDashboard() {
 
   const passive = getStudioPassiveIncome();
   const legacy = getStudioLegacyTotal();
-  const lease = getLeaseClause(gameState.office_tier);
   const rent = getStudioRentCost();
   const avgSkill = Math.round((gameState.coding_skill + gameState.design_skill + gameState.management_skill) / 3);
   const opp = gameState.studioOpportunity;
@@ -2608,51 +2616,29 @@ function renderStudioDashboard() {
     : `<div class="studio-project-snap muted">No active project — <button class="btn-secondary btn-inline" onclick="switchTab('develop')">Start one →</button></div>`;
 
   const activeGamesHtml = gameState.active_games.length === 0
-    ? `<p class="studio-empty">No products on shelves. The warehouse echoes with unused hype.</p>`
+    ? `<p class="studio-empty">No active sales.</p>`
     : gameState.active_games.map((game, index) => {
-      const remaining = Math.max(0, GAME_SHELF_LIFE - game.age);
-      const agePct = Math.min(100, (game.age / GAME_SHELF_LIFE) * 100);
       const income = getGameIncomePerTick(game);
       return `
-        <div class="studio-product-card">
+        <div class="studio-product-card studio-product-card--compact">
           <div class="studio-product-head">
-            <span><strong>${game.name}</strong> <small>${game.genre}/${game.topic}</small></span>
-            <span class="studio-income">+$${income.toFixed(1)}/s</span>
+            <span><strong>${game.name}</strong> · ★${game.rating.toFixed(1)} · +$${income.toFixed(1)}/s</span>
           </div>
-          <div class="studio-product-meta">★ ${game.rating.toFixed(1)} · ${game.totalSold.toLocaleString()} sold · ${remaining}s shelf</div>
-          <div class="status-bar-track" style="height:4px; margin:6px 0;"><div class="status-bar-fill" style="width:${100 - agePct}%; height:100%; background:var(--color-cyan);"></div></div>
           <div class="studio-marketing-row">
-            <button class="btn-secondary studio-mkt-btn" onclick="runMarketing(${index}, 'social')">📱 Social $200</button>
-            <button class="btn-secondary studio-mkt-btn" onclick="runMarketing(${index}, 'pr')">📰 PR $800</button>
-            <button class="btn-secondary studio-mkt-btn" onclick="runMarketing(${index}, 'steam')">🎮 Steam $400</button>
-            <button class="btn-secondary studio-mkt-btn" onclick="runMarketing(${index}, 'influencer')">📹 Creator $350</button>
+            <button class="btn-secondary studio-mkt-btn" onclick="runMarketing(${index}, 'social')">📱 $200</button>
+            <button class="btn-secondary studio-mkt-btn" onclick="runMarketing(${index}, 'pr')">📰 $800</button>
+            <button class="btn-secondary studio-mkt-btn" onclick="runMarketing(${index}, 'steam')">🎮 $400</button>
+            <button class="btn-secondary studio-mkt-btn" onclick="runMarketing(${index}, 'influencer')">📹 $350</button>
           </div>
         </div>`;
     }).join("");
 
   const portfolioHtml = (!gameState.portfolio || gameState.portfolio.length === 0)
-    ? `<p class="studio-empty">Portfolio empty. History is written by shipped builds (and deleted branches).</p>`
-    : [...gameState.portfolio].reverse().map(game => {
+    ? `<p class="studio-empty">No shipped games yet.</p>`
+    : [...gameState.portfolio].reverse().slice(0, 6).map(game => {
       const leg = game.legacyScore || Math.round((game.rating || 5) * 8);
-      return `
-        <div class="studio-portfolio-card">
-          <div><strong>${game.name}</strong> <small>${game.genre}/${game.topic}</small>
-            <div class="studio-product-meta">★ ${(game.rating || 0).toFixed(1)} · Legacy ${leg}</div>
-          </div>
-          <div class="studio-portfolio-stats">
-            <div>${parseInt(game.totalSold || 0).toLocaleString()} sold</div>
-            <div class="studio-income">$${parseFloat(game.totalRevenue || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-          </div>
-        </div>`;
+      return `<div class="studio-portfolio-card studio-portfolio-card--compact"><strong>${game.name}</strong> · ★${(game.rating || 0).toFixed(1)} · Legacy ${leg}</div>`;
     }).join("");
-
-  const diaryHtml = gameState.studioDiary.slice(0, 6).map(d =>
-    `<div class="dev-diary-entry"><span class="dev-diary-time">[${d.time}]</span> ${d.text}</div>`
-  ).join("") || `<p class="studio-empty">Studio chronicle blank. Make decisions to generate corporate lore.</p>`;
-
-  const awardsHtml = gameState.studioAwards.length
-    ? gameState.studioAwards.map(a => `<span class="award-chip">🏆 ${a}</span>`).join("")
-    : `<span class="studio-empty">No studio awards yet. Ship hits, pay rent on time, fool investors.</span>`;
 
   if (activeMiniGame && activeMiniGame.isZoneBonus && activeMiniGame.zoneId === "studio") {
     container.innerHTML = getZoneMiniGamePanel("studio");
@@ -2664,7 +2650,7 @@ function renderStudioDashboard() {
       <div class="studio-dash-header">
         <div>
           <h2 class="studio-dash-title">${gameState.company_name}</h2>
-          <p class="studio-dash-sub">${getOfficeDisplayName(gameState.office_tier)} · ${HUD_COPY.imposter.icon} Imposter Tier ${gameState.level} (${getImposterTitle(gameState.level)}) · ${gameState.employees.length} crew pretending to help</p>
+          <p class="studio-dash-sub">${getOfficeDisplayName(gameState.office_tier)} · Tier ${gameState.level} · ${gameState.employees.length} crew</p>
         </div>
         <div class="studio-dash-badges">
           <div class="studio-badge cash">$${parseFloat(gameState.cash).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
@@ -2706,46 +2692,34 @@ function renderStudioDashboard() {
 
         <div class="studio-board-col">
           <div class="dev-board-card compact lease-card">
-            <h4 class="dev-section-label">📜 ${lease.title}</h4>
-            <p class="lease-body">${lease.body}</p>
-            <button class="btn-secondary" style="margin-top:8px; font-size:0.75rem;" onclick="runStudioAction('pay_rent')">Pay Rent ($${rent})</button>
+            <h4 class="dev-section-label">📜 Rent</h4>
+            <button class="btn-secondary" style="font-size:0.75rem;" onclick="runStudioAction('pay_rent')">Pay Rent ($${rent})</button>
           </div>
 
           <div class="dev-board-card compact">
-            <h4 class="dev-section-label">💼 Incoming Opportunity</h4>
+            <h4 class="dev-section-label">💼 Deal Inbox</h4>
             ${opp ? `
               <p class="opp-title">${opp.title}</p>
-              <p class="opp-blurb">${opp.blurb}</p>
-              <p class="opp-meta">+$${opp.cash} · Rep ${opp.repReq}+ · ${opp.xp ? opp.xp + " XP" : "no XP"}</p>
+              <p class="opp-meta">+$${opp.cash} · Rep ${opp.repReq}+${opp.xp ? ` · ${opp.xp} XP` : ""}</p>
               <div style="display:flex; gap:8px; margin-top:8px;">
-                <button class="btn-primary" style="flex:1; font-size:0.72rem;" onclick="runStudioAction('accept_opportunity')">Sign Deal</button>
+                <button class="btn-primary" style="flex:1; font-size:0.72rem;" onclick="runStudioAction('accept_opportunity')">Sign</button>
                 <button class="btn-secondary" style="font-size:0.72rem;" onclick="runStudioAction('decline_opportunity')">Pass</button>
               </div>
-            ` : `<p class="studio-empty">No deals in inbox. Buzz around to attract vultures.</p>`}
+            ` : `<p class="studio-empty">No deals.</p>`}
           </div>
 
           <div class="dev-board-card compact">
-            <h4 class="dev-section-label">🏢 Studio Operations</h4>
+            <h4 class="dev-section-label">🏢 Operations</h4>
             <div class="studio-ops-grid">
-              <button class="btn-secondary studio-ops-btn" onclick="runStudioAction('investor_pitch')">Investor Pitch<br><small>-5 🎯</small></button>
+              <button class="btn-secondary studio-ops-btn" onclick="runStudioAction('investor_pitch')">Pitch<br><small>-5 🎯</small></button>
               <button class="btn-secondary studio-ops-btn" onclick="runStudioAction('rebrand')">Rebrand<br><small>-$500</small></button>
-              <button class="btn-secondary studio-ops-btn" onclick="runStudioAction('merch')">Merch Drop<br><small>-$150</small></button>
-              <button class="btn-secondary studio-ops-btn" onclick="runStudioAction('cleanup')">Clean Office<br><small>-$75</small></button>
-              <button class="btn-secondary studio-ops-btn" onclick="runStudioAction('networking')">Industry Mixer<br><small>-20 XP</small></button>
-              <button class="btn-secondary studio-ops-btn" onclick="runStudioAction('showcase')">Sales Showcase<br><small>-$200</small></button>
-              <button class="btn-secondary studio-ops-btn" onclick="runStudioAction('tax_audit')">Tax Audit<br><small>Free chaos</small></button>
-              <button class="btn-secondary studio-ops-btn" onclick="runStudioAction('rename')">Rename Studio<br><small>Free ego</small></button>
+              <button class="btn-secondary studio-ops-btn" onclick="runStudioAction('merch')">Merch<br><small>-$150</small></button>
+              <button class="btn-secondary studio-ops-btn" onclick="runStudioAction('cleanup')">Clean<br><small>-$75</small></button>
+              <button class="btn-secondary studio-ops-btn" onclick="runStudioAction('networking')">Mixer<br><small>-20 XP</small></button>
+              <button class="btn-secondary studio-ops-btn" onclick="runStudioAction('showcase')">Showcase<br><small>-$200</small></button>
+              <button class="btn-secondary studio-ops-btn" onclick="runStudioAction('tax_audit')">Audit</button>
+              <button class="btn-secondary studio-ops-btn" onclick="runStudioAction('rename')">Rename</button>
             </div>
-          </div>
-
-          <div class="dev-board-card compact">
-            <h4 class="dev-section-label">🏆 Studio Trophy Wall</h4>
-            <div class="awards-row">${awardsHtml}</div>
-          </div>
-
-          <div class="dev-board-card compact">
-            <h4 class="dev-section-label">📓 Studio Chronicle</h4>
-            <div class="dev-diary-feed">${diaryHtml}</div>
           </div>
         </div>
       </div>
@@ -2894,7 +2868,7 @@ function suspendMiniGameForTabChange(nextTab) {
     if (mg._refundXp) gameState.xp += mg._refundXp;
     addLog("Gig Interrupted", "You alt-tabbed to another zone. Crime cancelled; nerve refunded (plausible deniability restored).");
     showToast("Gig aborted — focus refunded. One hack at a time, criminal.", "warning");
-    renderGigsBoard();
+    renderGigsZone();
     saveGame();
     return;
   }
@@ -3014,69 +2988,73 @@ function updateZonePulse() {
   });
 }
 
+function renderGigsZone() {
+  renderGigsZoneMinigameSlot();
+  renderTrainingGym();
+  renderDeveloperStore();
+  renderActivitiesGrid();
+  renderGigsZone();
+}
+
+function renderGigsZoneMinigameSlot() {
+  const slot = document.getElementById("gigs-zone-minigame-slot");
+  if (!slot) return;
+  if (activeMiniGame && activeMiniGame.isZoneBonus && activeMiniGame.zoneId === "gigs") {
+    slot.innerHTML = getZoneMiniGamePanel("gigs");
+    return;
+  }
+  slot.innerHTML = window.SiteMinigames ? window.SiteMinigames.renderZoneHub("gigs") : "";
+}
+
+function renderActivitiesGrid() {
+  const container = document.getElementById("activities-grid");
+  if (!container) return;
+  container.innerHTML = STUDIO_ACTIVITIES.map(act => {
+    const owned = act.owned && act.owned();
+    const btnCls = act.secondary ? "btn-secondary" : "btn-primary";
+    const idAttr = act.btnId ? ` id="${act.btnId}"` : "";
+    const disabled = owned ? " disabled" : "";
+    const label = owned ? (act.ownedLabel || "Done") : act.label;
+    return `
+      <button type="button" class="gigs-activity-chip ${btnCls}"${idAttr}${disabled} onclick="${act.fn}" title="${act.reward}">
+        <span class="gigs-activity-emoji">${act.emoji}</span>
+        <span class="gigs-activity-label">${label}</span>
+        <span class="gigs-activity-cost">${act.cost}</span>
+      </button>
+    `;
+  }).join("");
+}
+
 // --- Training Actions (GYM) ---
 function renderTrainingGym() {
   const container = document.getElementById("training-gym-grid");
   if (!container) return;
 
   if (activeMiniGame && activeMiniGame.isTraining) {
-    container.innerHTML = buildActiveCanvasGameHtml(activeMiniGame, "grid-column: span 3; width: 100%;");
+    container.innerHTML = buildActiveCanvasGameHtml(activeMiniGame, "grid-column: 1 / -1; width: 100%;");
     return;
   }
 
   if (activeMiniGame && activeMiniGame.isZoneBonus && activeMiniGame.zoneId === "gigs") {
-    container.innerHTML = getZoneMiniGamePanel("gigs");
+    container.innerHTML = `<p class="gigs-active-hint">Zone arcade active above ↑</p>`;
     return;
   }
 
-  const xpCostText = gameState.level > 1 ? "-15 bullet points" : "FREE (mom pays tuition)";
+  const xpCostText = gameState.level > 1 ? "15 pad" : "FREE";
 
   container.innerHTML = `
-    <div class="card-item card-compact training-card-code">
-      <div class="card-item-title card-title-lg">
-        <span>Code Optimization Class</span>
-        <span class="cost-row"><span class="cost-gold">-10 ☕</span> <span class="cost-cyan">${xpCostText}</span></span>
-      </div>
-      <div class="card-item-desc card-desc-sm">
-        Solve complex algorithm challenges. Coding skill increases points generated during sprints.
-        <span class="card-footnote"><strong>Syllabus Excerpt:</strong> Learn how to write O(N^3) nested loops and explain it to management as 'dynamic scaling'. Study why comments like <code>// do not touch this or server melts</code> are essential for job security.</span>
-      </div>
-      <button class="btn-primary btn-sm" onclick="trainSkill('coding_skill')">Train Coding Arcade</button>
+    <div class="gigs-action-card">
+      <div class="gigs-action-head"><span>⌨️ Code</span><span class="gigs-action-cost">10 ☕ · ${xpCostText}</span></div>
+      <button class="btn-primary btn-sm" onclick="trainSkill('coding_skill')">Train Arcade</button>
     </div>
-
-    <div class="card-item card-compact training-card-design">
-      <div class="card-item-title card-title-lg">
-        <span>Design Theory Templates</span>
-        <span class="cost-row"><span class="cost-gold">-10 ☕</span> <span class="cost-cyan">${xpCostText}</span></span>
-      </div>
-      <div class="card-item-desc card-desc-sm">
-        Study harmonic layout guidelines. Design skill contributes heavy design points to active games.
-        <span class="card-footnote"><strong>Syllabus Excerpt:</strong> Discover why using 12 neon shades of purple creates a 'cyberpunk layout' that distracts reviewers from collision detection failures. Learn the hex codes of wobbly loot boxes.</span>
-      </div>
-      <button class="btn-primary btn-sm" onclick="trainSkill('design_skill')">Train Design Arcade</button>
+    <div class="gigs-action-card">
+      <div class="gigs-action-head"><span>🎨 Design</span><span class="gigs-action-cost">10 ☕ · ${xpCostText}</span></div>
+      <button class="btn-primary btn-sm" onclick="trainSkill('design_skill')">Train Arcade</button>
     </div>
-
-    <div class="card-item card-compact training-card-mgmt">
-      <div class="card-item-title card-title-lg">
-        <span>Agile Lead Seminars</span>
-        <span class="cost-row"><span class="cost-gold">-10 ☕</span> <span class="cost-cyan">${xpCostText}</span></span>
-      </div>
-      <div class="card-item-desc card-desc-sm">
-        Practice project management classes. Management skill boosts gig success and bug squashing.
-        <span class="card-footnote"><strong>Syllabus Excerpt:</strong> A 4-hour presentation on why talking about coding is mathematically more productive than coding. Learn how to convert 2 lines of edits into a 15-person standup meeting.</span>
-      </div>
-      <button class="btn-primary btn-sm" onclick="trainSkill('management_skill')">Train Management Arcade</button>
+    <div class="gigs-action-card">
+      <div class="gigs-action-head"><span>🔧 Management</span><span class="gigs-action-cost">10 ☕ · ${xpCostText}</span></div>
+      <button class="btn-primary btn-sm" onclick="trainSkill('management_skill')">Train Arcade</button>
     </div>
-    <div class="card-item card-compact arcade-pool-card">
-      <div class="card-item-title card-title-lg">
-        <span>🕹️ Arcade Training Pool</span>
-        <span class="cost-cyan">${window.ArcadeMinigames ? Object.keys(window.ArcadeMinigames.GAMES).length : 0} games</span>
-      </div>
-      <div class="card-item-desc card-desc-sm">
-        Each training session launches a random retro arcade mini-game — Snake, Space Invaders, Breakout, Tetris, Frogger, Whack-a-Bug, and more. Management said it's "gamified upskilling."
-      </div>
-    </div>
-    ${getZoneMiniGamePanel("gigs")}
   `;
 }
 
@@ -3146,7 +3124,7 @@ function runGig(gigId) {
     arcadeStarted: false
   });
 
-  renderGigsBoard();
+  renderGigsZone();
   updateUI();
 }
 
@@ -3182,10 +3160,7 @@ function renderStaffPanel() {
             <span>${tier.name}</span>
             <span class="${tier.cost > 0 ? "cost-green" : "cost-free"}">${tier.cost > 0 ? `$${tier.cost.toLocaleString()}` : "Free"}</span>
           </div>
-          <div class="card-item-desc card-desc-sm">
-            ${tier.desc}
-            <span class="card-footnote">Staff Capacity: <strong>${tier.capacity}</strong> · Dev Speed: <strong>${tier.speedMult}x</strong></span>
-          </div>
+          <div class="card-item-desc card-desc-sm">Capacity <strong>${tier.capacity}</strong> · Speed <strong>${tier.speedMult}x</strong></div>
           <button class="btn-primary btn-sm" ${isOwned || !canAfford ? "disabled" : ""} onclick="buyOffice('${tierKey}')">
             ${isOwned ? "Owned" : "Upgrade"}
           </button>
@@ -3208,10 +3183,7 @@ function renderStaffPanel() {
             <span>${emp.name}</span>
             <span class="cost-green">$${emp.cost.toLocaleString()}</span>
           </div>
-          <div class="card-item-desc card-desc-sm">
-            ${emp.desc}
-            <span class="card-footnote">Tech: <strong>+${emp.techRate}/s</strong> · Design: <strong>+${emp.designRate}/s</strong> · Salary: <strong>$${emp.salary}/min</strong></span>
-          </div>
+          <div class="card-item-desc card-desc-sm">Tech +${emp.techRate}/s · Design +${emp.designRate}/s · $${emp.salary}/min</div>
           <div class="staff-hire-footer">
             <span class="staff-hire-count">Active: ${hiredCount}</span>
             <button class="btn-secondary btn-sm" ${atCapacity || !canAfford ? "disabled" : ""} onclick="hireEmployee('${empKey}')">Hire</button>
@@ -3225,7 +3197,7 @@ function renderStaffPanel() {
   const activeStaffList = document.getElementById("active-staff-list");
   if (activeStaffList) {
     if (gameState.employees.length === 0) {
-      activeStaffList.innerHTML = `<div class="staff-empty">No hired employees on team. The office is just you and regret.</div>`;
+      activeStaffList.innerHTML = `<div class="staff-empty">No crew hired.</div>`;
     } else {
       activeStaffList.innerHTML = gameState.employees.map((emp, index) => {
         const info = EMPLOYEES_INFO[emp.id];
@@ -3317,9 +3289,6 @@ function renderDevelopPanel() {
   if (!gameState.current_project) {
     const portfolioCount = (gameState.portfolio || []).length;
     devPanel.innerHTML = `
-      <div class="dev-board-intro">
-        <p class="dev-board-tagline">Formulate a project, sign away your sanity, and enter crunch time. The board tracks every sprint, milestone, and regrettable scope decision.</p>
-      </div>
       <div class="dev-board-grid">
         <div class="dev-board-card">
           <h3 class="form-section-title">📋 New Project Brief</h3>
@@ -3387,14 +3356,10 @@ function renderDevelopPanel() {
           ${getMetaArcHtml()}
           <h4 style="margin-top:12px; margin-bottom:10px; color:var(--color-purple); text-transform:uppercase; font-size:0.8rem; letter-spacing:1px;">Act Checklist</h4>
           <div class="meta-step-list">${window.MetaProgression ? MetaProgression.renderMetaStepList(gameState) : ""}</div>
-          <h4 style="margin-top:12px; margin-bottom:10px; color:var(--color-purple); text-transform:uppercase; font-size:0.8rem; letter-spacing:1px;">Studio Pipeline Guide</h4>
-          <div class="dev-pipeline-guide">
-            ${DEV_PHASES.map(p => `<div class="dev-guide-step"><span>${p.icon}</span><div><strong>${p.label}</strong><p>Unlocks at ${p.min}% progress. Each phase unlocks new diary drama.</p></div></div>`).join("")}
+          <div class="dev-pipeline-compact">
+            ${DEV_PHASES.map(p => `<span class="dev-phase-chip">${p.icon} ${p.label} ${p.min}%</span>`).join("")}
           </div>
-          <div style="margin-top:14px; padding-top:14px; border-top:1px dashed rgba(255,255,255,0.08); font-size:0.78rem; color:var(--color-text-muted); line-height:1.45;">
-            <strong style="color:var(--color-cyan);">Games shipped:</strong> ${portfolioCount}<br>
-            Ship at <strong>90%</strong> with <strong>≤8 bugs</strong>. Arcade sprints → ship → Live Ops → legacy → capstone finale.
-          </div>
+          <p class="dev-sidebar-note">Shipped: ${portfolioCount} · Ship at 90% · ≤8 bugs</p>
         </div>
       </div>
       ${window.SiteMinigames ? window.SiteMinigames.renderZoneHub("develop") : ""}
@@ -3614,7 +3579,7 @@ function refreshZoneAfterMiniGame(zoneId) {
     case "staff": renderStaffPanel(); renderResearchLab(); break;
     case "research": renderResearchLab(); break;
     case "leaderboard": renderLeaderboardMiniGameSlot(); break;
-    case "gigs": renderTrainingGym(); renderGigsBoard(); break;
+    case "gigs": renderGigsZone(); break;
     case "store": renderDeveloperStore(); break;
     case "hud": renderHudMiniGameSlot(); break;
     case "post_release": renderPostReleaseDashboard(); break;
@@ -3822,7 +3787,7 @@ function startMiniGame(type, isTraining = false) {
   updateUI();
 
   if (isTraining) {
-    renderTrainingGym();
+    renderGigsZone();
   } else {
     renderProjectProgress();
   }
@@ -3879,7 +3844,7 @@ function cancelMiniGame() {
     addLog("Gig Cancelled", "Aborted mid-hack. Nerve refunded. Your VPN history has been tastefully blurred.");
     showToast("Gig aborted — nerve refunded. The FBI sends their regards.", "warning");
     saveGame();
-    renderGigsBoard();
+    renderGigsZone();
     updateUI();
     return;
   }
@@ -3891,7 +3856,7 @@ function cancelMiniGame() {
 
   addLog("Mini-game Cancelled", isTraining ? "Training session aborted." : "Development cycle aborted.");
   if (isTraining) {
-    renderTrainingGym();
+    renderGigsZone();
   } else {
     renderProjectProgress();
   }
@@ -4007,7 +3972,7 @@ function successMiniGame() {
     spawnFloatText(`+${skillGain} ${skillLabel.toUpperCase()}`, "cyan");
     fireMetaEvent("training_win");
     saveGame();
-    renderTrainingGym();
+    renderGigsZone();
     updateUI();
     return;
   }
@@ -4132,7 +4097,7 @@ function failMiniGame(reason) {
     addLog("Training Workout Failed!", `Reason: ${reason}. Gained 0 points in ${skillLabel}.`);
     showToast(`Training Failed: ${reason}`, "error");
     saveGame();
-    renderTrainingGym();
+    renderGigsZone();
     updateUI();
     return;
   }
@@ -4292,10 +4257,6 @@ function renderProjectProgress() {
     return `<span class="dev-milestone ${hit ? "hit" : ""}">${hit ? "✓" : "○"} ${ms}%</span>`;
   }).join("");
 
-  const diaryHtml = (proj.devDiary || []).slice(0, 5).map(d => `
-    <div class="dev-diary-entry"><span class="dev-diary-time">[${d.time}]</span> <span class="dev-diary-phase">${d.phase}</span> — ${d.text}</div>
-  `).join("") || `<div class="dev-diary-entry" style="font-style:italic; opacity:0.6;">No diary entries yet. Make questionable decisions to generate lore.</div>`;
-
   devPanel.innerHTML = `
     <div class="develop-progress-card">
       <div class="dev-board-header">
@@ -4330,21 +4291,13 @@ function renderProjectProgress() {
 
       <div class="dev-board-grid" style="margin-top:4px;">
         <div>
-          <h4 class="dev-section-label">⚡ Dev Sprints (Arcade Mini-games)</h4>
-          <p class="dev-section-hint">${energyCost} ☕ caffeine per sprint · ${window.ArcadeMinigames ? Object.keys(window.ArcadeMinigames.GAMES).length : 17} retro arcade games · Ship at 90% with ≤8 bugs (lawyers waived reading the fine print)</p>
+          <h4 class="dev-section-label">⚡ Dev Sprints</h4>
+          <p class="dev-section-hint">${energyCost} ☕ per sprint · arcade mini-games</p>
           <div class="dev-sprint-row">
             <button class="btn-primary dev-sprint-btn" onclick="startMiniGame('code')" title="Snake, Space Invaders, Breakout, Asteroids...">⌨️ Code Arcade</button>
             <button class="btn-primary dev-sprint-btn" onclick="startMiniGame('design')" title="Pong, Tetris, Frogger, Memory Match...">🎨 Design Arcade</button>
             <button class="btn-primary dev-sprint-btn" onclick="startMiniGame('polish')" title="Whack-a-Bug, Pac-Dots, Minesweeper...">🔧 Polish Arcade</button>
           </div>
-          <div class="arcade-pool-preview">
-            ${window.ArcadeMinigames ? ["code", "design", "polish"].map(cat => {
-              const games = window.ArcadeMinigames.listForCategory(cat);
-              const label = cat === "code" ? "Code" : cat === "design" ? "Design" : "Polish";
-              return `<span class="arcade-pool-chip" data-cat="${cat}">${label}: ${games.map(g => g.emoji).join("")}</span>`;
-            }).join("") : ""}
-          </div>
-
           <h4 class="dev-section-label" style="margin-top:14px;">🛠️ Production Actions</h4>
           <div class="dev-action-grid">
             <button class="btn-secondary dev-action-btn" onclick="runDevSprintAction('crunch')">Crunch Weekend<br><small>-3 🕶️ chutzpah</small></button>
@@ -4365,14 +4318,7 @@ function renderProjectProgress() {
 
         <div class="dev-board-sidebar">
           <div class="meta-step-list compact">${window.MetaProgression ? MetaProgression.renderMetaStepList(gameState) : ""}</div>
-          <h4 class="dev-section-label">📓 Dev Diary</h4>
-          <div class="dev-diary-feed">${diaryHtml}</div>
-          <h4 class="dev-section-label" style="margin-top:12px;">👥 Staff / Tick</h4>
-          <p class="dev-section-hint" style="margin-bottom:6px;">
-            Each second staff adds ~${staff.tech.toFixed(1)} tech, ~${staff.design.toFixed(1)} design
-            ${staff.bugFix < 0 ? `, fixes ~${Math.abs(staff.bugFix).toFixed(1)} bugs` : ""} while this project is active.
-          </p>
-          <p class="dev-section-hint">Sprints won: ${proj.miniGamesWon || 0}/${proj.miniGamesPlayed || 0} · Playtests: ${proj.playtestsRun || 0}${gameState.ai_behavior ? " · AI research: +25% sprint time, passive bug scrub" : ""}</p>
+          <p class="dev-section-hint">Staff +${staff.tech.toFixed(1)} tech/s · Sprints ${proj.miniGamesWon || 0}/${proj.miniGamesPlayed || 0}</p>
         </div>
       </div>
 
@@ -4779,27 +4725,9 @@ function renderResearchLab() {
   }
 
   const upgrades = [
-    {
-      id: "unlocked_console",
-      name: "Spinning Green Cube™ (Graphics Engine)",
-      cost: 50,
-      desc: "Research a revolutionary technology that renders a single, flat, spinning green cube on screen at 24 FPS. Claim to the press that this represents a '120 FPS ray-traced next-generation graphics engine'. Unlocks target compatibility for console platforms. Warn your hardware provider about smoke hazards.",
-      owned: !!gameState.unlocked_console
-    },
-    {
-      id: "researched_multiplayer",
-      name: "Peer-to-Peer Spaghetti Netcode",
-      cost: 100,
-      desc: "Implement a chaotic networking system that links players together via wobbly, unencrypted peer-to-peer UDP sockets. Includes no latency compensation, so characters will teleport through walls. Critics will rate it +1.0 point higher anyway because 'everything is better with friends'.",
-      owned: !!gameState.researched_multiplayer
-    },
-    {
-      id: "ai_behavior",
-      name: "ChatGPT Copy-Paster v0.1",
-      cost: 150,
-      desc: "Integrate a custom script that automatically scrapes developer forums and copy-pastes solutions into your main codebase. Increases the duration of the Syntax Striker coding mini-game from 15 seconds to 25 seconds, giving you ample time to read through forum complaints and pretend you understand memory leaks.",
-      owned: !!gameState.ai_behavior
-    }
+    { id: "unlocked_console", name: "Console Dev Kit", cost: 50, desc: "Unlocks console platform.", owned: !!gameState.unlocked_console },
+    { id: "researched_multiplayer", name: "Multiplayer Netcode", cost: 100, desc: "+1.0 rating on ship.", owned: !!gameState.researched_multiplayer },
+    { id: "ai_behavior", name: "AI Assist", cost: 150, desc: "+25% arcade time · passive bug scrub.", owned: !!gameState.ai_behavior }
   ];
 
   container.innerHTML = upgrades.map(upg => {
@@ -5038,6 +4966,7 @@ function runActivity(activityType) {
   }
 
   checkFunnyAchievements();
+  renderActivitiesGrid();
   saveGame();
   updateUI();
 }
@@ -5066,7 +4995,7 @@ function renderShippedGamePanel() {
     <div class="play-game-fullscreen-hub">
       <div class="play-game-fullscreen-bar">
         <button class="btn-secondary play-game-back-btn" onclick="exitShippedGame()">← Back to Live Ops</button>
-        <span class="play-game-fullscreen-hint">You are now playtesting your own shipped game. Meta.</span>
+        <span class="play-game-fullscreen-hint">Shipped platformer — beat your own game.</span>
       </div>
       ${window.ShippedPlatformer.renderShell(proj, { started: shippedGameStarted })}
     </div>
@@ -5245,7 +5174,7 @@ function renderPostReleaseDashboard() {
           <span>🔧 Day-One Patch Mini-game</span>
           <span>🍎 Apples: ${proj.applesCollected || 0}/3</span>
         </h4>
-        <p style="font-size:0.8rem; color:var(--color-text-muted); margin-bottom:12px; line-height:1.4;">Find the hidden memory leak disguised as fruit. Collect 3 to ship a Day-One Patch and earn <strong>+1.0</strong> Metacritic pity points.</p>
+        <p style="font-size:0.75rem; color:var(--color-text-muted); margin-bottom:10px;">Find 3 apples → day-one patch (+1.0 rating)</p>
         
         <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:8px; max-width:240px; margin: 0 auto 10px;">
           ${cells.map(i => {
@@ -5281,16 +5210,11 @@ function renderPostReleaseDashboard() {
     ? proj.awards.map((a, ai) => `<button type="button" class="award-chip clickable-detail-row" onclick="openPostReleaseDetail('award', ${ai})">🏆 ${a} ↗</button>`).join("")
     : `<button type="button" class="award-chip-empty clickable-detail-row" onclick="pokeMysteryDesk('inbox')" title="Maybe mom knows someone">No awards yet. Click for consolation email.</button>`;
 
-  const diaryHtml = (proj.devDiary || []).slice(0, 4).map((d, i) => `
-    <button type="button" class="dev-diary-entry clickable-detail-row" onclick="openPostReleaseDetail('diary', ${i})"><span class="dev-diary-time">[${d.time}]</span> ${d.text} <span class="click-hint">read more ↗</span></button>
-  `).join("");
-
   const telemetry = getPostReleaseTelemetry(proj);
   const telemetryHtml = telemetry.map(t => `
-    <button type="button" class="telemetry-row clickable-detail-row" onclick="openPostReleaseDetail('telemetry', ${t.id})" title="Click for classified breakdown">
-      <span class="telemetry-label">${t.label} <span class="click-hint">↗</span></span>
+    <button type="button" class="telemetry-row clickable-detail-row telemetry-row--compact" onclick="openPostReleaseDetail('telemetry', ${t.id})">
+      <span class="telemetry-label">${t.label} ↗</span>
       <strong class="telemetry-value">${t.value}</strong>
-      <span class="telemetry-note">${t.note}</span>
     </button>
   `).join("");
 
@@ -5337,7 +5261,6 @@ function renderPostReleaseDashboard() {
 
   const serverFine = proj.serverStatusFine !== false;
 
-  const playFlavor = window.ShippedPlatformer ? window.ShippedPlatformer.getFlavor(proj) : { tagline: "The game you shipped. Now playable. Unfortunately." };
   const bestScore = proj.bestPlatformerScore || 0;
   const playCount = proj.playCount || 0;
 
@@ -5359,16 +5282,14 @@ function renderPostReleaseDashboard() {
         <button type="button" class="mystery-desk-chip ${serverFine ? "mystery-ok" : "mystery-fire"}" onclick="pokeMysteryDesk('server')" title="Toggle server truth">${serverFine ? "🟢 Probably fine" : "🔥 On fire"}</button>
         <button type="button" class="mystery-desk-chip mystery-inbox" onclick="pokeMysteryDesk('inbox')" title="Mom emailed">📬 1 unread</button>
         <button type="button" class="mystery-desk-chip mystery-spin" onclick="pokeMysteryDesk('sentiment_spin')" title="Spin the wheel">🎰 Spin sentiment</button>
-        <span class="mystery-desk-hint">None of this affects sales. All of it is clickable.</span>
       </div>
 
-      <div class="play-game-hub">
+      <div class="play-game-hub play-game-hub--compact">
         <div class="play-game-hub-copy">
           <h4 class="dev-section-label">🎮 Play The Game</h4>
-          <p class="play-game-pitch">${playFlavor.tagline}</p>
-          <p class="play-game-stats">Dev playtests: <strong>${playCount}</strong> · Best run: <strong>${bestScore || "—"}</strong> · Status: <strong>${proj.platformerPlayed ? "You have suffered for your art" : "Unplayed by management"}</strong></p>
+          <p class="play-game-stats">Plays ${playCount} · Best ${bestScore || "—"}</p>
         </div>
-        <button class="btn-primary play-game-launch-btn" onclick="launchShippedGame()">▶ PLAY GAME</button>
+        <button class="btn-primary play-game-launch-btn" onclick="launchShippedGame()">▶ PLAY</button>
       </div>
 
       <div class="post-release-telemetry-hub">
@@ -5400,7 +5321,7 @@ function renderPostReleaseDashboard() {
               else if (rev.name === "Metacritic rating" || rev.name === "Metacritic") revNameColor = "#39ff14";
               const displayRevName = rev.name === "Metacritic rating" ? "Metacritic" : rev.name;
               const commentText = rev.comments ? (rev.comments[proj.commentIndex] || rev.comments[0] || "No comment.") : "No comment.";
-              return `<button type="button" class="critic-line clickable-detail-row" onclick="openPostReleaseDetail('critic', ${ri})"><strong style="color:${revNameColor}">${displayRevName}</strong>: "${commentText}" <span class="click-hint">full review ↗</span></button>`;
+              return `<button type="button" class="critic-line clickable-detail-row critic-line--compact" onclick="openPostReleaseDetail('critic', ${ri})"><strong style="color:${revNameColor}">${displayRevName}</strong> ↗</button>`;
             }).join("")}
           </div>
 
@@ -5410,17 +5331,12 @@ function renderPostReleaseDashboard() {
               <button class="btn-secondary" style="padding:4px 10px; font-size:0.65rem;" onclick="refreshSocialFeed()">Refresh ($25)</button>
             </div>
             <div class="social-feed-scroll">
-              ${proj.cachedTweets.map((t, i) => `<button type="button" class="social-line clickable-detail-row" onclick="openPostReleaseDetail('tweet', ${i})"><strong>@gamer_${t.user}</strong> "${t.text}" <span class="click-hint">thread ↗</span></button>`).join("")}
+              ${proj.cachedTweets.map((t, i) => `<button type="button" class="social-line clickable-detail-row social-line--compact" onclick="openPostReleaseDetail('tweet', ${i})">@${t.user} ↗</button>`).join("")}
             </div>
           </div>
 
           <div class="dev-board-card compact">
-            <h4 class="dev-section-label">📓 Post-Launch Diary</h4>
-            <div class="dev-diary-feed">${diaryHtml || "<em>Silence on the dev blog. Concerning.</em>"}</div>
-          </div>
-
-          <div class="dev-board-card compact">
-            <h4 class="dev-section-label">⭐ Player Reviews (After Playing)</h4>
+            <h4 class="dev-section-label">⭐ Player Reviews</h4>
             <div class="player-review-list">${playerReviewsHtml}</div>
           </div>
         </div>
@@ -5462,14 +5378,12 @@ function renderPostReleaseDashboard() {
       </div>
 
       <div class="useless-features-hub">
-        <h4 class="dev-section-label">🧪 Useless Features (Shipped Anyway)</h4>
-        <p class="dev-section-hint">Toggles do nothing useful. Each opens a spec sheet with uncomfortable detail.</p>
+        <h4 class="dev-section-label">🧪 Useless Features</h4>
         <div class="useless-feature-grid">${uselessFeaturesHtml}</div>
       </div>
 
       <div class="live-ops-hub">
-        <h4 class="dev-section-label">🚀 Live Ops Command Center</h4>
-        <p class="dev-section-hint">Support tickets, DLC, esports, remasters, sequels — the game never truly ends until you conclude the project.</p>
+        <h4 class="dev-section-label">🚀 Live Ops</h4>
         <div class="live-ops-grid">
           <button class="btn-primary live-ops-btn" onclick="supportActiveProject('dlc')">DLC Drop<br><small>-$150 · -15⚡</small></button>
           <button class="btn-primary live-ops-btn" onclick="supportActiveProject('marketing')">Hype Ads<br><small>-$100 · -5⚡</small></button>
@@ -6331,42 +6245,18 @@ function renderDeveloperStore() {
   }
 
   container.innerHTML = `
-    <div class="card-item card-compact store-card">
-      <div class="card-item-title card-title-md">
-        <span>Java Volt Extra-Battery Acid</span>
-        <span class="cost-green">$50</span>
-      </div>
-      <div class="card-item-desc card-desc-sm">
-        A carbonated cocktail of taurine, caffeine, and pure desperation. Instantly restores <strong>+25 Energy</strong>.
-        <span class="card-footnote">⚠️ <strong>WARNING:</strong> Highly radioactive. Side effects include seeing memory leaks in 4D space, rapid finger twitching, and typing compile loops in your sleep.</span>
-      </div>
-      <button class="btn-primary btn-sm" onclick="buyItem('energy_drink')">Buy &amp; Consume</button>
+    <div class="gigs-action-card">
+      <div class="gigs-action-head"><span>⚡ Java Volt</span><span class="gigs-action-cost">$50 · +25 ☕</span></div>
+      <button class="btn-primary btn-sm" onclick="buyItem('energy_drink')">Buy (pour mini-game)</button>
     </div>
-
-    <div class="card-item card-compact store-card">
-      <div class="card-item-title card-title-md">
-        <span>Lukewarm Office Drip Coffee</span>
-        <span class="cost-green">$20</span>
-      </div>
-      <div class="card-item-desc card-desc-sm">
-        Brewed last Tuesday in a machine that has not been descaled since the Dot-Com crash. Restores <strong>+10 Energy</strong>.
-        <span class="card-footnote">⚠️ Tastes like hot copper coins, industrial solvent, and broken promises. Morale boost is zero, but it is wet.</span>
-      </div>
-      <button class="btn-primary btn-sm" onclick="buyItem('coffee')">Buy &amp; Consume</button>
+    <div class="gigs-action-card">
+      <div class="gigs-action-head"><span>☕ Drip Coffee</span><span class="gigs-action-cost">$20 · +10 ☕</span></div>
+      <button class="btn-primary btn-sm" onclick="buyItem('coffee')">Buy (pour mini-game)</button>
     </div>
-
-    <div class="card-item card-compact store-card">
-      <div class="card-item-title card-title-md">
-        <span>Sus Nootropic Focus Pill</span>
-        <span class="cost-green">$100</span>
-      </div>
-      <div class="card-item-desc card-desc-sm">
-        Bought from a sketchy pop-up banner on an unindexed forum. Instantly restores <strong>+5 Nerve Focus</strong>.
-        <span class="card-footnote">⚠️ Ingredients list is written in wingdings. Guaranteed to lock you in an 8-hour loop staring at CSS centering tutorials.</span>
-      </div>
-      <button class="btn-primary btn-sm" onclick="buyItem('nootropic')">Buy &amp; Consume</button>
+    <div class="gigs-action-card">
+      <div class="gigs-action-head"><span>💊 Nootropic</span><span class="gigs-action-cost">$100 · +5 🕶️</span></div>
+      <button class="btn-primary btn-sm" onclick="buyItem('nootropic')">Buy (pour mini-game)</button>
     </div>
-    ${getZoneMiniGamePanel("store")}
   `;
 }
 
@@ -6375,7 +6265,7 @@ function renderGigsBoard() {
   if (!container) return;
 
   if (activeMiniGame && activeMiniGame.isZoneBonus && activeMiniGame.zoneId === "gigs") {
-    container.innerHTML = `<p class="zone-minigame-hint" style="padding:12px;">Zone arcade running in the Workout Gym above ↑</p>`;
+    container.innerHTML = `<p class="gigs-active-hint">Zone arcade active above ↑</p>`;
     return;
   }
 
@@ -6457,28 +6347,28 @@ function renderGigsBoard() {
     return;
   }
 
+  const dossierTitles = {
+    freelance_html: "CSS Div for Pizzeria",
+    crack_competitor: "Crack Rival DRM",
+    ransomware: "Smart Fridge Miner",
+    ddos_rival: "DDoS Botnet"
+  };
+
   container.innerHTML = GIGS.map(gig => {
-    const dossier = GIG_DOSSIERS[gig.id] || { title: gig.name, desc: gig.label, dossier: gig.label };
+    const title = dossierTitles[gig.id] || gig.name;
     const xpCost = getGigXpCost(gig.id);
     const successPct = Math.round(gig.successRate * 100);
     return `
-      <div class="card-item card-compact gig-card">
-        <div class="card-item-title card-title-md">
-          <span>${dossier.title}</span>
-          <span class="cost-row"><span class="cost-red">-${gig.nerveCost} 🕶️</span> <span class="cost-cyan">-${xpCost} pad</span></span>
+      <div class="gigs-crime-card">
+        <div class="gigs-action-head">
+          <span>${title}</span>
+          <span class="gigs-action-cost">${gig.nerveCost} 🕶️ · ${xpCost} pad</span>
         </div>
-        <div class="card-item-desc card-desc-sm">
-          ${dossier.desc}
-          <span class="card-dossier"><strong>Dossier:</strong> ${dossier.dossier}</span>
-        </div>
-        <div class="card-item-meta">
-          <span>💵 $${gig.rewardMin.toLocaleString()} – $${gig.rewardMax.toLocaleString()}</span>
-          <span>📈 ${successPct}% reliability</span>
-        </div>
+        <div class="gigs-crime-meta">$${gig.rewardMin.toLocaleString()}–$${gig.rewardMax.toLocaleString()} · ${successPct}% · arcade gate</div>
         <button class="btn-primary btn-sm" onclick="runGig('${gig.id}')">Perform Gig</button>
       </div>
     `;
-  }).join("") + getZoneMiniGamePanel("gigs");
+  }).join("");
 }
 
 function stopCoffeePour() {
@@ -6525,7 +6415,7 @@ function clickGigMatrix(num) {
       if (miniGameTimer) clearInterval(miniGameTimer);
       successMiniGame();
     } else {
-      renderGigsBoard();
+      renderGigsZone();
       updateUI();
     }
   } else {
@@ -6542,7 +6432,7 @@ function clickGigPing() {
     if (miniGameTimer) clearInterval(miniGameTimer);
     successMiniGame();
   } else {
-    renderGigsBoard();
+    renderGigsZone();
     updateUI();
   }
 }
@@ -6585,7 +6475,7 @@ function finishGig(gigId, wasSuccess) {
   }
 
   saveGame();
-  renderGigsBoard();
+  renderGigsZone();
   updateUI();
 }
 
@@ -6613,5 +6503,6 @@ window.clickGigMatrix = clickGigMatrix;
 window.clickGigPing = clickGigPing;
 window.renderDeveloperStore = renderDeveloperStore;
 window.renderGigsBoard = renderGigsBoard;
+window.renderGigsZone = renderGigsZone;
 
 

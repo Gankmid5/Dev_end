@@ -3529,6 +3529,145 @@ h1.logo-title {
     0 0 40px rgba(255, 42, 154, 0.04);
 }
 
+.gigs-hub-panel { display: flex; flex-direction: column; gap: 16px; }
+
+.gigs-zone-minigame-slot { margin-bottom: 4px; }
+
+.gigs-hub-top {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+@media (max-width: 768px) {
+  .gigs-hub-top { grid-template-columns: 1fr; }
+}
+
+.gigs-hub-block { display: flex; flex-direction: column; gap: 8px; }
+
+.gigs-hub-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.gigs-compact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.gigs-crimes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.gigs-action-card,
+.gigs-crime-card {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.22);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gigs-action-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.gigs-action-cost {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.gigs-crime-meta {
+  font-size: 0.68rem;
+  color: var(--color-text-muted);
+}
+
+.gigs-activities-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gigs-activity-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 12px;
+  min-width: 100px;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  text-align: left;
+}
+
+.gigs-activity-emoji { font-size: 1rem; }
+.gigs-activity-label { font-weight: 600; }
+.gigs-activity-cost { font-size: 0.65rem; opacity: 0.75; }
+
+.gigs-active-hint {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+  padding: 8px 0;
+  margin: 0;
+}
+
+.dev-pipeline-compact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.dev-phase-chip {
+  font-size: 0.68rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--color-text-muted);
+}
+
+.dev-sidebar-note {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  margin: 8px 0 0;
+}
+
+.studio-product-card--compact .studio-product-head { margin-bottom: 6px; }
+
+.studio-portfolio-card--compact {
+  font-size: 0.78rem;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.telemetry-row--compact,
+.critic-line--compact,
+.social-line--compact {
+  padding: 6px 8px !important;
+  font-size: 0.78rem !important;
+}
+
+.play-game-hub--compact {
+  padding: 10px 12px !important;
+  gap: 10px !important;
+}
+
 #staff-section .glass-panel {
   border-color: rgba(57, 255, 20, 0.2);
   box-shadow:

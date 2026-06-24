@@ -259,7 +259,6 @@
         <div class="panel-title">
           <span><span class="panel-title-icon">🏢</span> Studio Command Center</span>
         </div>
-        <p class="section-tagline">Morale metrics are vibes-based. Rent is real. The portfolio is mostly hope with a splash of revenue.</p>
         <div id="studio-dashboard-content" class="studio-dashboard-layout"></div>
       </section>
     </main>
@@ -272,8 +271,6 @@
         <div class="panel-title">
           <span><span class="panel-title-icon">💾</span> Game Development Board</span>
         </div>
-        <p class="section-tagline">17 arcade sprints, production chaos, milestones nobody asked for, and live-ops until the servers cry.</p>
-        
         <div id="develop-panel-content" class="develop-panel-layout">
           <!-- Loaded dynamically via game.js -->
         </div>
@@ -284,288 +281,28 @@
     <!-- Tab 3: Gigs & Training (Gym/Crimes) -->
     <!-- ═══════════════════════════════════ -->
     <main class="main-layout gigs-zone-layout" id="gigs-section">
-      <section class="glass-panel section-gap">
+      <section class="glass-panel gigs-hub-panel section-gap">
         <div class="panel-title">
-          <span><span class="panel-title-icon">🏋️</span> Developer Workout Gym</span>
+          <span><span class="panel-title-icon">🏋️</span> Gigs Zone</span>
         </div>
-        <p class="panel-tagline">Train skills via retro arcade mini-games. Management calls it "gamified upskilling."</p>
-        <div id="training-gym-grid" class="training-grid">
-          <div class="card-item" style="padding: 14px;">
-            <div class="card-item-title" style="font-size: 0.95rem;">
-              <span>Code Optimization Class</span>
-              <span style="color: #ffd700;">-10 ⚡</span>
-            </div>
-            <div class="card-item-desc" style="font-size: 0.8rem;">
-              Solve complex algorithm challenges. Coding skill increases points generated during sprints.
-            </div>
-            <button class="btn-primary" style="padding: 10px;" onclick="trainSkill('coding_skill')">Train Coding</button>
+        <div id="gigs-zone-minigame-slot" class="gigs-zone-minigame-slot"></div>
+        <div class="gigs-hub-top">
+          <div class="gigs-hub-block">
+            <h4 class="gigs-hub-label">🕹️ Training Arcade</h4>
+            <div id="training-gym-grid" class="training-grid gigs-compact-grid"></div>
           </div>
-
-          <div class="card-item" style="padding: 14px;">
-            <div class="card-item-title" style="font-size: 0.95rem;">
-              <span>Design Theory Templates</span>
-              <span style="color: #ffd700;">-10 ⚡</span>
-            </div>
-            <div class="card-item-desc" style="font-size: 0.8rem;">
-              Study harmonic layout guidelines. Design skill contributes heavy design points to active games.
-            </div>
-            <button class="btn-primary" style="padding: 10px;" onclick="trainSkill('design_skill')">Train Design</button>
-          </div>
-
-          <div class="card-item" style="padding: 14px;">
-            <div class="card-item-title" style="font-size: 0.95rem;">
-              <span>Agile Lead Seminars</span>
-              <span style="color: #ffd700;">-10 ⚡</span>
-            </div>
-            <div class="card-item-desc" style="font-size: 0.8rem;">
-              Practice project management classes. Management skill boosts gig success and bug squashing.
-            </div>
-            <button class="btn-primary" style="padding: 10px;" onclick="trainSkill('management_skill')">Train Management</button>
+          <div class="gigs-hub-block">
+            <h4 class="gigs-hub-label">🛒 Store</h4>
+            <div id="store-items-grid" class="store-grid gigs-compact-grid"></div>
           </div>
         </div>
-
-        <div class="panel-title panel-divider">
-          <span><span class="panel-title-icon">🛒</span> Developer Store</span>
+        <div class="gigs-hub-block">
+          <h4 class="gigs-hub-label">🎪 Quick Activities</h4>
+          <div id="activities-grid" class="gigs-activities-row"></div>
         </div>
-        <div id="store-items-grid" class="store-grid">
-          <div class="card-item" style="padding: 14px;">
-            <div class="card-item-title" style="font-size: 0.9rem;">
-              <span>Java Volt Extra-Battery Acid</span>
-              <span style="color: #39ff14;">$50</span>
-            </div>
-            <div class="card-item-desc" style="font-size: 0.8rem; line-height:1.35;">
-              A carbonated cocktail of taurine, caffeine, and pure desperation. Instantly restores <strong>+25 mg of desperation</strong>.<br>
-              <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block; margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
-                ⚠️ <strong>WARNING:</strong> Highly radioactive. Side effects include seeing memory leaks in 4D space, rapid finger twitching, and typing compile loops in your sleep. Daily value of caffeine: 900%.
-              </span>
-            </div>
-            <button class="btn-primary" style="padding: 10px; font-size: 0.85rem;" onclick="buyItem('energy_drink')">Buy & Consume</button>
-          </div>
-
-          <div class="card-item" style="padding: 14px;">
-            <div class="card-item-title" style="font-size: 0.9rem;">
-              <span>Lukewarm Office Drip Coffee</span>
-              <span style="color: #39ff14;">$20</span>
-            </div>
-            <div class="card-item-desc" style="font-size: 0.8rem; line-height:1.35;">
-              Brewed last Tuesday in a machine that has not been descaled since the Dot-Com crash. Restores <strong>+10 mg of desperation</strong>.<br>
-              <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block; margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
-                ⚠️ <strong>Surgeon General Warning:</strong> Tastes like hot copper coins, industrial solvent, and broken promises. Morale boost is zero, but it is wet.
-              </span>
-            </div>
-            <button class="btn-primary" style="padding: 10px; font-size: 0.85rem;" onclick="buyItem('coffee')">Buy & Consume</button>
-          </div>
-
-          <div class="card-item" style="padding: 14px;">
-            <div class="card-item-title" style="font-size: 0.9rem;">
-              <span>Sus Nootropic Focus Pill</span>
-              <span style="color: #39ff14;">$100</span>
-            </div>
-            <div class="card-item-desc" style="font-size: 0.8rem; line-height:1.35;">
-              Bought from a sketchy pop-up banner on an unindexed forum. Instantly restores <strong>+5 chutzpah</strong>.<br>
-              <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block; margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
-                ⚠️ <strong>DISCLAIMER:</strong> Ingredients list is written in wingdings. Guaranteed to lock you in an 8-hour loop staring at CSS centering tutorials.
-              </span>
-            </div>
-            <button class="btn-primary" style="padding: 10px; font-size: 0.85rem;" onclick="buyItem('nootropic')">Buy & Consume</button>
-          </div>
-        </div>
-
-        <div class="panel-title panel-divider">
-          <span><span class="panel-title-icon">🎪</span> Studio &amp; Team Activities</span>
-        </div>
-        <div class="activities-grid" id="activities-grid">
-          <div class="card-item" style="padding: 14px;">
-            <div class="card-item-title" style="font-size: 0.9rem;">
-              <span>🍕 Host Soggy Pizza Party</span>
-              <span style="color: #ff1744;">-$150</span>
-            </div>
-            <div class="card-item-desc" style="font-size: 0.8rem; line-height: 1.35;">
-              Morale booster: order wobbly, lukewarm cheese pizzas from a generic budget outlet. Restores <strong>+35 mg of desperation</strong>.<br>
-              <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block; margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
-                Morale remains at absolute zero. The cardboard box is structurally more appetizing than the crust. Developers are too full to write resignation letters.
-              </span>
-            </div>
-            <button class="btn-primary" style="padding: 10px; font-size: 0.85rem;" onclick="runActivity('pizza_party')">Host Party</button>
-          </div>
-
-          <div class="card-item" style="padding: 14px;">
-            <div class="card-item-title" style="font-size: 0.9rem;">
-              <span>💡 Host 24-Hour Hackathon</span>
-              <span style="color: #ff1744;">-$500</span>
-            </div>
-            <div class="card-item-desc" style="font-size: 0.8rem; line-height: 1.35;">
-              Lock exit doors, turn off AC, and feed them carbonated drinks until build success. Gained <strong>+15 RP</strong>.<br>
-              <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block; margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
-                Some developers may hallucinate clean class inheritance or sensible variable naming schemes. Code compiles by sheer force of desperation.
-              </span>
-            </div>
-            <button class="btn-primary" style="padding: 10px; font-size: 0.85rem;" onclick="runActivity('hackathon')">Start Hackathon</button>
-          </div>
-
-          <div class="card-item" style="padding: 14px;">
-            <div class="card-item-title" style="font-size: 0.9rem;">
-              <span>🎟️ DevCon Free T-Shirt Hunt</span>
-              <span style="color: #ff1744;">-$1,200</span>
-            </div>
-            <div class="card-item-desc" style="font-size: 0.8rem; line-height: 1.35;">
-              Send developers to collect screen-printed cotton swag and talk to strangers. Gained <strong>+20 RP</strong> and <strong>+5 Skills</strong>.<br>
-              <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block; margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
-                Developers return with acute social anxiety, custom laptop stickers, and bags of plastic sunglasses they will throw away next week.
-              </span>
-            </div>
-            <button class="btn-primary" style="padding: 10px; font-size: 0.85rem;" onclick="runActivity('dev_con')">Attend DevCon</button>
-          </div>
-
-          <div class="card-item" style="padding: 14px;">
-            <div class="card-item-title" style="font-size: 0.9rem;">
-              <span>🛋️ Overpriced Ergonomic Gaming Chairs</span>
-              <span style="color: #ff1744;">-$5,000</span>
-            </div>
-            <div class="card-item-desc" style="font-size: 0.8rem; line-height: 1.35;">
-              racing bucket seats designed for high-G maneuvers but used exclusively for typing console logs. <strong>+50% caffeine recovery speed</strong>.<br>
-              <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block; margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
-                Guaranteed to increase productivity by making your lower back hurt in a futuristic, neon-colored way.
-              </span>
-            </div>
-            <button class="btn-primary" style="padding: 10px; font-size: 0.85rem;" id="btn-chairs-activity" onclick="runActivity('chairs')">Purchase Chairs</button>
-          </div>
-
-          <div class="card-item chaos-activity-card" style="padding: 14px;">
-            <div class="card-item-title" style="font-size: 0.9rem;">
-              <span>🖥️ Pretend to Work (Tab Switching)</span>
-              <span style="color: #39ff14;">FREE</span>
-            </div>
-            <div class="card-item-desc" style="font-size: 0.8rem; line-height: 1.35;">
-              Alt-tab between IDE and a spreadsheet for 20 minutes. Gain <strong>+8 mg desperation</strong> and <strong>+3 resume bullet points</strong>. Productivity: theatrical.<br>
-              <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block; margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
-                Manager thinks you're crushing it. You are crushing snacks.
-              </span>
-            </div>
-            <button class="btn-primary" style="padding: 10px; font-size: 0.85rem;" onclick="runActivity('pretend_work')">Look Busy</button>
-          </div>
-
-          <div class="card-item chaos-activity-card" style="padding: 14px;">
-            <div class="card-item-title" style="font-size: 0.9rem;">
-              <span>🎰 Blame Roulette</span>
-              <span style="color: #39ff14;">FREE</span>
-            </div>
-            <div class="card-item-desc" style="font-size: 0.8rem; line-height: 1.35;">
-              Spin the wheel of accountability. Someone else is definitely responsible for the production incident.<br>
-              <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block; margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
-                Outcomes include: intern, DNS, solar flares, and 'works on my machine'.
-              </span>
-            </div>
-            <button class="btn-secondary" style="padding: 10px; font-size: 0.85rem;" onclick="runChaosAction('blame_roulette')">Spin Wheel</button>
-          </div>
-
-          <div class="card-item chaos-activity-card" style="padding: 14px;">
-            <div class="card-item-title" style="font-size: 0.9rem;">
-              <span>📢 Buzzword Standup</span>
-              <span style="color: #ff1744;">-5 pad</span>
-            </div>
-            <div class="card-item-desc" style="font-size: 0.8rem; line-height: 1.35;">
-              Host a 45-minute standup about synergy, blockchain, and AI-powered agile NFTs. <strong>+12 morale</strong>, <strong>+6 buzz</strong>.<br>
-              <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block; margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
-                Zero lines of code written. Maximum LinkedIn content generated.
-              </span>
-            </div>
-            <button class="btn-primary" style="padding: 10px; font-size: 0.85rem;" onclick="runActivity('buzzword_standup')">Host Standup</button>
-          </div>
-
-          <div class="card-item chaos-activity-card" style="padding: 14px;">
-            <div class="card-item-title" style="font-size: 0.9rem;">
-              <span>🪴 Buy Office Plant (Fake)</span>
-              <span style="color: #ff1744;">-$75</span>
-            </div>
-            <div class="card-item-desc" style="font-size: 0.8rem; line-height: 1.35;">
-              Plastic fern that screams wellness culture. Permanent <strong>+2% morale recovery</strong> from photosynthesis cosplay.<br>
-              <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block; margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
-                Dies emotionally every quarter. Revived with dusting.
-              </span>
-            </div>
-            <button class="btn-primary" style="padding: 10px; font-size: 0.85rem;" id="btn-plant-activity" onclick="runActivity('office_plant')">Buy Plant</button>
-          </div>
-        </div>
-      </section>
-
-      <section class="glass-panel section-gap">
-        <div class="panel-title">
-          <span><span class="panel-title-icon">⚡</span> Gig Board (Crimes)</span>
-        </div>
-        <p class="panel-tagline">Freelance fixes, DRM cracks, and ethically flexible side hustles. Arcade mini-games gate success.</p>
-        <div id="gigs-board-grid" class="action-grid-single">
-          <div class="card-item">
-            <div class="card-item-title">
-              <span>Freelance HTML Edits</span>
-              <span style="color: #ff1744;">-2 🎯</span>
-            </div>
-            <div class="card-item-desc" style="line-height:1.4;">
-              Tweak markup code templates for small neighborhood stores. High success rate, small payouts.<br>
-              <span style="font-size: 0.75rem; color: var(--color-text-muted); display: block; margin-top: 4px; font-style: italic;">
-                <strong>Dossier:</strong> Luigi (local pizzeria owner) claims his pizza image is shifting 2px left when clicked. He demands inline styles because bootstrap is "communist spyware". Rot your soul for $50.
-              </span>
-            </div>
-            <div class="card-item-meta">
-              <span>💵 Payout: $50 - $100</span>
-              <span>📈 Success: 95%</span>
-            </div>
-            <button class="btn-primary" onclick="runGig('freelance_html')">Perform Gig</button>
-          </div>
-
-          <div class="card-item">
-            <div class="card-item-title">
-              <span>Crack Competitor DRM</span>
-              <span style="color: #ff1744;">-4 🎯</span>
-            </div>
-            <div class="card-item-desc" style="line-height:1.4;">
-              Leak files of rival software assets to internet forums. Generates decent returns with moderate risk.<br>
-              <span style="font-size: 0.75rem; color: var(--color-text-muted); display: block; margin-top: 4px; font-style: italic;">
-                <strong>Dossier:</strong> Bypass wobbly DRM loops that melt client CPUs. Upload cracked binaries to retro forums. Gains decent returns and massive street cred among 14-year-olds.
-              </span>
-            </div>
-            <div class="card-item-meta">
-              <span>💵 Payout: $200 - $400</span>
-              <span>📈 Success: 75%</span>
-            </div>
-            <button class="btn-primary" onclick="runGig('crack_competitor')">Perform Gig</button>
-          </div>
-
-          <div class="card-item">
-            <div class="card-item-title">
-              <span>Ransomware local server</span>
-              <span style="color: #ff1744;">-6 🎯</span>
-            </div>
-            <div class="card-item-desc" style="line-height:1.4;">
-              Infect server of offshore shell companies. High payout but failure results in corporate penalties.<br>
-              <span style="font-size: 0.75rem; color: var(--color-text-muted); display: block; margin-top: 4px; font-style: italic;">
-                <strong>Dossier:</strong> Drop-shipping conglomerate using password "admin123". If you fail, their automatic legal fax bots will flood your parents' fax machine with 8,000 cease-and-desists.
-              </span>
-            </div>
-            <div class="card-item-meta">
-              <span>💵 Payout: $800 - $1,500</span>
-              <span>📈 Success: 60%</span>
-            </div>
-            <button class="btn-primary" onclick="runGig('ransomware')">Perform Gig</button>
-          </div>
-
-          <div class="card-item">
-            <div class="card-item-title">
-              <span>DDoS Competitor Platform</span>
-              <span style="color: #ff1744;">-8 🎯</span>
-            </div>
-            <div class="card-item-desc" style="line-height:1.4;">
-              Crash concurrent database nodes of giant rivals. Extremely risky, but lucrative rewards.<br>
-              <span style="font-size: 0.75rem; color: var(--color-text-muted); display: block; margin-top: 4px; font-style: italic;">
-                <strong>Dossier:</strong> Coordinate botnet of 40,000 wobbly smart refrigerators and electric toothbrushes to flood a competitor's servers during their pre-order launch. Highly volatile!
-              </span>
-            </div>
-            <div class="card-item-meta">
-              <span>💵 Payout: $3,000 - $6,000</span>
-              <span>📈 Success: 45%</span>
-            </div>
-            <button class="btn-primary" onclick="runGig('ddos_rival')">Perform Gig</button>
-          </div>
+        <div class="gigs-hub-block gigs-hub-block--crimes">
+          <h4 class="gigs-hub-label">⚡ Gig Board — arcade crimes</h4>
+          <div id="gigs-board-grid" class="gigs-crimes-grid"></div>
         </div>
       </section>
     </main>
@@ -611,7 +348,6 @@
         <div class="panel-title">
           <span><span class="panel-title-icon">🏆</span> Global Net Worth Leaderboard</span>
         </div>
-        <p class="panel-tagline">Humblebrag leaderboard. Net worth may include imaginary valuation multiples.</p>
         <div id="leaderboard-minigame-slot" class="leaderboard-minigame-slot"></div>
         <div class="history-container">
           <table class="history-table">
