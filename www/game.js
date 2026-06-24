@@ -1095,6 +1095,10 @@ function createGameProject() {
   else if (scale === "Large") xpCost = 80;
   else if (scale === "AAA") xpCost = 200;
 
+  if (gameState.level === 1 && scale === "Small") {
+    xpCost = 0;
+  }
+
   if (gameState.xp < xpCost) {
     showToast(`Insufficient XP! Starting a ${scale} project requires ${xpCost} XP.`, "error");
     return;
