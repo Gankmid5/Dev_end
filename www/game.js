@@ -151,6 +151,13 @@ let consoleLogs = [];
 let localSaveTimer = 0;
 let paySalaryTimer = 0;
 
+// Mini-game combo streak (resets on fail)
+let miniGameCombo = 0;
+
+// Screen flash FX for level-ups and big moments
+let screenFlashUntil = 0;
+let screenFlashColor = { r: 57, g: 255, b: 20 };
+
 // Supabase sync session check
 let isUserLoggedIn = false;
 let userColor = "#00e5ff";
@@ -187,6 +194,13 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   if (window.init3DScene) {
     window.init3DScene();
+  }
+
+  if (!localStorage.getItem("dev_end_seen_tutorial")) {
+    setTimeout(() => {
+      const panel = document.getElementById("game-hint-panel");
+      if (panel) panel.style.display = "flex";
+    }, 900);
   }
 });
 
@@ -353,7 +367,7 @@ function gainXP(amount) {
   }
   
   if (leveledUp) {
-    // Play chiptune release fanfare for Level Up!
+    triggerScreenFlash(57, 255, 20);
     setTimeout(() => {
       if (window.ChiptuneAudio) ChiptuneAudio.playSFX("release");
     }, 100);
@@ -461,15 +475,36 @@ function initFormInputs() {
 
 // --- Game Tick Loops (1s) ---
 function gameTick() {
-  // 1. Regenerate Energy and Nerve
-  // Energy: 5 per 60 ticks (1/12), boosted 1.5x by ergonomic chairs upgrade
+  // 1. Regenerate Energy and Nerve (tuned for snappier early-game pacing)
+  const recoveryBonus = gameState.ergonomic_chairs ? 1.5 : 1.0;
+  const energyRate = (gameState.level === 1 ? 12 : 8) / 60;
   if (gameState.energy < gameState.max_energy) {
-    const recoveryBonus = gameState.ergonomic_chairs ? 1.5 : 1.0;
-    gameState.energy = Math.min(gameState.max_energy, gameState.energy + (5 / 60) * recoveryBonus);
+    gameState.energy = Math.min(gameState.max_energy, gameState.energy + energyRate * recoveryBonus);
   }
-  // Nerve: 1 per 60 ticks (1/60)
   if (gameState.nerve < gameState.max_nerve) {
-    gameState.nerve = Math.min(gameState.max_nerve, gameState.nerve + (1 / 60));
+    gameState.nerve = Math.min(gameState.max_nerve, gameState.nerve + (2 / 60));
+  }
+
+  // 1b. Staff passively contribute to active dev project
+  if (gameState.current_project && gameState.current_project.phase !== "post_release") {
+    const speedMult = OFFICE_TIERS[gameState.office_tier]?.speedMult || 1.0;
+    let techGain = 0;
+    let designGain = 0;
+    let bugFix = 0;
+    gameState.employees.forEach(emp => {
+      const info = EMPLOYEES_INFO[emp.id];
+      if (!info) return;
+      techGain += (info.techRate || 0) * 0.04 * speedMult;
+      designGain += (info.designRate || 0) * 0.04 * speedMult;
+      bugFix += (info.bugFixRate || 0) * 0.015 * speedMult;
+    });
+    if (techGain > 0 || designGain > 0) {
+      gameState.current_project.tech_points += techGain;
+      gameState.current_project.design_points += designGain;
+      if (bugFix > 0) {
+        gameState.current_project.bug_points = Math.max(0, gameState.current_project.bug_points - bugFix);
+      }
+    }
   }
 
   // 2. Active games revenue generation
@@ -563,7 +598,56 @@ function gameTick() {
     generateLiveChatMessage();
   }
 
+  // 7. Random studio events (~4% per tick)
+  if (Math.random() < 0.04) {
+    triggerRandomEvent();
+  }
+
   updateUI();
+}
+
+function triggerRandomEvent() {
+  const pool = [
+    () => {
+      gameState.energy = Math.min(gameState.max_energy, gameState.energy + 18);
+      addLog("Random Event", "Roommate delivered lukewarm pizza. +18 Energy.");
+      showToast("🍕 Pizza delivery! +18 Energy", "success");
+    },
+    () => {
+      gameState.cash += 85;
+      addLog("Random Event", "Found $85 in the couch cushions between the Cheeto dust.");
+      showToast("💰 Couch treasure! +$85", "success");
+    },
+    () => {
+      gameState.research_points += 4;
+      addLog("Random Event", "StackOverflow answer accepted. +4 Research Points.");
+      showToast("📚 Research breakthrough! +4 RP", "info");
+    },
+    () => {
+      gameState.nerve = Math.min(gameState.max_nerve, gameState.nerve + 2);
+      addLog("Random Event", "Espresso machine fixed itself. +2 Nerve Focus.");
+      showToast("☕ Espresso miracle! +2 Focus", "success");
+    }
+  ];
+
+  if (gameState.current_project) {
+    pool.push(() => {
+      gameState.current_project.bug_points += 2;
+      addLog("Random Event", "A Reddit thread exposed 2 new bugs in your build.");
+      showToast("🐛 Viral bug thread! +2 bugs", "warning");
+    });
+  }
+
+  if (gameState.active_games.length > 0) {
+    pool.push(() => {
+      const g = gameState.active_games[Math.floor(Math.random() * gameState.active_games.length)];
+      g.age = Math.max(0, g.age - 25);
+      addLog("Random Event", `'${g.name}' is trending on social media! Shelf life extended.`);
+      showToast(`📱 '${g.name}' went viral! Sales extended`, "success");
+    });
+  }
+
+  pool[Math.floor(Math.random() * pool.length)]();
 }
 
 // --- Target point targets based on Dev scale ---
@@ -1259,7 +1343,7 @@ function getRandomColorHex() {
 }
 
 function startMiniGame(type, isTraining = false) {
-  const energyCost = isTraining ? 10 : 5;
+  const energyCost = isTraining ? 10 : (gameState.level === 1 ? 4 : 5);
   const xpCost = isTraining ? (gameState.level > 1 ? 15 : 0) : 0;
 
   if (gameState.energy < energyCost) {
@@ -1387,6 +1471,11 @@ function cancelMiniGame() {
     return;
   }
 
+  if (!isTraining && !isGig && !isStore) {
+    miniGameCombo = 0;
+    updateHudCombo(0);
+  }
+
   addLog("Mini-game Cancelled", isTraining ? "Training session aborted." : "Development cycle aborted.");
   if (isTraining) {
     renderTrainingGym();
@@ -1503,31 +1592,42 @@ function successMiniGame() {
   }
 
   const target = getTargetPointsForScale(gameState.current_project.scale);
+  miniGameCombo++;
+  const comboMult = Math.min(1.8, 1 + (miniGameCombo - 1) * 0.12);
+  updateHudCombo(miniGameCombo);
+
+  if (miniGameCombo >= 3) {
+    ChiptuneAudio.playSFX("combo");
+    triggerScreenFlash(255, 215, 0);
+  }
+
+  const comboLabel = miniGameCombo >= 2 ? ` (${miniGameCombo}x COMBO!)` : "";
 
   if (type === 'code') {
-    const pointsGained = target;
+    const pointsGained = Math.ceil(target * comboMult);
     gameState.current_project.tech_points += pointsGained;
     gameState.coding_skill += 1;
 
-    addLog("Syntax Striker Success!", `Correctly typed code snippet. Gained +${pointsGained} Tech Points (50% Project Progress) and +1 Coding Skill.`);
-    showToast(`Code success! +${pointsGained} Tech Points (50% Progress)`, "success");
+    addLog("Syntax Striker Success!", `Correctly typed code snippet. Gained +${pointsGained} Tech Points${comboLabel} and +1 Coding Skill.`);
+    showToast(`Code success! +${pointsGained} Tech${comboLabel}`, "success");
   } else if (type === 'design') {
-    const pointsGained = target;
+    const pointsGained = Math.ceil(target * comboMult);
     gameState.current_project.design_points += pointsGained;
     gameState.design_skill += 1;
 
-    addLog("Color Matcher Success!", `Matched target design color resonance. Gained +${pointsGained} Design Points (50% Project Progress) and +1 Design Skill.`);
-    showToast(`Design success! +${pointsGained} Design Points (50% Progress)`, "success");
+    addLog("Color Matcher Success!", `Matched target design color resonance. Gained +${pointsGained} Design Points${comboLabel} and +1 Design Skill.`);
+    showToast(`Design success! +${pointsGained} Design${comboLabel}`, "success");
   } else if (type === 'polish') {
-    const bugsRemoved = Math.floor(Math.random() * 8) + 8 + Math.floor(gameState.management_skill / 8);
+    const bugsRemoved = Math.floor((Math.random() * 8) + 8 + Math.floor(gameState.management_skill / 8)) * comboMult;
     gameState.current_project.bug_points = Math.max(0, gameState.current_project.bug_points - bugsRemoved);
     gameState.management_skill += 1;
 
-    addLog("Bug Squasher Success!", `Squashed compiler bugs. Removed -${bugsRemoved} bugs and gained +1 Management.`);
-    showToast(`Polished game! Removed -${bugsRemoved} Bugs`, "success");
+    addLog("Bug Squasher Success!", `Squashed compiler bugs. Removed -${Math.floor(bugsRemoved)} bugs${comboLabel} and gained +1 Management.`);
+    showToast(`Polished! -${Math.floor(bugsRemoved)} Bugs${comboLabel}`, "success");
   }
 
-  gainXP(5);
+  const xpGain = 5 + Math.min(10, miniGameCombo * 2);
+  gainXP(xpGain);
   saveGame();
   renderProjectProgress();
   updateUI();
@@ -1583,6 +1683,11 @@ function failMiniGame(reason) {
   if (gameState.current_project) {
     gameState.current_project.miniGamesPlayed = (gameState.current_project.miniGamesPlayed || 0) + 1;
     gameState.current_project.miniGamesLost = (gameState.current_project.miniGamesLost || 0) + 1;
+  }
+
+  if (!isTraining && !isGig && !isStore) {
+    miniGameCombo = 0;
+    updateHudCombo(0);
   }
 
   if (type === 'code') {
@@ -1893,6 +1998,10 @@ function releaseGameProject() {
 
   addLog("Game Released!", `'${proj.name}' was published! Shelf revenue generating (Max Revenue Cap: $${cap.toFixed(2)}). Gained +${totalXPGained} XP.`);
   showToast(`Released '${proj.name}'! Rating: ${rating.toFixed(1)}/10`, "success");
+
+  miniGameCombo = 0;
+  updateHudCombo(0);
+  triggerScreenFlash(0, 229, 255);
   
   gainXP(totalXPGained);
 
@@ -2845,6 +2954,11 @@ const ChiptuneAudio = {
         const dur = i === notes.length - 1 ? 0.6 : 0.12;
         this.playTone(freq, "triangle", now + i * 0.1, dur, 0.06);
       });
+    } else if (type === "combo") {
+      const notes = [392.00, 493.88, 587.33, 783.99];
+      notes.forEach((freq, i) => {
+        this.playTone(freq, "square", now + i * 0.06, 0.1, 0.04);
+      });
     } else if (type === "click") {
       this.playTone(600, "sine", now, 0.05, 0.02);
     }
@@ -2870,13 +2984,51 @@ const ChiptuneAudio = {
 
 function toggleMusic() {
   ChiptuneAudio.toggle();
+  const isOn = ChiptuneAudio.isPlaying;
   const btn = document.getElementById("music-toggle-btn");
+  const hudBtn = document.getElementById("hud-music-btn");
   if (btn) {
-    btn.innerText = ChiptuneAudio.isPlaying ? "🎵 Music: ON" : "🎵 Music: OFF";
-    btn.style.borderColor = ChiptuneAudio.isPlaying ? "var(--color-cyan)" : "rgba(255,255,255,0.15)";
-    btn.style.color = ChiptuneAudio.isPlaying ? "var(--color-cyan)" : "";
+    btn.innerText = isOn ? "🎵 Music: ON" : "🎵 Music: OFF";
+    btn.style.borderColor = isOn ? "var(--color-cyan)" : "rgba(255,255,255,0.15)";
+    btn.style.color = isOn ? "var(--color-cyan)" : "";
+  }
+  if (hudBtn) {
+    hudBtn.innerText = isOn ? "🎵 Music: ON" : "🎵 Music: OFF";
+    hudBtn.classList.toggle("music-on", isOn);
   }
 }
+
+function triggerScreenFlash(r, g, b) {
+  screenFlashColor = { r, g, b };
+  screenFlashUntil = Date.now() + 450;
+}
+
+function updateHudCombo(combo) {
+  const el = document.getElementById("hud-combo");
+  if (!el) return;
+  if (combo >= 2) {
+    el.style.display = "block";
+    el.innerText = `🔥 ${combo}x COMBO`;
+  } else {
+    el.style.display = "none";
+  }
+}
+
+function toggleGameHint() {
+  const panel = document.getElementById("game-hint-panel");
+  if (panel) panel.style.display = panel.style.display === "none" ? "flex" : "none";
+}
+
+function dismissGameHint() {
+  localStorage.setItem("dev_end_seen_tutorial", "1");
+  const panel = document.getElementById("game-hint-panel");
+  if (panel) panel.style.display = "none";
+  showToast("Welcome to the garage! Click the monitor to start.", "info");
+}
+
+window.toggleGameHint = toggleGameHint;
+window.dismissGameHint = dismissGameHint;
+window.triggerScreenFlash = triggerScreenFlash;
 
 const devNukeComments = [
   "Wait, they canceled it? But I already bought the gamer socks from their merch store!",
@@ -3588,7 +3740,8 @@ let leaderboardCanvas, leaderboardCtx, leaderboardTexture;
 let scene3D, camera3D, renderer3D;
 let cameraTargetPos, cameraTargetLookAt;
 let currentCameraPos, currentCameraLookAt;
-let mainScreenMesh, auxScreenMesh, coffeeMugMesh, serverRackMesh, leaderboardMesh;
+let mainScreenMesh, auxScreenMesh, coffeeMugMesh, coffeeMugGroup, serverRackMesh, leaderboardMesh;
+let serverLedMeshes = [];
 
 let activeTab = "gigs"; // Default tab
 let focusedInputField = null; // 'username' or 'password'
@@ -3732,6 +3885,7 @@ function init3DScene() {
   
   mugGroup.position.set(-7, 4.4, 2);
   coffeeMugMesh = mugBody;
+  coffeeMugGroup = mugGroup;
   deskGroup.add(mugGroup);
 
   // Server Stack
@@ -3739,6 +3893,7 @@ function init3DScene() {
   const rackBoxGeo = new THREE.BoxGeometry(4, 1.2, 5);
   const rackBoxMat = new THREE.MeshStandardMaterial({ color: 0x08080a, metalness: 0.9, roughness: 0.1 });
   
+  serverLedMeshes = [];
   for (let i = 0; i < 3; i++) {
     const rack = new THREE.Mesh(rackBoxGeo, rackBoxMat);
     rack.position.set(0, i * 1.3 + 0.6, 0);
@@ -3747,6 +3902,7 @@ function init3DScene() {
     const ledMat = new THREE.MeshBasicMaterial({ color: 0x39ff14 });
     const led = new THREE.Mesh(ledGeo, ledMat);
     led.position.set(-1.6, i * 1.3 + 0.6, 2.52);
+    serverLedMeshes.push(led);
     serverGroup.add(rack, led);
   }
   serverGroup.position.set(-4, 0, -2);
@@ -3803,12 +3959,23 @@ function onWindowResize() {
 function animate() {
   requestAnimationFrame(animate);
 
-  // Smooth LERP glide transitions
+  const t = Date.now() * 0.001;
+
   currentCameraPos.lerp(cameraTargetPos, 0.08);
   currentCameraLookAt.lerp(cameraTargetLookAt, 0.08);
 
   camera3D.position.copy(currentCameraPos);
   camera3D.lookAt(currentCameraLookAt);
+
+  if (coffeeMugGroup) {
+    coffeeMugGroup.position.y = 4.4 + Math.sin(t * 2.2) * 0.06;
+    coffeeMugGroup.rotation.z = Math.sin(t * 1.5) * 0.04;
+  }
+
+  serverLedMeshes.forEach((led, i) => {
+    const pulse = 0.35 + 0.65 * Math.abs(Math.sin(t * 3 + i * 1.2));
+    led.material.color.setRGB(0, pulse, pulse * 0.25);
+  });
 
   if (mainScreenCtx) {
     drawMainScreen();
@@ -3856,6 +4023,7 @@ function onDocumentMouseDown(event) {
 
     // 1. Raycast Main Screen plane
     if (hitObject === mainScreenMesh && hitUv) {
+      ChiptuneAudio.playSFX("click");
       const cx = hitUv.x * 1024;
       const cy = (1 - hitUv.y) * 1024;
       handleMainScreenClick(cx, cy);
@@ -4169,7 +4337,7 @@ function handleDevelopTabClick(cx, cy) {
     if (isPointInRect(cx, cy, 50, 560, 280, 60)) startMiniGame("code");
     if (isPointInRect(cx, cy, 360, 560, 280, 60)) startMiniGame("design");
     if (isPointInRect(cx, cy, 670, 560, 280, 60)) startMiniGame("polish");
-    if (isPointInRect(cx, cy, 300, 670, 420, 60) && progressPercent >= 100 && proj.bug_points === 0) {
+    if (isPointInRect(cx, cy, 300, 670, 420, 60) && progressPercent >= 90 && proj.bug_points <= 8) {
       releaseGameProject();
     }
   }
@@ -4419,6 +4587,14 @@ function drawHeaderBar(ctx, w) {
   ctx.fillText(`${Math.floor(gameState.energy)}/${gameState.max_energy}`, 360, 60);
   ctx.fillText(`${Math.floor(gameState.nerve)}/${gameState.max_nerve}`, 540, 60);
   ctx.fillText(`${Math.floor(gameState.xp)}/${gameState.xp_needed} XP`, 710, 60);
+
+  if (miniGameCombo >= 2) {
+    ctx.fillStyle = "#ffd700";
+    ctx.font = "bold 14px 'Press Start 2P', monospace";
+    ctx.textAlign = "right";
+    ctx.fillText(`🔥 ${miniGameCombo}x COMBO`, w - 20, 42);
+    ctx.textAlign = "left";
+  }
 }
 
 function drawNavTabs(ctx, w) {
@@ -4471,6 +4647,17 @@ function drawMainScreen() {
     drawLeaderboardTab(ctx, w);
   } else if (activeTab === "profile") {
     drawProfileTab(ctx, w);
+  }
+
+  const flicker = 0.97 + Math.sin(Date.now() * 0.008) * 0.03;
+  ctx.fillStyle = `rgba(0, 229, 255, ${0.014 * flicker})`;
+  ctx.fillRect(0, 0, w, h);
+
+  if (screenFlashUntil > Date.now()) {
+    const alpha = (screenFlashUntil - Date.now()) / 450;
+    const c = screenFlashColor;
+    ctx.fillStyle = `rgba(${c.r}, ${c.g}, ${c.b}, ${alpha * 0.35})`;
+    ctx.fillRect(0, 0, w, h);
   }
   
   if (mainScreenTexture) {
@@ -4586,6 +4773,13 @@ function drawDevelopTab(ctx, w) {
     ctx.fillText("MULTIPLAYER:", 50, 640);
     drawPixelButton(ctx, 200, 620, 160, 35, draftMultiplayer ? "[X] ENABLED" : "[ ] DISABLED", draftMultiplayer, draftMultiplayer ? "#39ff14" : "#00e5ff", "9px 'Press Start 2P'");
 
+    const synergyKey = `${draftGenre}-${draftTopic}`;
+    const synergy = SYNERGIES[synergyKey] || 0.85;
+    const synergyLabel = synergy >= 1.2 ? "GREAT MATCH" : (synergy >= 1.0 ? "OK PAIRING" : "WEAK COMBO");
+    ctx.fillStyle = synergy >= 1.15 ? "#39ff14" : (synergy < 0.9 ? "#ff1744" : "#ffd700");
+    ctx.font = "18px 'VT323', monospace";
+    ctx.fillText(`SYNERGY: ${synergyLabel} (${Math.round(synergy * 100)}% critic bonus)`, 50, 690);
+
     let cost = draftPlatform === "mobile" ? 50 : (draftPlatform === "console" ? 500 : 100);
     let scaleXp = draftScale === "Medium" ? 100 : (draftScale === "Large" ? 400 : 10);
     if (gameState.level === 1 && draftScale === "Small") scaleXp = 0;
@@ -4622,7 +4816,18 @@ function drawDevelopTab(ctx, w) {
     ctx.fillStyle = proj.bug_points > 0 ? "#ff1744" : "#39ff14";
     ctx.fillText(`Bugs to Squash: ${proj.bug_points}`, 50, 360);
 
+    if (gameState.employees.length > 0) {
+      ctx.fillStyle = "rgba(57, 255, 20, 0.7)";
+      ctx.font = "16px 'VT323', monospace";
+      ctx.fillText(`👥 Staff grinding: +${gameState.employees.length} devs passively building`, 50, 395);
+    }
+
+    const projSynergy = SYNERGIES[`${proj.genre}-${proj.topic}`] || 0.85;
+    ctx.fillStyle = projSynergy >= 1.15 ? "#39ff14" : "#ffd700";
+    ctx.fillText(`Genre/Topic synergy: ${Math.round(projSynergy * 100)}% critic bonus`, 524, 360);
+
     ctx.fillStyle = "#ffffff";
+    ctx.font = "20px 'VT323', monospace";
     ctx.fillText(`Overall Progress: ${progressPercent.toFixed(1)}%`, 50, 420);
     ctx.fillStyle = "#222";
     ctx.fillRect(50, 434, 874, 24);
@@ -4640,8 +4845,11 @@ function drawDevelopTab(ctx, w) {
       drawPixelButton(ctx, 360, 560, 280, 60, "[DESIGN] COLOR", false, "#b388ff", "10px 'Press Start 2P'");
       drawPixelButton(ctx, 670, 560, 280, 60, "[POLISH] DEBUG", false, "#ffd700", "10px 'Press Start 2P'");
 
-      const readyToRelease = progressPercent >= 100 && proj.bug_points === 0;
-      drawPixelButton(ctx, 300, 670, 420, 60, readyToRelease ? "🚀 RELEASE GAME NOW" : "LOCK SPRINT (100% & 0 BUGS)", !readyToRelease, readyToRelease ? "#39ff14" : "#444", "11px 'Press Start 2P'");
+      const readyToRelease = progressPercent >= 90 && proj.bug_points <= 8;
+      const releaseLabel = readyToRelease
+        ? "🚀 RELEASE GAME NOW"
+        : `LOCK SPRINT (${Math.floor(progressPercent)}% / ≤8 bugs)`;
+      drawPixelButton(ctx, 300, 670, 420, 60, releaseLabel, !readyToRelease, readyToRelease ? "#39ff14" : "#444", "11px 'Press Start 2P'");
     }
   }
 
@@ -5054,9 +5262,9 @@ function drawStaffTab(ctx, w) {
   ctx.fillText("RESEARCH LAB LABS", 520, 540);
 
   const researchTypes = [
-    { id: "unlocked_console", name: "Unlock Consoles", cost: 10, unlocked: gameState.unlocked_console },
-    { id: "researched_multiplayer", name: "Multiplayer Engine", cost: 25, unlocked: gameState.researched_multiplayer },
-    { id: "ai_behavior", name: "AI NPC Algorithms", cost: 50, unlocked: gameState.ai_behavior }
+    { id: "unlocked_console", name: "3D Cube Renderer", cost: 50, unlocked: gameState.unlocked_console },
+    { id: "researched_multiplayer", name: "Spaghetti Netcode", cost: 100, unlocked: gameState.researched_multiplayer },
+    { id: "ai_behavior", name: "ChatGPT Copy-Paster", cost: 150, unlocked: gameState.ai_behavior }
   ];
 
   researchTypes.forEach((res, idx) => {

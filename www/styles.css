@@ -1110,6 +1110,15 @@ h1.logo-title {
   background: #000;
 }
 
+#canvas-container::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
+}
+
 .app-wrapper {
   display: none !important;
 }
@@ -1118,4 +1127,111 @@ body {
   margin: 0 !important;
   padding: 0 !important;
   overflow: hidden !important;
+}
+
+/* 3D HUD overlay */
+.game-hud {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 2500;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.hud-btn {
+  pointer-events: auto;
+  background: rgba(12, 12, 16, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--color-text-muted);
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  transition: border-color 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+.hud-btn:hover {
+  border-color: var(--color-cyan);
+  color: #fff;
+}
+
+.hud-btn.hud-btn-muted {
+  opacity: 0.75;
+}
+
+.hud-btn.music-on {
+  border-color: var(--color-cyan);
+  color: var(--color-cyan);
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.25);
+}
+
+.hud-combo {
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 145, 0, 0.08));
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  color: #ffd700;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  animation: combo-pulse 0.6s ease infinite alternate;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+}
+
+@keyframes combo-pulse {
+  from { transform: scale(1); box-shadow: 0 0 6px rgba(255, 215, 0, 0.2); }
+  to { transform: scale(1.04); box-shadow: 0 0 14px rgba(255, 215, 0, 0.45); }
+}
+
+.game-hint-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 2800;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.game-hint-content {
+  max-width: 480px;
+  background: linear-gradient(135deg, rgba(20, 20, 28, 0.97), rgba(8, 8, 12, 0.97));
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  border-radius: 18px;
+  padding: 28px 32px;
+  box-shadow: 0 0 40px rgba(0, 229, 255, 0.12);
+}
+
+.game-hint-content h3 {
+  color: var(--color-cyan);
+  font-size: 1.3rem;
+  margin-bottom: 14px;
+  letter-spacing: 1px;
+}
+
+.game-hint-content p {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.55;
+  margin-bottom: 8px;
+}
+
+.toast.warning {
+  border-color: rgba(255, 145, 0, 0.35);
+  color: #ff9100;
+}
+
+.toast.info {
+  border-color: rgba(0, 229, 255, 0.25);
+  color: var(--color-cyan);
 }

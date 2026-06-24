@@ -26,6 +26,45 @@
 
 <body>
   <div id="canvas-container"></div>
+
+  <!-- 3D mode HUD & overlays (must live outside hidden .app-wrapper) -->
+  <div id="game-hud" class="game-hud">
+    <button id="hud-music-btn" class="hud-btn" onclick="toggleMusic()" title="Toggle chiptune soundtrack">🎵 Music: OFF</button>
+    <button id="hud-hint-btn" class="hud-btn hud-btn-muted" onclick="toggleGameHint()" title="Show controls">❓ Controls</button>
+    <div id="hud-combo" class="hud-combo" style="display:none;"></div>
+  </div>
+
+  <div id="game-hint-panel" class="game-hint-panel" style="display:none;">
+    <div class="game-hint-content">
+      <h3>Garage Controls</h3>
+      <p><strong>Click</strong> the main monitor to interact with tabs and mini-games.</p>
+      <p><strong>Coffee mug</strong> → Gigs &amp; Store &nbsp;|&nbsp; <strong>Aux screen</strong> → Live feed &nbsp;|&nbsp; <strong>Server rack</strong> → Gigs</p>
+      <p><strong>Wall poster</strong> → Leaderboard &nbsp;|&nbsp; Click empty space to zoom out.</p>
+      <p>Chain mini-game wins for <span style="color:#ffd700">combo bonuses</span>. Hire staff to passively build your project!</p>
+      <button class="btn-primary" style="width:100%; margin-top:12px;" onclick="dismissGameHint()">Got it — let's ship bugs!</button>
+    </div>
+  </div>
+
+  <div id="review-modal" class="modal-overlay" style="display: none;">
+    <div class="glass-panel review-modal-content">
+      <h2 id="review-game-title" style="color: var(--color-cyan); text-align: center; margin-bottom: 5px; font-size: 1.6rem;">Super Quest</h2>
+      <p id="review-game-meta" style="text-align: center; color: var(--color-text-muted); font-size: 0.85rem; margin-bottom: 20px; font-weight: 500;">RPG / Cyberpunk | Rating: 8.5/10</p>
+      <div id="reviewers-cards-container" style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px;"></div>
+      <button class="btn-primary" style="width: 100%;" onclick="closeReviewModal()">Back to Studio</button>
+    </div>
+  </div>
+
+  <div id="nuke-modal" class="modal-overlay" style="display: none;">
+    <div class="glass-panel review-modal-content" style="border-color: #ff1744; box-shadow: 0 0 25px rgba(255, 23, 68, 0.25);">
+      <h2 id="nuke-game-title" style="color: #ff1744; text-align: center; margin-bottom: 5px; font-size: 1.6rem; font-weight: 800; text-shadow: 0 0 10px rgba(255, 23, 68, 0.4);">💥 Project Nuked!</h2>
+      <p id="nuke-game-meta" style="text-align: center; color: var(--color-text-muted); font-size: 0.85rem; margin-bottom: 20px; font-weight: 500;">The internet reacts to the cancellation.</p>
+      <div id="nuke-reactions-container" style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px;"></div>
+      <button class="btn-primary" style="width: 100%; background: #ff1744; border: 1px solid #ff1744; color: #fff; box-shadow: 0 4px 15px rgba(255, 23, 68, 0.35);" onclick="closeNukeModal()">Acknowledge Disaster</button>
+    </div>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+
   <div class="app-wrapper">
     <!-- Header -->
     <header>
@@ -490,37 +529,6 @@
         </div>
       </section>
     </main>
-
-    <!-- Game Review Modal Overlay -->
-    <div id="review-modal" class="modal-overlay" style="display: none;">
-      <div class="glass-panel review-modal-content">
-        <h2 id="review-game-title" style="color: var(--color-cyan); text-align: center; margin-bottom: 5px; font-size: 1.6rem;">Super Quest</h2>
-        <p id="review-game-meta" style="text-align: center; color: var(--color-text-muted); font-size: 0.85rem; margin-bottom: 20px; font-weight: 500;">RPG / Cyberpunk | Rating: 8.5/10</p>
-        
-        <div id="reviewers-cards-container" style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px;">
-          <!-- Loaded dynamically via game.js -->
-        </div>
-        
-        <button class="btn-primary" style="width: 100%;" onclick="closeReviewModal()">Back to Studio</button>
-      </div>
-    </div>
-
-    <!-- Game Nuke Modal Overlay -->
-    <div id="nuke-modal" class="modal-overlay" style="display: none;">
-      <div class="glass-panel review-modal-content" style="border-color: #ff1744; box-shadow: 0 0 25px rgba(255, 23, 68, 0.25);">
-        <h2 id="nuke-game-title" style="color: #ff1744; text-align: center; margin-bottom: 5px; font-size: 1.6rem; font-weight: 800; text-shadow: 0 0 10px rgba(255, 23, 68, 0.4);">💥 Project Nuked!</h2>
-        <p id="nuke-game-meta" style="text-align: center; color: var(--color-text-muted); font-size: 0.85rem; margin-bottom: 20px; font-weight: 500;">The internet reacts to the cancellation.</p>
-        
-        <div id="nuke-reactions-container" style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px;">
-          <!-- Loaded dynamically via game.js -->
-        </div>
-        
-        <button class="btn-primary" style="width: 100%; background: #ff1744; border: 1px solid #ff1744; color: #fff; box-shadow: 0 4px 15px rgba(255, 23, 68, 0.35);" onclick="closeNukeModal()">Acknowledge Disaster</button>
-      </div>
-    </div>
-
-    <!-- Toast Notification Container -->
-    <div id="toast-container" class="toast-container"></div>
 
     <!-- Footer -->
     <footer style="text-align: center; padding: 25px 10px 40px; color: var(--color-text-muted); font-size: 0.8rem; border-top: 1px solid rgba(255,255,255,0.06); margin-top: 20px;">
