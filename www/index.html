@@ -35,8 +35,8 @@
       <span class="sign-main">DEV_END</span>
       <span class="sign-sub">NEON GARAGE STUDIO</span>
     </div>
-    <div class="studio-clutter studio-clutter-left" title="">🍕</div>
-    <div class="studio-clutter studio-clutter-right" title="">☕</div>
+    <div class="studio-clutter studio-clutter-left" title="Loot drop: +2 Morale (expired 2019)">🍕</div>
+    <div class="studio-clutter studio-clutter-right" title="Mana potion. Side quest: descale machine">☕</div>
     <div class="studio-code-fall" id="studio-code-fall"></div>
     <div class="studio-desk">
       <div class="crt crt-left">
@@ -142,6 +142,31 @@
 
       <div class="hud-status-banner" id="hud-status-banner">No active crises. Suspicious. Investigate immediately.</div>
 
+      <div class="quest-tracker" id="quest-tracker">
+        <span class="quest-tracker-label">▶ ACTIVE QUEST</span>
+        <span class="quest-tracker-text" id="quest-tracker-text">Tutorial skipped. Good luck.</span>
+        <span class="quest-tracker-sub" id="quest-tracker-sub">Objective: survive until coffee respawns</span>
+      </div>
+
+      <div class="hud-rpg-row" id="hud-rpg-row">
+        <div class="rpg-stat" title="Luck modifier for gig payouts and recruiter DMs">
+          <span class="rpg-stat-label">LUK</span>
+          <div class="rpg-stat-bar"><div class="rpg-stat-fill rpg-luk" id="rpg-luk-bar"></div></div>
+        </div>
+        <div class="rpg-stat" title="How cooked the codebase is">
+          <span class="rpg-stat-label">DEBT</span>
+          <div class="rpg-stat-bar"><div class="rpg-stat-fill rpg-debt" id="rpg-debt-bar"></div></div>
+        </div>
+        <div class="rpg-stat" title="Daily grind tolerance (resets never)">
+          <span class="rpg-stat-label">GRIND</span>
+          <div class="rpg-stat-bar"><div class="rpg-stat-fill rpg-grind" id="rpg-grind-bar"></div></div>
+        </div>
+        <div class="rpg-stat" title="Autosave anxiety level">
+          <span class="rpg-stat-label">SAVE</span>
+          <div class="rpg-stat-bar"><div class="rpg-stat-fill rpg-save" id="rpg-save-bar"></div></div>
+        </div>
+      </div>
+
       <div class="hud-vitals-row" id="hud-vitals-row">
         <span class="hud-vital-chip">📅 Standups today: <strong>3</strong> (2 were about lunch)</span>
         <span class="hud-vital-chip">🌐 SO tabs open: <strong>18</strong></span>
@@ -205,6 +230,10 @@
       </nav>
 
       <div class="zone-main" id="zone-main">
+        <div class="zone-loading" id="zone-loading" hidden>
+          <span class="zone-loading-pixel">▶</span>
+          <span class="zone-loading-text" id="zone-loading-text">WARPING TO ZONE...</span>
+        </div>
     <main class="main-layout main-single" id="company-section" style="display: none;">
       <section class="glass-panel studio-dashboard-shell section-gap-tight">
         <div class="panel-title">
@@ -587,10 +616,14 @@
         <div class="chaos-panel glass-panel">
           <div class="chaos-panel-title">🎪 STUDIO CHAOS</div>
           <div class="chaos-btn-grid">
-            <button type="button" class="chaos-btn" onclick="runChaosAction('slack_here')">@here</button>
-            <button type="button" class="chaos-btn" onclick="runChaosAction('buzzword')">Buzzword</button>
-            <button type="button" class="chaos-btn" onclick="runChaosAction('touch_grass')">Touch Grass</button>
-            <button type="button" class="chaos-btn" onclick="runChaosAction('ceo_thought')">CEO Brain</button>
+            <button type="button" class="chaos-btn" onclick="runChaosAction('slack_here')" title="Debuff: 47 reply notifications">@here</button>
+            <button type="button" class="chaos-btn" onclick="runChaosAction('buzzword')" title="Buff: +2 buzz, -1 dignity">Buzzword</button>
+            <button type="button" class="chaos-btn" onclick="runChaosAction('touch_grass')" title="Side quest (always fails)">Touch Grass</button>
+            <button type="button" class="chaos-btn" onclick="runChaosAction('ceo_thought')" title="Random boss dialogue">CEO Brain</button>
+            <button type="button" class="chaos-btn" onclick="runChaosAction('fake_patch')" title="Patch notes: 'fixed things'">Fake Patch</button>
+            <button type="button" class="chaos-btn" onclick="runChaosAction('save_scum')" title="Reload last good vibe">Save Scum</button>
+            <button type="button" class="chaos-btn" onclick="runChaosAction('deploy_friday')" title="Friday deploy ritual">Fri Deploy</button>
+            <button type="button" class="chaos-btn" onclick="runChaosAction('readme_lies')" title="Update README fiction">README</button>
           </div>
           <div class="ceo-thought-bubble" id="ceo-thought-bubble">"We should AI the blockchain synergy."</div>
         </div>
@@ -618,9 +651,12 @@
       </aside>
     </div>
 
+    <div id="float-text-layer" class="float-text-layer" aria-hidden="true"></div>
+
     <footer class="synth-footer">
       <p>© DEV_END — CYBER GARAGE EDITION — FUELED BY CAFFEINE, CHUTZPAH &amp; UNREAD SLACK THREADS</p>
       <p class="footer-sub">No developers were harmed during crunch. They were merely spiritually rearranged.</p>
+      <p class="footer-quest-hint" id="footer-quest-hint">TIP: Click the logo 7 times. The game respects superstition.</p>
     </footer>
   </div>
 </body>

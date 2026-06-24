@@ -223,7 +223,16 @@ const HUD_TICKER_LINES = [
   "🎵 SYNTHWAVE: Mandatory. Productivity optional.",
   "🍕 PIZZA BUDGET: Exceeded. Morale budget: never existed.",
   "🧑‍💻 CODING SKILL: Measured in Stack Overflow tabs open.",
-  "📝 POST-MORTEM: Scheduled. Blame distribution TBD."
+  "📝 POST-MORTEM: Scheduled. Blame distribution TBD.",
+  "🎮 NEW GAME+: Same bugs, higher expectations.",
+  "💾 SAVE SLOT 1: Autosave (anxiety tier: critical).",
+  "🗺️ WORLD MAP: Basement → Co-working → Loft → Bunker.",
+  "👾 RANDOM ENCOUNTER: Recruiter appeared! You fled.",
+  "📦 LOOT BOX: Contains 3 TODO comments and a sticker.",
+  "⚔️ BOSS WEAKNESS: Free pizza (morale +0 anyway).",
+  "🔮 PATCH 1.0.1: 'Fixed known issues' (list redacted).",
+  "🧙 SKILL TREE: 90% locked behind 'seniority vibes'.",
+  "🏃 SPEEDRUN CATEGORY: Any% to first rent payment."
 ];
 
 const CORPORATE_MANDATES = [
@@ -241,7 +250,13 @@ const CORPORATE_MANDATES = [
   "Touch grass is prohibited on company property. Grass is untested.",
   "Every meeting could've been a Slack thread that could've been nothing.",
   "Performance reviews based on GitHub green squares and vibes.",
-  "The intern is now 'Head of Innovation'. Salary unchanged."
+  "The intern is now 'Head of Innovation'. Salary unchanged.",
+  "All estimates must include a 'surprise multiplier' of ×3.",
+  "Friday deploys are now a competitive esport.",
+  "README must claim 'production ready' regardless of evidence.",
+  "Save scumming is encouraged for quarterly demos only.",
+  "The tutorial is a 47-slide deck nobody opened.",
+  "Critical hits enabled on passive-aggressive code review comments."
 ];
 
 const CEO_THOUGHTS = [
@@ -254,7 +269,12 @@ const CEO_THOUGHTS = [
   "\"The crash is a feature for hardcore players.\"",
   "\"I read on LinkedIn that crunch builds character.\"",
   "\"Why fix netcode when we can sell battle pass?\"",
-  "\"Agile means we change our minds every hour.\""
+  "\"Agile means we change our minds every hour.\"",
+  "\"What if we gamified the gamification?\"",
+  "\"Players love grinding. Trust me, I read a tweet.\"",
+  "\"Our KPI is vibes per sprint. We're crushing it.\"",
+  "\"Can marketing rename the crash to 'dynamic difficulty'?\"",
+  "\"Let's ship now and patch the lawsuit later.\""
 ];
 
 const SLACK_HERE_MESSAGES = [
@@ -304,7 +324,11 @@ const STUDIO_BADGE_DEFS = {
   rent_survivor: { icon: "🏠", name: "Rent Survivor", desc: "Paid rent 3 times. Landlord suspicious." },
   plant_parent: { icon: "🪴", name: "Plant Parent", desc: "Bought fake office plant. Wellness unlocked." },
   blame_master: { icon: "🎰", name: "Blame Master", desc: "Spun blame roulette 10 times. Accountability zero." },
-  touch_grass_fail: { icon: "🌿", name: "Grass Denier", desc: "Attempted to touch grass. Failed professionally." }
+  touch_grass_fail: { icon: "🌿", name: "Grass Denier", desc: "Attempted to touch grass. Failed professionally." },
+  friday_deploy: { icon: "📅", name: "Friday Warrior", desc: "Deployed on a Friday and lived to retro." },
+  readme_fiction: { icon: "📖", name: "README Novelist", desc: "Wrote patch notes that contradict reality." },
+  save_scummer: { icon: "💾", name: "Save Scummer", desc: "Reloaded vibes 5 times. Ethics optional." },
+  arcade_10: { icon: "👾", name: "Arcade Regular", desc: "Cleared 10 arcade sessions. Wrist pain unlocked." }
 };
 
 const HUD_SIDEBAR_QUIPS = [
@@ -317,8 +341,64 @@ const HUD_SIDEBAR_QUIPS = [
   "The roadmap is a suggestion written in crayon.",
   "QA found bugs. Management found 'personality'.",
   "Your PR will be reviewed after the heat death of the universe.",
-  "Morale is a custom enum we never defined."
+  "Morale is a custom enum we never defined.",
+  "Autosave enabled. Autosave trusted. Autosave lied before.",
+  "Press START to continue your career mistake.",
+  "Side quest available: explain blockchain to your mom.",
+  "Inventory: 1 laptop, 47 tabs, infinite tech debt.",
+  "Boss fight upcoming: quarterly performance review.",
+  "Tutorial skipped. Game assumes you read the 400-page wiki.",
+  "RNGesus favors whoever ships on Friday.",
+  "Your save slot is named 'final_FINAL_v2_REAL'.",
+  "DLC unlocked: Mandatory standup expansion pack.",
+  "Achievement progress: 'Touch Grass' — 0% (blocked by basement)."
 ];
+
+const ZONE_FLAVOR = {
+  company: {
+    name: "STUDIO HQ",
+    loads: ["Auditing imaginary revenue...", "Calculating rent dread...", "Syncing portfolio cope..."],
+    enters: ["Entered Studio HQ. The spreadsheets judge you silently.", "Studio zone loaded. Morale file corrupted — using defaults.", "Welcome to HQ. The printer is haunted again."]
+  },
+  develop: {
+    name: "DEV LAB",
+    loads: ["Compiling hope...", "Spawning bugs for XP...", "Centering divs (failed)..."],
+    enters: ["Dev Lab online. Milestones are suggestions with deadlines.", "You smell solder and unresolved merge conflicts.", "Dev zone: where features go to become 'phase 2'."]
+  },
+  gigs: {
+    name: "GIGS ALLEY",
+    loads: ["Rolling sketch factor...", "Shuffling arcade cabinets...", "Lawyer.exe not found..."],
+    enters: ["Gigs zone. Crime pays slightly better than indie dev.", "Training gym smells like sweat and broken controllers.", "Side hustle hub loaded. FBI ping: 47ms."]
+  },
+  staff: {
+    name: "CREW QUARTERS",
+    loads: ["Interviewing liars...", "Calculating salaries in regret...", "Water cooler gossip buffering..."],
+    enters: ["Crew zone. Everyone's 'passionate' about something unbillable.", "HR (you) reminds staff that pizza is not compensation.", "Hire screen unlocked. Candidates include MS Paint visionaries."]
+  },
+  leaderboard: {
+    name: "HALL OF FLEX",
+    loads: ["Ranking net worth delusions...", "Generating humblebrag stats...", "Loading rivals you'll never catch..."],
+    enters: ["Leaderboard zone. Numbers are inflated for drama.", "Global ranks loaded. You are statistically 'fine'.", "Hall of Flex: where ego meets spreadsheet."]
+  }
+};
+
+const QUEST_SUBTITLES = [
+  "Bonus objective: do not read the comments section",
+  "Fails condition: landlord sends a text",
+  "Reward: questionable LinkedIn endorsement",
+  "Time limit: until coffee wears off",
+  "Hint: the answer is always 'it depends'",
+  "Optional: blame the intern (recommended)",
+  "Secret route: touch grass (unimplemented)"
+];
+
+const LOG_BADGES = {
+  bot: { icon: "🤖", label: "BOT", color: "var(--color-cyan)", cls: "" },
+  quest: { icon: "📜", label: "QUEST", color: "#ffd700", cls: "log-quest" },
+  loot: { icon: "💰", label: "LOOT", color: "#39ff14", cls: "log-loot" },
+  warn: { icon: "⚠️", label: "WARN", color: "#ff1744", cls: "log-warn" },
+  arcade: { icon: "🕹️", label: "ARCADE", color: "#b388ff", cls: "log-arcade" }
+};
 
 let hudTickerIndex = 0;
 let hudFlavorTimer = 0;
@@ -406,23 +486,156 @@ function refreshHudHumor() {
   }
 
   renderBadgeWall();
+  updateQuestTracker();
+  updateRpgBars();
 
   if (vitals) {
     const standups = 2 + (gameState.level % 5);
     const tabs = 8 + gameState.coding_skill;
     const morale = gameState.studioMorale != null ? Math.floor(gameState.studioMorale) : randHudMorale();
+    const techDebt = clamp(15 + (gameState.current_project?.bug_points || 0) * 3 + gameState.games_released * 2, 1, 999);
+    const fps = 12 + Math.min(24, gameState.coding_skill);
+    const dms = 3 + Math.floor(gameState.level / 2);
     vitals.innerHTML = `
-      <span class="hud-vital-chip">📅 Standups today: <strong>${standups}</strong> (2 were about lunch)</span>
-      <span class="hud-vital-chip">🌐 SO tabs open: <strong>${tabs}</strong></span>
-      <span class="hud-vital-chip">😶 Morale: <strong>${morale}%</strong> (survey optional)</span>
-      <span class="hud-vital-chip">🐛 Prod bugs: <strong>${gameState.current_project?.bug_points || "¯\\_(ツ)_/¯"}</strong></span>
-      <span class="hud-vital-chip">📧 Unread: <strong>${847 + gameState.games_released * 12}</strong></span>
+      <span class="hud-vital-chip" title="Mandatory meetings about meetings">📅 Standups: <strong>${standups}</strong> (lunch meta)</span>
+      <span class="hud-vital-chip" title="Stack Overflow tabs — close at your peril">🌐 SO tabs: <strong>${tabs}</strong></span>
+      <span class="hud-vital-chip" title="Survey optional. Results ignored.">😶 Morale: <strong>${morale}%</strong></span>
+      <span class="hud-vital-chip" title="Production health indicator">🐛 Bugs: <strong>${gameState.current_project?.bug_points ?? "¯\\_(ツ)_/¯"}</strong></span>
+      <span class="hud-vital-chip" title="Inbox zero is a myth">📧 Unread: <strong>${847 + gameState.games_released * 12}</strong></span>
+      <span class="hud-vital-chip" title="Technical debt stat — does not decrease">📚 Tech debt: <strong>${techDebt}</strong></span>
+      <span class="hud-vital-chip" title="Build FPS on dev machine">🎮 Dev FPS: <strong>${fps}</strong></span>
+      <span class="hud-vital-chip" title="Recruiters in queue">💼 LinkedIn DMs: <strong>${dms}</strong></span>
     `;
   }
 }
 
 function randHudMorale() {
   return 34 + Math.floor(Math.random() * 40);
+}
+
+function getCurrentQuest() {
+  const proj = gameState.current_project;
+  if (gameState.rentOverdue > 0) {
+    return { main: "URGENT: Pay rent before landlord unlocks 'eviction cutscene'", sub: "Failure state: sleeping in car" };
+  }
+  if (proj && proj.phase !== "post_release") {
+    const pct = Math.floor(getProjectProgressPercent(proj));
+    const bugs = proj.bug_points || 0;
+    return {
+      main: `MAIN: Ship '${proj.name}' (${pct}% — ${bugs} bugs classified as charm)`,
+      sub: bugs > 10 ? "Bonus: pretend playtesting happened" : "Bonus: add one more 'small' feature"
+    };
+  }
+  if (proj && proj.phase === "post_release") {
+    return { main: `LIVE OPS: Keep '${proj.name}' alive until players forget`, sub: "DLC idea: sell the crash as premium" };
+  }
+  if (gameState.cash < 300) {
+    return { main: "SIDE: Perform gigs without FBI noticing", sub: "Reward: ramen + plausible deniability" };
+  }
+  if (gameState.energy < 25) {
+    return { main: "SIDE: Restore caffeine reserves to playable levels", sub: "Visit store or touch grass (not recommended)" };
+  }
+  if (!proj) {
+    return { main: "MAIN: Start a project before investors ask for screenshots", sub: "Tutorial boss: the blank page" };
+  }
+  const mains = [
+    "MAIN: Expand studio without expanding accountability",
+    "SIDE: Train skills via legally distinct arcade machines",
+    "MAIN: Hit Imposter Tier " + (gameState.level + 1) + " for no extra pay"
+  ];
+  return { main: mains[hudFlavorTimer % mains.length], sub: QUEST_SUBTITLES[hudFlavorTimer % QUEST_SUBTITLES.length] };
+}
+
+function updateQuestTracker() {
+  const q = getCurrentQuest();
+  const mainEl = document.getElementById("quest-tracker-text");
+  const subEl = document.getElementById("quest-tracker-sub");
+  if (mainEl) mainEl.textContent = q.main;
+  if (subEl) subEl.textContent = q.sub;
+
+  const footerHint = document.getElementById("footer-quest-hint");
+  if (footerHint && hudFlavorTimer % 9 === 0) {
+    const hints = [
+      "TIP: Click the logo 7 times. The game respects superstition.",
+      "TIP: 3x arcade combo triggers screen flash. Synergy is real.",
+      "TIP: Chaos panel buttons are 100% necessary. Probably.",
+      "TIP: Rent overdue unlocks passive-aggressive landlord mode.",
+      "TIP: Every zone warp includes unnecessary loading flavor text."
+    ];
+    footerHint.textContent = hints[Math.floor(Math.random() * hints.length)];
+  }
+}
+
+function updateRpgBars() {
+  const luk = clamp(12 + gameState.level * 3 + (gameState.studioBuzz || 0) * 0.2, 5, 99);
+  const debt = clamp(20 + gameState.games_released * 4 + (gameState.current_project?.bug_points || 0) * 2, 8, 100);
+  const grind = clamp(30 + gameState.coding_skill + gameState.design_skill + gameState.management_skill, 10, 100);
+  const save = clamp(55 + (gameState.games_released > 0 ? 15 : 0) + (isUserLoggedIn ? 20 : 5), 20, 100);
+
+  const setBar = (id, pct) => {
+    const el = document.getElementById(id);
+    if (el) el.style.width = `${pct}%`;
+  };
+  setBar("rpg-luk-bar", luk);
+  setBar("rpg-debt-bar", debt);
+  setBar("rpg-grind-bar", grind);
+  setBar("rpg-save-bar", save);
+}
+
+function clamp(v, lo, hi) {
+  return Math.max(lo, Math.min(hi, v));
+}
+
+function spawnFloatText(text, variant = "xp", big = false) {
+  const layer = document.getElementById("float-text-layer");
+  if (!layer) return;
+  const el = document.createElement("div");
+  el.className = `float-text float-text--${variant}${big ? " float-text--big" : ""}`;
+  el.textContent = text;
+  el.style.left = `${42 + Math.random() * 16}%`;
+  el.style.top = `${36 + Math.random() * 10}%`;
+  layer.appendChild(el);
+  setTimeout(() => el.remove(), 1500);
+}
+
+function triggerScreenShake() {
+  document.body.classList.add("screen-shake");
+  setTimeout(() => document.body.classList.remove("screen-shake"), 380);
+}
+
+function playZoneTransition(tabName) {
+  const flavor = ZONE_FLAVOR[tabName];
+  if (!flavor) return;
+
+  const overlay = document.getElementById("zone-loading");
+  const textEl = document.getElementById("zone-loading-text");
+  const loadLine = flavor.loads[Math.floor(Math.random() * flavor.loads.length)];
+  const enterLine = flavor.enters[Math.floor(Math.random() * flavor.enters.length)];
+
+  if (overlay && textEl) {
+    overlay.hidden = false;
+    textEl.textContent = `${flavor.name}: ${loadLine}`;
+    setTimeout(() => {
+      overlay.hidden = true;
+      showToast(enterLine, "info", true);
+    }, 520);
+  } else {
+    showToast(enterLine, "info", true);
+  }
+}
+
+function initZoneTooltips() {
+  const tips = {
+    company: "Zone: Studio HQ — Manage rent, portfolio, and corporate delusion",
+    develop: "Zone: Dev Lab — Ship games, arcade sprints, live ops",
+    gigs: "Zone: Gigs Alley — Train, shop, crime, arcade",
+    staff: "Zone: Crew Quarters — Hire, fire, research",
+    leaderboard: "Zone: Hall of Flex — Compare net worth humblebrags"
+  };
+  document.querySelectorAll(".zone-node[data-tab]").forEach(node => {
+    const tab = node.dataset.tab;
+    if (tips[tab]) node.title = tips[tab];
+  });
 }
 
 // Active UI zone (synthwave dashboard)
@@ -459,6 +672,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   addLog("System initialized.", "Garage studio online. Basement humidity: 94%. Morale: unmeasured.");
   initStudioBackdrop();
   initLogoEasterEgg();
+  initZoneTooltips();
   updateUI();
   refreshHudHumor();
   renderBadgeWall();
@@ -475,7 +689,8 @@ window.addEventListener("DOMContentLoaded", async () => {
   if (!localStorage.getItem("dev_end_seen_tutorial")) {
     localStorage.setItem("dev_end_seen_tutorial", "1");
     setTimeout(() => {
-      showToast("Welcome to the neon garage — pick a zone on the left rail and ship bugs!", "info");
+      showToast("▶ PRESS START: Pick a zone on the left rail and ship bugs!", "info", true);
+      addLog("Tutorial Skipped", "Game assumes you read the wiki. Good luck, chosen one.", "quest");
     }, 600);
   }
 });
@@ -563,6 +778,9 @@ function switchTab(tabName) {
   if (window.SynthwaveAudio) {
     SynthwaveAudio.setZone(tabName);
   }
+
+  playZoneTransition(tabName);
+  updateQuestTracker();
 }
 
 // --- Load / Save Logic ---
@@ -682,8 +900,10 @@ function gainXP(amount) {
       "Achievement unlocked: more responsibilities, same snack budget."
     ];
     const levelQuip = levelQuips[Math.floor(Math.random() * levelQuips.length)];
-    addLog("IMPOSTER TIER UP!", `${HUD_COPY.imposter.icon} Tier ${gameState.level} — ${getImposterTitle(gameState.level)}! Max ${HUD_COPY.caffeine.short}: ${gameState.max_energy}, Max ${HUD_COPY.sketch.short}: ${gameState.max_nerve}. ${levelQuip}`);
-    showToast(`${HUD_COPY.imposter.icon} TIER ${gameState.level}! ${levelQuip}`, "success");
+    addLog("IMPOSTER TIER UP!", `${HUD_COPY.imposter.icon} Tier ${gameState.level} — ${getImposterTitle(gameState.level)}! Max ${HUD_COPY.caffeine.short}: ${gameState.max_energy}, Max ${HUD_COPY.sketch.short}: ${gameState.max_nerve}. ${levelQuip}`, "quest");
+    showToast(`▲ TIER ${gameState.level}! ${levelQuip}`, "success", true);
+    spawnFloatText(`LEVEL UP! T${gameState.level}`, "gold", true);
+    triggerScreenShake();
     
     // If Gigs tab is active, redraw the training gym to show updated XP cost labels
     const gigsSection = document.getElementById("gigs-section");
@@ -691,7 +911,8 @@ function gainXP(amount) {
       renderTrainingGym();
     }
   } else {
-    addLog("Resume Padding", `+${amount} ${HUD_COPY.resume.unit} added. Recruiters mildly interested.`);
+    addLog("Resume Padding", `+${amount} ${HUD_COPY.resume.unit} added. Recruiters mildly interested.`, "loot");
+    spawnFloatText(`+${amount} XP`, "xp");
   }
   
   saveGame();
@@ -724,23 +945,31 @@ async function saveGame() {
 }
 
 // --- Console Log Helper (System Bot Announcements) ---
-function addLog(title, desc) {
+function addLog(title, desc, logType = "bot") {
   const time = new Date().toLocaleTimeString().split(' ')[0];
+  const badge = LOG_BADGES[logType] || LOG_BADGES.bot;
   consoleLogs.push({
     time: time,
-    user: "STUDIO_BOT",
+    user: badge.label,
     text: `${title} — ${desc}`,
-    color: "#00e5ff",
-    badge: "🤖 BOT"
+    color: badge.color,
+    badge: `${badge.icon} ${badge.label}`
   });
   if (consoleLogs.length > 60) consoleLogs.shift();
 
   const consoleEl = document.getElementById("terminal-console");
   if (consoleEl) {
     const trmLine = document.createElement("div");
-    trmLine.className = "terminal-line";
-    trmLine.style.borderLeft = "3px solid var(--color-cyan)";
-    trmLine.style.background = "rgba(0, 229, 255, 0.03)";
+    const logBg = {
+      bot: "rgba(0, 229, 255, 0.03)",
+      quest: "rgba(255, 215, 0, 0.04)",
+      loot: "rgba(57, 255, 20, 0.04)",
+      warn: "rgba(255, 23, 68, 0.04)",
+      arcade: "rgba(179, 136, 255, 0.04)"
+    };
+    trmLine.className = `terminal-line ${badge.cls}`.trim();
+    trmLine.style.borderLeft = `3px solid ${badge.color}`;
+    trmLine.style.background = logBg[logType] || logBg.bot;
     trmLine.style.padding = "6px 10px";
     trmLine.style.margin = "4px 0";
     trmLine.style.borderRadius = "6px";
@@ -749,8 +978,7 @@ function addLog(title, desc) {
     
     trmLine.innerHTML = `
       <span class="timestamp" style="font-size:0.72rem; color:var(--color-text-muted); margin-right:6px;">[${time}]</span>
-      <span style="font-size:0.65rem; font-weight:800; padding:2px 5px; border-radius:4px; margin-right:6px; border:1px solid var(--color-cyan); color:var(--color-cyan); background:rgba(0,229,255,0.15);">🤖 BOT</span>
-      <strong style="color:var(--color-cyan); margin-right:5px;">[STUDIO_BOT]:</strong>
+      <span style="font-size:0.65rem; font-weight:800; padding:2px 5px; border-radius:4px; margin-right:6px; border:1px solid ${badge.color}; color:${badge.color}; background:${badge.color}22;">${badge.icon} ${badge.label}</span>
       <span style="color:var(--color-light-grey); font-weight:500;">${title}</span> — 
       <span style="color:var(--color-text-muted); font-style:italic;">${desc}</span>
     `;
@@ -977,6 +1205,10 @@ function checkFunnyAchievements() {
   if (gameState.officePlant) unlockStudioBadge("plant_parent");
   if (gameState.blameSpins >= 10) unlockStudioBadge("blame_master");
   if (miniGameCombo >= 5) unlockStudioBadge("combo_king");
+  if (gameState.fridayDeploys >= 1) unlockStudioBadge("friday_deploy");
+  if (gameState.readmeLies >= 3) unlockStudioBadge("readme_fiction");
+  if (gameState.saveScums >= 5) unlockStudioBadge("save_scummer");
+  if (gameState.arcadeClears >= 10) unlockStudioBadge("arcade_10");
 }
 
 function renderBadgeWall() {
@@ -1058,6 +1290,62 @@ function runChaosAction(actionId) {
     saveGame();
     return;
   }
+  if (actionId === "fake_patch") {
+    const notes = [
+      "v1.0.1 — Fixed known issues (list classified)",
+      "v1.0.2 — Improved stability (citation needed)",
+      "v1.0.3 — Performance optimizations (trust us)",
+      "Hotfix — Centered div. Pizzeria satisfied."
+    ];
+    const note = notes[Math.floor(Math.random() * notes.length)];
+    addLog("Patch Notes Published", note, "warn");
+    showToast("📦 Fake patch shipped to prod", "warning", true);
+    spawnFloatText("PATCH DEPLOYED", "cyan");
+    return;
+  }
+  if (actionId === "save_scum") {
+    gameState.saveScums = (gameState.saveScums || 0) + 1;
+    gameState.energy = Math.min(gameState.max_energy, gameState.energy + 3);
+    addLog("Save Scummed", "Reloaded last good vibe. +3 caffeine. Ethics file not found.", "quest");
+    showToast("💾 Save reloaded. Timeline altered.", "info", true);
+    spawnFloatText("+3 VIBES", "purple");
+    checkFunnyAchievements();
+    saveGame();
+    updateUI();
+    return;
+  }
+  if (actionId === "deploy_friday") {
+    gameState.fridayDeploys = (gameState.fridayDeploys || 0) + 1;
+    gameState.studioMorale = Math.max(0, gameState.studioMorale - 4);
+    const outcomes = [
+      "Deploy succeeded. Weekend on-call unlocked.",
+      "Deploy failed. Blame assigned to 'DNS Friday curse'.",
+      "Deploy succeeded. Users discovered 12 new features (bugs)."
+    ];
+    addLog("Friday Deploy Ritual", outcomes[Math.floor(Math.random() * outcomes.length)], "warn");
+    showToast("📅 Friday deploy cast! Morale -4", "warning", true);
+    triggerScreenShake();
+    checkFunnyAchievements();
+    saveGame();
+    updateUI();
+    return;
+  }
+  if (actionId === "readme_lies") {
+    gameState.readmeLies = (gameState.readmeLies || 0) + 1;
+    const lies = [
+      "README now claims 'production ready' with zero evidence.",
+      "Added badge: 'enterprise-grade' (self-awarded).",
+      "Installation steps reduced to 'npm vibes install'.",
+      "Contributing guide: 'don't'."
+    ];
+    addLog("README Updated", lies[Math.floor(Math.random() * lies.length)], "quest");
+    gameState.studioBuzz = Math.min(100, gameState.studioBuzz + 3);
+    showToast("📖 README fiction +3 buzz", "info", true);
+    checkFunnyAchievements();
+    saveGame();
+    updateUI();
+    return;
+  }
 }
 
 const BACKDROP_CODE_SNIPPETS = [
@@ -1076,7 +1364,16 @@ const BACKDROP_CODE_SNIPPETS = [
   "techDebt += Infinity;",
   "player.energy -= 999;",
   "/* fix later lol */",
-  "merge conflict!!!!!!"
+  "merge conflict!!!!!!",
+  "player.quest = 'survive';",
+  "HP -= standup();",
+  "SAVE_POINT // not really",
+  "RNGesus.roll();",
+  "boss.phase = 'crunch';",
+  "inventory.push('regret');",
+  "achievement.unlock('touch_grass'); // failed",
+  "new Game().start(); // why",
+  "patchNotes = ['fixed stuff'];"
 ];
 
 function initStudioBackdrop() {
@@ -1561,6 +1858,10 @@ function ensureStudioMeta() {
   gameState.rentPaidCount = gameState.rentPaidCount ?? 0;
   gameState.corporateMandateIndex = gameState.corporateMandateIndex ?? 0;
   gameState.logoClicks = gameState.logoClicks ?? 0;
+  gameState.fridayDeploys = gameState.fridayDeploys ?? 0;
+  gameState.readmeLies = gameState.readmeLies ?? 0;
+  gameState.saveScums = gameState.saveScums ?? 0;
+  gameState.arcadeClears = gameState.arcadeClears ?? 0;
   if (gameState.studioOpportunity == null) {
     const pool = [...STUDIO_OPPORTUNITY_POOL].sort(() => Math.random() - 0.5);
     gameState.studioOpportunity = pool[0];
@@ -2772,6 +3073,7 @@ function successMiniGame() {
       showToast(`Management Skill increased! +${skillGain}`, "success");
     }
     gainXP(10);
+    spawnFloatText(`+${skillGain} ${skillLabel.toUpperCase()}`, "cyan");
     saveGame();
     renderTrainingGym();
     updateUI();
@@ -2785,6 +3087,7 @@ function successMiniGame() {
 
   const target = getTargetPointsForScale(gameState.current_project.scale);
   miniGameCombo++;
+  gameState.arcadeClears = (gameState.arcadeClears || 0) + 1;
   const comboMult = Math.min(1.8, 1 + (miniGameCombo - 1) * 0.12);
   updateHudCombo(miniGameCombo);
   checkFunnyAchievements();
@@ -2792,6 +3095,9 @@ function successMiniGame() {
   if (miniGameCombo >= 3) {
     ChiptuneAudio.playSFX("combo");
     triggerScreenFlash(255, 215, 0);
+    spawnFloatText(`${miniGameCombo}x COMBO!`, "gold", true);
+  } else {
+    spawnFloatText("CLEARED!", "cyan");
   }
 
   const comboLabel = miniGameCombo >= 2 ? ` (${miniGameCombo}x COMBO!)` : "";
@@ -2803,22 +3109,25 @@ function successMiniGame() {
     gameState.current_project.tech_points += pointsGained;
     gameState.coding_skill += 1;
 
-    addLog(arcadeLabel ? `${arcadeLabel} Cleared!` : "Syntax Striker Success!", `Arcade sprint complete. Gained +${pointsGained} Tech Points${comboLabel} and +1 Coding Skill.`);
-    showToast(`Code arcade win! +${pointsGained} Tech${comboLabel}`, "success");
+    addLog(arcadeLabel ? `${arcadeLabel} Cleared!` : "Syntax Striker Success!", `Arcade sprint complete. Gained +${pointsGained} Tech Points${comboLabel} and +1 Coding Skill.`, "arcade");
+    showToast(`+${pointsGained} TECH${comboLabel}`, "success", true);
+    spawnFloatText(`+${pointsGained} TECH`, "xp");
   } else if (type === 'design') {
     const pointsGained = Math.ceil(target * comboMult);
     gameState.current_project.design_points += pointsGained;
     gameState.design_skill += 1;
 
-    addLog(arcadeLabel ? `${arcadeLabel} Cleared!` : "Color Matcher Success!", `Arcade sprint complete. Gained +${pointsGained} Design Points${comboLabel} and +1 Design Skill.`);
-    showToast(`Design arcade win! +${pointsGained} Design${comboLabel}`, "success");
+    addLog(arcadeLabel ? `${arcadeLabel} Cleared!` : "Color Matcher Success!", `Arcade sprint complete. Gained +${pointsGained} Design Points${comboLabel} and +1 Design Skill.`, "arcade");
+    showToast(`+${pointsGained} DESIGN${comboLabel}`, "success", true);
+    spawnFloatText(`+${pointsGained} DESIGN`, "purple");
   } else if (type === 'polish') {
     const bugsRemoved = Math.floor((Math.random() * 8) + 8 + Math.floor(gameState.management_skill / 8)) * comboMult;
     gameState.current_project.bug_points = Math.max(0, gameState.current_project.bug_points - bugsRemoved);
     gameState.management_skill += 1;
 
-    addLog(arcadeLabel ? `${arcadeLabel} Cleared!` : "Bug Squasher Success!", `Arcade polish run complete. Removed -${Math.floor(bugsRemoved)} bugs${comboLabel} and gained +1 Management.`);
-    showToast(`Polished! -${Math.floor(bugsRemoved)} Bugs${comboLabel}`, "success");
+    addLog(arcadeLabel ? `${arcadeLabel} Cleared!` : "Bug Squasher Success!", `Arcade polish run complete. Removed -${Math.floor(bugsRemoved)} bugs${comboLabel} and gained +1 Management.`, "arcade");
+    showToast(`-${Math.floor(bugsRemoved)} BUGS${comboLabel}`, "success", true);
+    spawnFloatText(`-${Math.floor(bugsRemoved)} BUGS`, "gold");
   }
 
   const xpGain = 5 + Math.min(10, miniGameCombo * 2);
@@ -2890,19 +3199,24 @@ function failMiniGame(reason) {
   if (!isTraining && !isGig && !isStore) {
     miniGameCombo = 0;
     updateHudCombo(0);
+    spawnFloatText("GAME OVER", "red", true);
+    triggerScreenShake();
   }
 
   if (type === 'code') {
     gameState.current_project.bug_points += 2;
-    addLog("Syntax Striker Failure!", `Reason: ${reason}. Compiler error introduced +2 Bugs.`);
-    showToast(`Compilation failed: +2 Bugs`, "error");
+    addLog("Syntax Striker Failure!", `Reason: ${reason}. Compiler error introduced +2 Bugs.`, "warn");
+    showToast(`COMPILE FAIL +2 BUGS`, "error", true);
+    spawnFloatText("+2 BUGS", "red");
   } else if (type === 'design') {
-    addLog("Color Matcher Failure!", `Reason: ${reason}. Poor color palette selected.`);
-    showToast(`Design failed! No points gained`, "error");
+    addLog("Color Matcher Failure!", `Reason: ${reason}. Poor color palette selected.`, "warn");
+    showToast(`DESIGN FAIL`, "error", true);
+    spawnFloatText("NO LOOT", "red");
   } else if (type === 'polish') {
     gameState.current_project.bug_points += 3;
-    addLog("Bug Squasher Failure!", `Reason: ${reason}. Memory leak introduced +3 Bugs.`);
-    showToast(`Squash failed: +3 Bugs`, "error");
+    addLog("Bug Squasher Failure!", `Reason: ${reason}. Memory leak introduced +3 Bugs.`, "warn");
+    showToast(`SQUASH FAIL +3 BUGS`, "error", true);
+    spawnFloatText("+3 BUGS", "red");
   }
 
   if (gameState.current_project && !isTraining && !isGig && !isStore) {
@@ -4375,12 +4689,12 @@ window.runChaosAction = runChaosAction;
 window.renderStudioDashboard = renderStudioDashboard;
 
 // TOAST NOTIFICATIONS
-function showToast(message, type = "info") {
+function showToast(message, type = "info", gameStyle = false) {
   const container = document.getElementById("toast-container");
   if (!container) return;
 
   const toast = document.createElement("div");
-  toast.className = `toast ${type}`;
+  toast.className = `toast ${type}${gameStyle ? " game-toast" : ""}`;
   toast.innerText = message;
 
   container.appendChild(toast);

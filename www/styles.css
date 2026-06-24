@@ -2294,6 +2294,7 @@ h1.logo-title {
   min-width: 0;
   position: relative;
   transition: box-shadow 0.15s;
+  min-height: 120px;
 }
 
 .zone-main.screen-flash {
@@ -3407,4 +3408,261 @@ h1.logo-title {
 
 .auth-studio-wrap .glass-panel {
   border-color: rgba(255, 42, 154, 0.25);
+}
+
+/* ═══ VIDEO GAME FEEL — RPG HUD, FLOAT TEXT, ZONE WARPS ═══ */
+
+.quest-tracker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, rgba(255, 215, 0, 0.06), rgba(0, 229, 255, 0.04));
+  border: 1px solid rgba(255, 215, 0, 0.22);
+  box-shadow: inset 0 0 20px rgba(255, 215, 0, 0.03);
+}
+
+.quest-tracker-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.42rem;
+  color: #ffd700;
+  letter-spacing: 1px;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+  white-space: nowrap;
+}
+
+.quest-tracker-text {
+  font-family: 'VT323', monospace;
+  font-size: 1.05rem;
+  color: var(--color-light-grey);
+  flex: 1;
+  min-width: 180px;
+}
+
+.quest-tracker-sub {
+  width: 100%;
+  font-size: 0.68rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+  padding-left: 2px;
+}
+
+.hud-rpg-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 768px) {
+  .hud-rpg-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.rpg-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rpg-stat-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.38rem;
+  color: var(--color-cyan);
+  letter-spacing: 1px;
+}
+
+.rpg-stat-bar {
+  height: 6px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.rpg-stat-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+.rpg-stat-fill.rpg-luk {
+  background: linear-gradient(90deg, #b388ff, #ffd700);
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.35);
+}
+
+.rpg-stat-fill.rpg-debt {
+  background: linear-gradient(90deg, #ff1744, #ff9100);
+  box-shadow: 0 0 8px rgba(255, 23, 68, 0.35);
+}
+
+.rpg-stat-fill.rpg-grind {
+  background: linear-gradient(90deg, #00e5ff, #39ff14);
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.35);
+}
+
+.rpg-stat-fill.rpg-save {
+  background: linear-gradient(90deg, #39ff14, #00e5ff);
+  box-shadow: 0 0 8px rgba(57, 255, 20, 0.35);
+}
+
+.zone-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(4, 0, 12, 0.88);
+  backdrop-filter: blur(4px);
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+.zone-loading[hidden] {
+  display: none !important;
+}
+
+.zone-loading-pixel {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 1.2rem;
+  color: var(--color-pink);
+  animation: zone-blink 0.6s step-end infinite;
+}
+
+.zone-loading-text {
+  font-family: 'VT323', monospace;
+  font-size: 1.35rem;
+  color: var(--color-cyan);
+  letter-spacing: 3px;
+  text-align: center;
+  padding: 0 16px;
+  text-shadow: 0 0 12px rgba(0, 229, 255, 0.5);
+}
+
+@keyframes zone-blink {
+  50% { opacity: 0.2; }
+}
+
+.float-text-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2500;
+  overflow: hidden;
+}
+
+.float-text {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  transform: translateX(-50%);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.65rem;
+  font-weight: 800;
+  white-space: nowrap;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.8);
+  animation: float-rise 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  pointer-events: none;
+}
+
+.float-text--xp { color: #39ff14; }
+.float-text--gold { color: #ffd700; }
+.float-text--cyan { color: #00e5ff; }
+.float-text--red { color: #ff1744; }
+.float-text--purple { color: #b388ff; }
+.float-text--big {
+  font-size: 0.85rem;
+  top: 38%;
+}
+
+@keyframes float-rise {
+  0% { opacity: 0; transform: translateX(-50%) translateY(12px) scale(0.7); }
+  15% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.1); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-70px) scale(1); }
+}
+
+body.screen-shake {
+  animation: screen-shake 0.35s ease;
+}
+
+@keyframes screen-shake {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-4px, 2px); }
+  40% { transform: translate(4px, -2px); }
+  60% { transform: translate(-3px, -1px); }
+  80% { transform: translate(3px, 1px); }
+}
+
+.toast.game-toast {
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: 0.5rem !important;
+  line-height: 1.6 !important;
+  letter-spacing: 0.5px;
+  border-width: 2px !important;
+  border-radius: 4px !important;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.5);
+}
+
+.footer-quest-hint {
+  font-size: 0.72rem !important;
+  opacity: 0.45;
+  margin-top: 6px !important;
+  font-family: 'VT323', monospace;
+  letter-spacing: 1px;
+}
+
+.chaos-btn-grid {
+  grid-template-columns: 1fr 1fr !important;
+}
+
+.zone-node[data-tab]::after {
+  content: "▸";
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.6rem;
+  color: var(--color-cyan);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.zone-node.active[data-tab]::after {
+  opacity: 1;
+  animation: zone-blink 1s step-end infinite;
+}
+
+.terminal-line.log-quest { border-left-color: #ffd700 !important; background: rgba(255, 215, 0, 0.04) !important; }
+.terminal-line.log-loot { border-left-color: #39ff14 !important; background: rgba(57, 255, 20, 0.04) !important; }
+.terminal-line.log-warn { border-left-color: #ff1744 !important; background: rgba(255, 23, 68, 0.04) !important; }
+.terminal-line.log-arcade { border-left-color: #b388ff !important; background: rgba(179, 136, 255, 0.04) !important; }
+
+.panel-title span::after {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 10px;
+  margin-left: 6px;
+  background: var(--color-cyan);
+  opacity: 0.35;
+  animation: cursor-blink 1s step-end infinite;
+  vertical-align: middle;
+}
+
+@keyframes cursor-blink {
+  50% { opacity: 0; }
+}
+
+.hud-vital-chip {
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.hud-vital-chip:hover {
+  transform: translateY(-1px);
+  border-color: rgba(0, 229, 255, 0.2);
 }
