@@ -456,8 +456,8 @@ window.addEventListener("DOMContentLoaded", async () => {
   setInterval(gameTick, 1000);
 
   // Renders
-  addLog("System initialized.", "Ready in developer console. Neon void online. Morale: unmeasured.");
-  initNeonCity();
+  addLog("System initialized.", "Garage studio online. Basement humidity: 94%. Morale: unmeasured.");
+  initStudioBackdrop();
   initLogoEasterEgg();
   updateUI();
   refreshHudHumor();
@@ -1060,24 +1060,52 @@ function runChaosAction(actionId) {
   }
 }
 
-function initNeonCity() {
-  const city = document.getElementById("void-city");
-  if (!city || city.children.length > 0) return;
-  const colors = ["#00fff0", "#ff0080", "#8b5cff", "#00e5ff", "#ff2a9a", "#39ff14"];
-  const widths = [3, 4, 5, 6, 7, 8, 10, 12, 14, 5, 6, 8, 4, 9, 11, 7];
-  const heights = [35, 55, 70, 45, 80, 60, 90, 50, 75, 40, 65, 85, 48, 72, 58, 68];
-  widths.forEach((w, i) => {
-    const b = document.createElement("div");
-    b.className = "city-building";
-    const h = heights[i % heights.length];
-    const c = colors[i % colors.length];
-    b.style.width = `${w}%`;
-    b.style.height = `${h}%`;
-    b.style.setProperty("--bcolor", c);
-    b.style.setProperty("--fdelay", `${(i * 0.3) % 2}s`);
-    b.style.maxWidth = `${40 + (i % 5) * 12}px`;
-    city.appendChild(b);
+const BACKDROP_CODE_SNIPPETS = [
+  "// TODO: ship before mom asks",
+  "git commit -m \"probably fine\"",
+  "npm ERR! div not centered",
+  "while (crunch) { bugs++; }",
+  "const rating = rng();",
+  "// works on my machine",
+  "await deploy(chaos);",
+  "bugs++ // feature flag",
+  "sudo chmod -R 777 /",
+  "export default regret;",
+  "if (alive) standup();",
+  "console.log('send help');",
+  "techDebt += Infinity;",
+  "player.energy -= 999;",
+  "/* fix later lol */",
+  "merge conflict!!!!!!"
+];
+
+function initStudioBackdrop() {
+  const crtIds = ["crt-code-1", "crt-code-2", "crt-code-3"];
+  crtIds.forEach((id, screenIdx) => {
+    const el = document.getElementById(id);
+    if (!el || el.children.length > 0) return;
+    const lines = [];
+    for (let i = 0; i < 14; i++) {
+      lines.push(BACKDROP_CODE_SNIPPETS[(i + screenIdx * 4) % BACKDROP_CODE_SNIPPETS.length]);
+    }
+    const html = lines.map(t => `<div class="crt-line">${t}</div>`).join("");
+    el.innerHTML = html + html;
   });
+
+  const fall = document.getElementById("studio-code-fall");
+  if (!fall || fall.children.length > 0) return;
+  const columns = 16;
+  for (let c = 0; c < columns; c++) {
+    const col = document.createElement("div");
+    col.className = "code-fall-col";
+    const edge = c < 8;
+    col.style.left = edge ? `${c * 4 + 1}%` : `${52 + (c - 8) * 4.5}%`;
+    col.style.opacity = edge ? "0.35" : "0.28";
+    col.style.animationDuration = `${10 + (c % 5) * 3}s`;
+    col.style.animationDelay = `${-(c * 1.7)}s`;
+    col.textContent = BACKDROP_CODE_SNIPPETS[c % BACKDROP_CODE_SNIPPETS.length];
+    fall.appendChild(col);
+  }
 }
 
 function initLogoEasterEgg() {
@@ -4593,7 +4621,7 @@ function generateLiveChatMessage() {
       "CEO just said 'AI blockchain synergy' unironically MonkaS",
       "touch grass? in THIS economy? 💀",
       "speedrun any% studio bankruptcy when?",
-      "the neon background has more personality than the roadmap",
+      "the garage basement aesthetic has more personality than the roadmap",
       "who broke prod? it was DNS again wasn't it",
       "morale survey results: 'tired' written 47 times"
     ];
