@@ -325,7 +325,8 @@ function gameTick() {
 
       // Decaying copies sold per tick (moderated by 20x to prevent cash flood)
       const baseUnits = (game.initialSalesRate || 100);
-      const decayMult = Math.max(0.01, Math.exp(-game.age / 90)); // Half life of ~60s
+      const halfLife = game.decayHalfLife || 90;
+      const decayMult = Math.max(0.01, Math.exp(-game.age / halfLife)); // Dynamic half-life
       const copiesSoldThisTick = Math.ceil((baseUnits * decayMult) / 20);
 
       const revenue = copiesSoldThisTick * game.price * 0.70; // 30% store cut
@@ -349,10 +350,10 @@ function gameTick() {
       // Prune dead games (age >= 120 seconds or has reached its scale revenue threshold)
       gameState.active_games = gameState.active_games.filter(g => {
         const scale = g.scale || "Small";
-        let cap = 3000;
-        if (scale === "Medium") cap = 20000;
-        if (scale === "Large") cap = 100000;
-        if (scale === "AAA") cap = 600000;
+        let cap = 1000;
+        if (scale === "Medium") cap = 5000;
+        if (scale === "Large") cap = 20000;
+        if (scale === "AAA") cap = 80000;
         
         const isDead = g.age >= 120 || (g.totalRevenue || 0) >= cap;
         if (isDead) {
@@ -1261,11 +1262,11 @@ function releaseGameProject() {
   rating = Math.max(1.0, Math.min(10.0, rating));
 
   // Determine copies sold and price based on platform, scale, and rating
-  let price = 9.99;
-  let baseSales = 200; // Small project baseline
-  if (proj.scale === "Medium") { price = 19.99; baseSales = 2000; }
-  if (proj.scale === "Large") { price = 39.99; baseSales = 12000; }
-  if (proj.scale === "AAA") { price = 59.99; baseSales = 80000; }
+  let price = 4.99;
+  let baseSales = 60; // Small project baseline
+  if (proj.scale === "Medium") { price = 14.99; baseSales = 250; }
+  if (proj.scale === "Large") { price = 29.99; baseSales = 800; }
+  if (proj.scale === "AAA") { price = 49.99; baseSales = 2500; }
 
   // Platform multipliers
   const pMult = PLATFORMS[proj.platform].marketSize;
@@ -1854,6 +1855,23 @@ function renderPostReleaseDashboard() {
           </div>
 
           ${patchHtml}
+
+          <!-- Live Ops Actions -->
+          <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--color-purple); padding: 15px; border-radius: 12px; margin-top: 5px;">
+            <h4 style="color:var(--color-purple); margin-bottom: 6px; font-size:0.85rem; text-transform:uppercase;">
+              <span>🚀 Support & Live Ops Actions</span>
+            </h4>
+            <p style="font-size:0.75rem; color:var(--color-text-muted); margin-bottom:10px; line-height:1.3;">Add DLC features or start ad campaigns to revive sales!</p>
+            
+            <div style="display:flex; gap:10px;">
+              <button class="btn-primary" style="flex:1; font-size:0.75rem; padding:8px;" onclick="supportActiveProject('dlc')">
+                Release DLC Update<br><span style="font-size:0.65rem; color:#ffd700;">-$150 | -15⚡</span>
+              </button>
+              <button class="btn-primary" style="flex:1; font-size:0.75rem; padding:8px;" onclick="supportActiveProject('marketing')">
+                Launch Hype Ads<br><span style="font-size:0.65rem; color:#ffd700;">-$100 | -5⚡</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1937,11 +1955,11 @@ function applyDayOnePatch() {
   proj.rating = Math.min(10.0, proj.rating + 1.0);
   
   // Recalculate sales multiplier & velocity
-  let price = 9.99;
-  let baseSales = 200;
-  if (proj.scale === "Medium") { price = 19.99; baseSales = 2000; }
-  if (proj.scale === "Large") { price = 39.99; baseSales = 12000; }
-  if (proj.scale === "AAA") { price = 59.99; baseSales = 80000; }
+  let price = 4.99;
+  let baseSales = 60;
+  if (proj.scale === "Medium") { price = 14.99; baseSales = 250; }
+  if (proj.scale === "Large") { price = 29.99; baseSales = 800; }
+  if (proj.scale === "AAA") { price = 49.99; baseSales = 2500; }
   
   const pMult = PLATFORMS[proj.platform].marketSize;
   const ratingMult = Math.pow(proj.rating / 7.0, 3.5);
@@ -1985,6 +2003,70 @@ function concludeGameProject() {
   updateUI();
 }
 
+function supportActiveProject(actionType) {
+  if (!gameState.current_project || gameState.current_project.phase !== "post_release") return;
+  const proj = gameState.current_project;
+  
+  const activeGame = gameState.active_games.find(g => g.name === proj.name);
+  if (!activeGame) {
+    showToast("This game is no longer active on the market!", "error");
+    return;
+  }
+
+  if (actionType === "dlc") {
+    const cashCost = 150;
+    const energyCost = 15;
+    if (gameState.cash < cashCost) {
+      showToast(`Requires $${cashCost} cash!`, "error");
+      return;
+    }
+    if (gameState.energy < energyCost) {
+      showToast(`Requires ${energyCost} Energy!`, "error");
+      return;
+    }
+
+    gameState.cash -= cashCost;
+    gameState.energy -= energyCost;
+    proj.rating = Math.min(10.0, proj.rating + 0.5);
+    activeGame.rating = proj.rating;
+
+    // Recalculate sales rate
+    activeGame.initialSalesRate = Math.ceil(activeGame.initialSalesRate * 1.3);
+
+    const portItem = gameState.portfolio.find(p => p.name === proj.name);
+    if (portItem) {
+      portItem.rating = proj.rating;
+      portItem.initialSalesRate = activeGame.initialSalesRate;
+    }
+
+    proj.dlcCount = (proj.dlcCount || 0) + 1;
+    addLog("DLC Launched", `Released DLC Update #${proj.dlcCount} for '${proj.name}'. Rating boosted to ${proj.rating.toFixed(1)}/10.`);
+    showToast("DLC update launched! Sales rate boosted +30%!", "success");
+  } else if (actionType === "marketing") {
+    const cashCost = 100;
+    const energyCost = 5;
+    if (gameState.cash < cashCost) {
+      showToast(`Requires $${cashCost} cash!`, "error");
+      return;
+    }
+    if (gameState.energy < energyCost) {
+      showToast(`Requires ${energyCost} Energy!`, "error");
+      return;
+    }
+
+    gameState.cash -= cashCost;
+    gameState.energy -= energyCost;
+    activeGame.decayHalfLife = (activeGame.decayHalfLife || 90) + 45;
+
+    addLog("Community Hype Boosted", `Launched ad blitz for '${proj.name}'. Shelf-life extended.`);
+    showToast("Community Hype boosted! Sales decay slowed.", "success");
+  }
+
+  saveGame();
+  renderPostReleaseDashboard();
+  updateUI();
+}
+
 // --- Global Window Bindings for Module Scope Safeguard ---
 window.trainSkill = trainSkill;
 window.runGig = runGig;
@@ -2001,4 +2083,5 @@ window.closeReviewModal = closeReviewModal;
 window.runActivity = runActivity;
 window.clickPatchGrid = clickPatchGrid;
 window.concludeGameProject = concludeGameProject;
+window.supportActiveProject = supportActiveProject;
 
