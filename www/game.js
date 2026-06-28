@@ -6401,16 +6401,6 @@ function stopCoffeePour() {
     successMiniGame();
   } else {
     failMiniGame("Poured coffee on keyboard!");
-
-function stopCoffeePour() {
-  if (!activeMiniGame || activeMiniGame.type !== 'pour') return;
-  if (miniGameTimer) clearInterval(miniGameTimer);
-
-  const pos = activeMiniGame.pointerPosition;
-  if (pos >= activeMiniGame.greenZoneStart && pos <= activeMiniGame.greenZoneEnd) {
-    successMiniGame();
-  } else {
-    failMiniGame("Poured coffee on keyboard!");
   }
 }
 
