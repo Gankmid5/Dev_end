@@ -6628,4 +6628,21 @@ window.closeQuestRoadmap = closeQuestRoadmap;
 window.selectRoadmapAct = selectRoadmapAct;
 window.renderRoadmapSteps = renderRoadmapSteps;
 
+function triggerPanic() {
+  if (window.SynthwaveAudio) SynthwaveAudio.playSFX("fail");
+  triggerScreenFlash(255, 23, 68);
+  const alerts = [
+    "🔥 CRITICAL: Production DB has dropped itself. CEO demands a PowerPoint EOD.",
+    "🐛 SEVERE: A user clicked 'Settings' and opened a gateway to the 4th dimension.",
+    "📧 URGENT: Recruiter DM'd you to discuss a 'life-changing contract opportunity' at a blockchain laundry startup.",
+    "🛡️ CAUTION: Security audit found a plaintext password file named 'passwords_dont_read.txt' on public CDN.",
+    "📉 PANIC: Meta-progression loop detected. The game is sentient and reviewing its own code."
+  ];
+  const msg = alerts[Math.floor(Math.random() * alerts.length)];
+  addLog("PRODUCTION CRITICAL", msg, "warn");
+  showToast(msg, "error");
+  spawnFloatText("🔥 DISASTER", "red", true);
+}
+window.triggerPanic = triggerPanic;
+
 

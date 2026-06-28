@@ -12,7 +12,7 @@
   --neon-violet: #8b5cff;
 
   --color-text-main: #f0e6ff;
-  --color-text-muted: #9a7ab8;
+  --color-text-muted: #c3afd9;
 
   --color-cyan: #00e5ff;
   --color-purple: #b388ff;
@@ -4765,4 +4765,47 @@ body.screen-shake {
 .quest-roadmap-btn:hover {
   background: rgba(255, 215, 0, 0.2) !important;
   box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+/* --- Cohesive UI Polish Enhancements --- */
+
+/* Retro Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-purple);
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-pink);
+  box-shadow: 0 0 6px var(--color-pink);
+}
+
+/* Scrollbar support for Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-purple) rgba(0, 0, 0, 0.3);
+}
+
+/* Panic button header */
+.panic-btn {
+  background: rgba(255, 23, 68, 0.15) !important;
+  border-color: rgba(255, 23, 68, 0.5) !important;
+  color: #ff1744 !important;
+  animation: panic-glow 2s infinite alternate;
+}
+.panic-btn:hover {
+  background: rgba(255, 23, 68, 0.3) !important;
+  box-shadow: 0 0 12px rgba(255, 23, 68, 0.6) !important;
+}
+@keyframes panic-glow {
+  0% { box-shadow: 0 0 2px rgba(255, 23, 68, 0.2); }
+  100% { box-shadow: 0 0 8px rgba(255, 23, 68, 0.5); }
 }
