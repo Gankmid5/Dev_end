@@ -515,6 +515,72 @@
               ctx.fillStyle = C.gold; ctx.fillRect(b.x, b.y, b.w, b.h);
               ctx.fillStyle = C.bg; ctx.font = "bold 8px monospace"; ctx.fillText("SHIP IT", b.x + 8, b.y + 14);
             });
+          }
+        };
+      }
+    },
+
+    touch_grass_game: {
+      id: "touch_grass_game",
+      title: "Touch Grass Simulator",
+      emoji: "🌿",
+      zone: "studio",
+      accent: C.green,
+      energyCost: 0,
+      instructions: "← → move hand — catch 5 🌿 grass, dodge 📧 recruiters & 🐛 Jira bugs.",
+      goal: "Touch 5 blades of grass",
+      controls: "← → or A D",
+      duration: 35000,
+      create(w, h, keys) {
+        let px = w / 2, items = [], frame = 0, grassTouched = 0;
+        const spawn = () => {
+          const types = ["grass", "recruiter", "jira"];
+          const r = Math.random();
+          const type = r < 0.45 ? "grass" : r < 0.75 ? "recruiter" : "jira";
+          items.push({
+            x: rand(20, w - 30),
+            y: 24,
+            vy: randF(2.0, 3.5),
+            type: type
+          });
+        };
+        return {
+          update() {
+            frame++;
+            if (keys.left) px = Math.max(20, px - 6);
+            if (keys.right) px = Math.min(w - 20, px + 6);
+            if (frame % 35 === 0) spawn();
+            items.forEach(it => {
+              it.y += it.vy;
+              if (Math.abs(it.x - px) < 22 && it.y > h - 38 && it.y < h - 14) {
+                it.dead = true;
+                if (it.type === "grass") {
+                  grassTouched++;
+                  if (grassTouched >= 5) endSession("win");
+                } else if (it.type === "recruiter") {
+                  endSession("lose", "Recruiter cornered you on LinkedIn. retreat to basement!");
+                } else {
+                  endSession("lose", "Hit by a JIRA ticket! Out of scope!");
+                }
+              }
+            });
+            items = items.filter(it => !it.dead && it.y < h + 10);
+          },
+          draw(ctx) {
+            ctx.fillStyle = C.bg; ctx.fillRect(0, 0, w, h);
+            drawHud(ctx, w, `GRASS TOUCHED: ${grassTouched}/5`, C.green);
+            ctx.fillStyle = C.cyan;
+            ctx.fillRect(px - 16, h - 26, 32, 10);
+            ctx.fillStyle = C.gold;
+            ctx.font = "10px sans-serif";
+            ctx.fillText("🫴", px - 7, h - 18);
+            items.forEach(it => {
+              ctx.font = "14px sans-serif";
+              let label = "🌿";
+              if (it.type === "recruiter") label = "📧";
+              if (it.type === "jira") label = "🐛";
+              ctx.fillText(label, it.x - 7, it.y);
+            });
             drawScanlines(ctx, w, h);
           }
         };
@@ -523,7 +589,7 @@
   };
 
   const ZONE_POOLS = {
-    studio: ["rent_dodge", "investor_qte", "email_whack"],
+    studio: ["rent_dodge", "investor_qte", "email_whack", "touch_grass_game"],
     develop: ["scope_creep", "email_whack", "blame_wheel"],
     staff: ["standup_bingo", "hire_interview", "blame_wheel"],
     research: ["research_orbs", "standup_bingo"],

@@ -1396,16 +1396,7 @@ function runChaosAction(actionId) {
     return;
   }
   if (actionId === "touch_grass") {
-    unlockStudioBadge("touch_grass_fail");
-    const fails = [
-      "You opened the door. UV radiation from the sun caused a production incident.",
-      "Grass touched you back. It filed a Jira ticket.",
-      "You stepped outside. A recruiter appeared. Retreat successful.",
-      "Nature patch notes unknown. Rolled back to basement immediately."
-    ];
-    const msg = fails[Math.floor(Math.random() * fails.length)];
-    addLog("Touch Grass Attempt", msg);
-    showToast("🌿 Touch grass failed. +0 wellness.", "warning");
+    launchZoneMiniGame("studio", "touch_grass_game");
     return;
   }
   if (actionId === "ceo_thought") {
@@ -3689,6 +3680,36 @@ function finishZoneMiniGameReward(won, reason, zoneId, gameId) {
   const gid = gameId || (activeMiniGame && activeMiniGame.siteGameId);
   const meta = window.SiteMinigames ? window.SiteMinigames.getMeta(gid) : { title: "Mini-game" };
   gameState.siteMiniGamesPlayed = (gameState.siteMiniGamesPlayed || 0) + 1;
+
+  if (gid === "touch_grass_game") {
+    if (won) {
+      gameState.siteMiniGamesWon = (gameState.siteMiniGamesWon || 0) + 1;
+      gameState.arcadeClears = (gameState.arcadeClears || 0) + 1;
+      if (window.MetaProgression) {
+        MetaProgression.ensureMeta(gameState);
+        gameState.arcadeStats.siteWins = (gameState.arcadeStats.siteWins || 0) + 1;
+      }
+      fireMetaEvent("site_win");
+      gameState.studioMorale = Math.min(100, (gameState.studioMorale || 50) + 15);
+      const xpGain = 30;
+      gameState.xp += xpGain;
+      addLog("Touch Grass Success", "Incredible. You actually touched physical grass. Morale +15, +30 XP. Reality feels wobbly.", "loot");
+      showToast("🌿 Touched grass! Morale +15 · Reality compromised", "success");
+      spawnFloatText("+30 XP", "gold", true);
+      if (window.SynthwaveAudio) SynthwaveAudio.playSFX("cash");
+      checkFunnyAchievements();
+    } else {
+      unlockStudioBadge("touch_grass_fail");
+      addLog("Touch Grass Attempt", reason || "Nature patch notes unknown. Rolled back to basement immediately.");
+      showToast(reason || "🌿 Touch grass failed. +0 wellness.", "warning");
+      if (window.SynthwaveAudio) SynthwaveAudio.playSFX("fail");
+    }
+    saveGame();
+    refreshZoneAfterMiniGame(zone);
+    updateUI();
+    return;
+  }
+
   if (won) {
     gameState.siteMiniGamesWon = (gameState.siteMiniGamesWon || 0) + 1;
     gameState.arcadeClears = (gameState.arcadeClears || 0) + 1;
@@ -6380,6 +6401,16 @@ function stopCoffeePour() {
     successMiniGame();
   } else {
     failMiniGame("Poured coffee on keyboard!");
+
+function stopCoffeePour() {
+  if (!activeMiniGame || activeMiniGame.type !== 'pour') return;
+  if (miniGameTimer) clearInterval(miniGameTimer);
+
+  const pos = activeMiniGame.pointerPosition;
+  if (pos >= activeMiniGame.greenZoneStart && pos <= activeMiniGame.greenZoneEnd) {
+    successMiniGame();
+  } else {
+    failMiniGame("Poured coffee on keyboard!");
   }
 }
 
@@ -6504,5 +6535,107 @@ window.clickGigPing = clickGigPing;
 window.renderDeveloperStore = renderDeveloperStore;
 window.renderGigsBoard = renderGigsBoard;
 window.renderGigsZone = renderGigsZone;
+
+// --- Quest Roadmap Modal Controllers ---
+let roadmapActiveAct = 1;
+
+function showQuestRoadmap() {
+  const modal = document.getElementById("quest-roadmap-modal");
+  if (!modal) return;
+  
+  if (window.MetaProgression) {
+    MetaProgression.syncProgress(gameState);
+    const overall = MetaProgression.getOverallProgress(gameState);
+    const overallPctEl = document.getElementById("roadmap-overall-pct");
+    const overallBarEl = document.getElementById("roadmap-overall-bar");
+    if (overallPctEl) overallPctEl.innerText = `${overall.pct}% Complete`;
+    if (overallBarEl) overallBarEl.style.width = `${overall.pct}%`;
+    
+    // Default to the current act
+    roadmapActiveAct = MetaProgression.getCurrentAct(gameState) || 1;
+  }
+  
+  modal.style.display = "flex";
+  selectRoadmapAct(roadmapActiveAct);
+  if (window.SynthwaveAudio) SynthwaveAudio.playSFX("levelup");
+}
+
+function closeQuestRoadmap() {
+  const modal = document.getElementById("quest-roadmap-modal");
+  if (modal) modal.style.display = "none";
+}
+
+function selectRoadmapAct(actNum) {
+  roadmapActiveAct = actNum;
+  
+  // Highlight tab button
+  for (let i = 1; i <= 5; i++) {
+    const tabBtn = document.getElementById(`act-tab-${i}`);
+    if (tabBtn) {
+      tabBtn.classList.toggle("active", i === actNum);
+    }
+  }
+  
+  const titleEl = document.getElementById("roadmap-act-title");
+  if (titleEl && window.MetaProgression) {
+    titleEl.innerText = MetaProgression.ACT_TITLES[actNum] || `Act ${actNum}`;
+  }
+  
+  renderRoadmapSteps(actNum);
+}
+
+function renderRoadmapSteps(actNum) {
+  const container = document.getElementById("roadmap-steps-container");
+  if (!container || !window.MetaProgression) return;
+  
+  const steps = MetaProgression.META_STEPS.filter(s => s.act === actNum);
+  const nextStep = MetaProgression.getNextStep(gameState);
+  
+  container.innerHTML = steps.map(step => {
+    const completedSteps = gameState.metaProgress?.completedSteps || [];
+    const isCompleted = completedSteps.includes(step.id);
+    const isActive = nextStep && nextStep.id === step.id;
+    
+    let cardClass = "roadmap-step-card";
+    let statusText = "🔒 Locked";
+    let statusIcon = "○";
+    
+    if (isCompleted) {
+      cardClass += " completed";
+      statusText = "✓ Completed";
+      statusIcon = "✓";
+    } else if (isActive) {
+      cardClass += " active";
+      statusText = "⚡ Active";
+      statusIcon = "▶";
+    } else {
+      cardClass += " locked";
+    }
+    
+    const zoneName = step.zone ? step.zone.toUpperCase() : "HUD";
+    const actionBtn = !isCompleted && step.zone
+      ? `<button class="btn-secondary btn-inline roadmap-go-btn" onclick="closeQuestRoadmap(); goToMetaZone('${step.zone}')">Go → ${zoneName}</button>`
+      : "";
+      
+    return `
+      <div class="${cardClass}">
+        <div class="roadmap-step-header">
+          <span class="roadmap-step-status-icon">${statusIcon}</span>
+          <span class="roadmap-step-label">${step.label}</span>
+          <span class="roadmap-step-badge">${statusText}</span>
+        </div>
+        <div class="roadmap-step-body">
+          <p class="roadmap-step-hint">${step.hint}</p>
+          ${actionBtn}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+window.showQuestRoadmap = showQuestRoadmap;
+window.closeQuestRoadmap = closeQuestRoadmap;
+window.selectRoadmapAct = selectRoadmapAct;
+window.renderRoadmapSteps = renderRoadmapSteps;
 
 

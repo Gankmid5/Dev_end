@@ -92,6 +92,37 @@
     </div>
   </div>
 
+  <div id="quest-roadmap-modal" class="modal-overlay" style="display: none;">
+    <div class="glass-panel review-modal-content roadmap-modal-content">
+      <h2 class="modal-title">🏆 MAIN QUEST ROADMAP</h2>
+      <p class="modal-meta">Trace your ascension from parent's basement to complete web-game dev master.</p>
+      
+      <div class="roadmap-dashboard">
+        <div class="roadmap-summary">
+          <span class="roadmap-overall-pct" id="roadmap-overall-pct">0% Complete</span>
+          <div class="status-bar-track roadmap-overall-track">
+            <div class="status-bar-fill xp" id="roadmap-overall-bar" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <div class="roadmap-acts-tabs">
+          <button type="button" class="btn-secondary act-tab-btn active" id="act-tab-1" onclick="selectRoadmapAct(1)">Act I</button>
+          <button type="button" class="btn-secondary act-tab-btn" id="act-tab-2" onclick="selectRoadmapAct(2)">Act II</button>
+          <button type="button" class="btn-secondary act-tab-btn" id="act-tab-3" onclick="selectRoadmapAct(3)">Act III</button>
+          <button type="button" class="btn-secondary act-tab-btn" id="act-tab-4" onclick="selectRoadmapAct(4)">Act IV</button>
+          <button type="button" class="btn-secondary act-tab-btn" id="act-tab-5" onclick="selectRoadmapAct(5)">Act V</button>
+        </div>
+      </div>
+
+      <div class="roadmap-content-wrapper">
+        <h3 class="roadmap-act-title" id="roadmap-act-title">Act I — Basement Origins</h3>
+        <div id="roadmap-steps-container" class="roadmap-steps-list"></div>
+      </div>
+
+      <button class="btn-primary" onclick="closeQuestRoadmap()">Back to Simulator</button>
+    </div>
+  </div>
+
   <div id="toast-container" class="toast-container"></div>
 
   <div class="app-wrapper">
@@ -110,6 +141,7 @@
       </nav>
       <div class="wallet-widget">
         <button id="music-toggle-btn" class="synth-btn-mini" onclick="toggleMusic()">🎵 OFF</button>
+        <button id="roadmap-toggle-btn" class="synth-btn-mini quest-roadmap-btn" onclick="showQuestRoadmap()" title="Open Main Quest Roadmap">🏆 QUESTS</button>
         <a href="signup.html" style="text-decoration: none; color: inherit;">
           <div class="wallet-balance" id="header-profile-badge" title="Active Developer Status">GUEST</div>
         </a>
