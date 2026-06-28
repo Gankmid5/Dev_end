@@ -4848,3 +4848,130 @@ body.screen-shake {
   background: rgba(0, 229, 255, 0.18) !important;
   box-shadow: 0 0 10px rgba(0, 229, 255, 0.25) !important;
 }
+
+/* ==========================================================================
+   RETRO CRT & PIXEL-ART TERMINAL REDESIGN
+   ========================================================================== */
+
+/* CRT Glass Vignette Overlay */
+body::after {
+  content: " ";
+  display: block;
+  position: fixed;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: radial-gradient(circle at center, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.65) 100%);
+  z-index: 999998;
+  pointer-events: none;
+}
+
+/* CRT Scanline Grid Overlay */
+body::before {
+  content: " ";
+  display: block;
+  position: fixed;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.32) 50%), 
+              linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+  z-index: 999999;
+  background-size: 100% 4px, 6px 100%;
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+/* CRT Flicker & Screen Curved Frame */
+.app-wrapper {
+  border: 12px solid #140826 !important;
+  border-radius: 24px !important;
+  box-shadow: inset 0 0 60px rgba(0, 255, 240, 0.22), 
+              0 0 40px rgba(139, 92, 255, 0.5) !important;
+  position: relative;
+  overflow: hidden;
+  animation: crt-phosphor-flicker 0.2s infinite;
+  background: #05020d !important;
+}
+
+@keyframes crt-phosphor-flicker {
+  0% { opacity: 0.985; }
+  50% { opacity: 0.995; }
+  100% { opacity: 0.99; }
+}
+
+/* Retro Typography conversion */
+h1, h2, h3, h4, h5, h6,
+.dev-section-label,
+.modal-title,
+.roadmap-act-title,
+.stat-label {
+  font-family: 'VT323', monospace !important;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Larger headings for readability in VT323 */
+h2, .modal-title {
+  font-size: 2.2rem !important;
+}
+h3, .roadmap-act-title {
+  font-size: 1.8rem !important;
+}
+h4, .dev-section-label {
+  font-size: 1.5rem !important;
+}
+
+/* Navigation Tabs */
+.nav-tab {
+  font-family: 'VT323', monospace !important;
+  font-size: 1.4rem !important;
+  text-transform: uppercase;
+}
+
+/* Buttons */
+.btn-primary,
+.btn-secondary,
+.synth-btn-mini,
+.detail-micro-btn,
+.meta-goto-btn {
+  font-family: 'VT323', monospace !important;
+  font-size: 1.35rem !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Statistics Values */
+.stat-value,
+.wallet-balance,
+.rpg-stat-label,
+.status-bar-header span {
+  font-family: 'VT323', monospace !important;
+  font-size: 1.5rem !important;
+  letter-spacing: 0.5px;
+}
+.stat-value {
+  font-size: 2.4rem !important;
+}
+
+/* Logo Title using Press Start 2P */
+.logo-title {
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: 2.3rem !important;
+  text-shadow: 4px 4px 0px var(--neon-magenta), -3px -3px 0px var(--neon-cyan) !important;
+  letter-spacing: -2px;
+}
+.logo-subtitle {
+  font-family: 'VT323', monospace !important;
+  font-size: 1.15rem !important;
+  color: var(--color-cyan) !important;
+  letter-spacing: 1px;
+}
+
+/* Quest Tracker */
+.quest-tracker-label {
+  font-family: 'VT323', monospace !important;
+  font-size: 1.2rem !important;
+}
+
+/* Green Phosphor Cash stats */
+.cash-green {
+  color: #39ff14 !important;
+  text-shadow: 0 0 10px rgba(57, 255, 20, 0.4) !important;
+}

@@ -15,7 +15,7 @@ const ZONES = {
     label: "MIDNIGHT OFFICE",
     bpm: 88,
     root: NOTE.A2,
-    chord: [NOTE.A3, NOTE.C4, NOTE.E4, NOTE.G4],
+    chord: [NOTE.A3, NOTE.C4, NOTE.E4, NOTE.G4, NOTE.B4], // Minor 9th
     bass: [0, -1, 0, -1, 2, -1, 0, -1],
     arp: [0, 2, 1, 3, 2, 1, 0, 2],
     kick: [1, 0, 0, 0, 1, 0, 0, 0],
@@ -29,7 +29,7 @@ const ZONES = {
     label: "CODE RUNNER",
     bpm: 108,
     root: NOTE.D2,
-    chord: [NOTE.D3, NOTE.F3, NOTE.A3, NOTE.C4],
+    chord: [NOTE.D3, NOTE.F3, NOTE.A3, NOTE.C4, NOTE.E4], // Minor 9th
     bass: [0, 0, -1, 0, 2, 0, -1, 0],
     arp: [0, 1, 2, 3, 2, 1, 0, 3],
     kick: [1, 0, 0, 1, 0, 0, 1, 0],
@@ -43,7 +43,7 @@ const ZONES = {
     label: "NEON HUSTLE",
     bpm: 118,
     root: NOTE.E2,
-    chord: [NOTE.E3, NOTE.G3, NOTE.B3, NOTE.D4],
+    chord: [NOTE.E3, NOTE.G3, NOTE.B3, NOTE.D4, NOTE.F4], // Minor 9th
     bass: [0, -1, 0, 2, 0, -1, 0, 2],
     arp: [0, 2, 1, 3, 0, 2, 1, 3],
     kick: [1, 0, 1, 0, 1, 0, 1, 0],
@@ -141,6 +141,15 @@ const SynthwaveAudio = {
     this.musicBus.connect(this.master);
     this.sfxBus.connect(this.master);
     this.master.connect(this.ctx.destination);
+
+    // Retro Delay (Echo) Node for rich arcade space
+    this.delayNode = this.ctx.createDelay();
+    this.delayNode.delayTime.value = 0.20; // 200ms delay feedback
+    this.delayFeedback = this.ctx.createGain();
+    this.delayFeedback.gain.value = 0.35; // 35% feedback loop volume
+    this.delayNode.connect(this.delayFeedback);
+    this.delayFeedback.connect(this.delayNode);
+    this.delayFeedback.connect(this.musicBus);
   },
 
   _makeReverbImpulse(duration, decay) {
@@ -398,6 +407,15 @@ const SynthwaveAudio = {
     osc.connect(filt);
     filt.connect(gain);
     gain.connect(this.musicBus);
+
+    // Send to Delay bus for rich retro bounce
+    if (this.delayNode) {
+      const delaySend = this.ctx.createGain();
+      delaySend.gain.value = 0.32; // Send level
+      gain.connect(delaySend);
+      delaySend.connect(this.delayNode);
+    }
+
     osc.start(time);
     osc.stop(time + 0.16);
   },
