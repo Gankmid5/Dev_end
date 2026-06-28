@@ -4809,3 +4809,42 @@ body.screen-shake {
   0% { box-shadow: 0 0 2px rgba(255, 23, 68, 0.2); }
   100% { box-shadow: 0 0 8px rgba(255, 23, 68, 0.5); }
 }
+
+/* --- Game Guide / Wiki Modal Styles --- */
+.guide-scroll-container {
+  max-height: 45vh;
+  overflow-y: auto;
+  padding-right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 15px 0;
+  text-align: left;
+}
+.guide-section {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 14px;
+}
+.guide-section h3 {
+  font-size: 1rem;
+  color: var(--color-cyan);
+  margin-bottom: 6px;
+  font-family: 'Outfit', sans-serif;
+  text-transform: uppercase;
+}
+.guide-section p {
+  font-size: 0.85rem;
+  color: var(--color-light-grey);
+  line-height: 1.45;
+}
+.guide-btn {
+  background: rgba(0, 229, 255, 0.08) !important;
+  border-color: rgba(0, 229, 255, 0.3) !important;
+  color: var(--color-cyan) !important;
+}
+.guide-btn:hover {
+  background: rgba(0, 229, 255, 0.18) !important;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.25) !important;
+}

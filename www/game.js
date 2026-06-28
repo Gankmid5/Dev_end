@@ -6645,4 +6645,18 @@ function triggerPanic() {
 }
 window.triggerPanic = triggerPanic;
 
+function showGameGuide() {
+  const modal = document.getElementById("game-guide-modal");
+  if (modal) {
+    modal.style.display = "flex";
+    if (window.SynthwaveAudio) SynthwaveAudio.playSFX("click");
+  }
+}
+function closeGameGuide() {
+  const modal = document.getElementById("game-guide-modal");
+  if (modal) modal.style.display = "none";
+}
+window.showGameGuide = showGameGuide;
+window.closeGameGuide = closeGameGuide;
+
 

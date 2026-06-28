@@ -129,6 +129,42 @@
     </div>
   </div>
 
+  <div id="game-guide-modal" class="modal-overlay" style="display: none;">
+    <div class="glass-panel review-modal-content roadmap-modal-content">
+      <h2 class="modal-title">📖 DEV_END WIKI & MANUAL</h2>
+      <p class="modal-meta">The 400-page documentation condensed into 5 bullet points. Read it or don't. Management won't know.</p>
+      
+      <div class="guide-scroll-container">
+        <div class="guide-section">
+          <h3>💸 Phase 1: Freelance Hustle (Gigs)</h3>
+          <p>You start in your parents' basement with $500. To fund your studio empire, go to the <strong>Gigs & Training</strong> tab. Perform freelance contracts (like cracked DRM or CSS positioning). Each gig costs <strong>Nerve (Chutzpah)</strong> but gives quick cash and XP.</p>
+        </div>
+
+        <div class="guide-section">
+          <h3>💻 Phase 2: Game Production (Develop Tab)</h3>
+          <p>Ready to build? Go to <strong>Develop Game</strong>, select a platform, genre, and topic (check for synergies like <em>RPG + Cyberpunk</em>). Once greenlit, click <strong>Sprint</strong> to play arcade micro-games. Sprints yield Tech and Design points. Chain successful sprints for Combo multipliers. Watch out: sprints add bugs!</p>
+        </div>
+
+        <div class="guide-section">
+          <h3>📦 Phase 3: Shipping & Live Ops</h3>
+          <p>Once progress hits 100%, click <strong>Ship It</strong>. Your game will sell copies and passively generate revenue, decaying over time. Release DLC or enter <strong>Live Ops</strong> to run patch sprints, spin the player sentiment wheel, or toggle useless features (like <em>Pet Loader</em> or <em>RNG Sacrifice</em>).</p>
+        </div>
+
+        <div class="guide-section">
+          <h3>👥 Phase 4: Office Expansion (Staff Tab)</h3>
+          <p>Tired of solo-grinding? Go to <strong>Staff & Office</strong> to hire crew members (like <em>MS Paint Specialist</em> or <em>StackOverflow Archmage</em>) who passively generate Tech/Design points for you. Purchase research or pay rent to upgrade your office space.</p>
+        </div>
+
+        <div class="guide-section">
+          <h3>🏆 Phase 5: The Main Quest & Finale</h3>
+          <p>Track your progression using the <strong>Quests</strong> roadmap in the header. Clear all 18 objectives across Act I to Act V to unlock the final capstone project: greenlighting a simulation about shipping this exact simulation.</p>
+        </div>
+      </div>
+
+      <button class="btn-primary" onclick="closeGameGuide()">Acknowledge Documentation</button>
+    </div>
+  </div>
+
   <div id="toast-container" class="toast-container"></div>
 
   <div class="app-wrapper">
@@ -147,6 +183,7 @@
       </nav>
       <div class="wallet-widget">
         <button id="panic-btn" class="synth-btn-mini panic-btn" onclick="triggerPanic()" title="Simulate a production disaster">🚨 PANIC</button>
+        <button id="guide-toggle-btn" class="synth-btn-mini guide-btn" onclick="showGameGuide()" title="Open Developer Wiki / Help Guide">📖 GUIDE</button>
         <button id="music-toggle-btn" class="synth-btn-mini" onclick="toggleMusic()">🎵 OFF</button>
         <button id="roadmap-toggle-btn" class="synth-btn-mini quest-roadmap-btn" onclick="showQuestRoadmap()" title="Open Main Quest Roadmap">🏆 QUESTS</button>
         <a href="signup.html" style="text-decoration: none; color: inherit;">
