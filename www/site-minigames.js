@@ -696,14 +696,26 @@
     const mouse = { click: null };
     const keyMap = {
       ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down",
-      a: "left", d: "right", w: "up", s: "down", " ": "fire"
+      a: "left", d: "right", w: "up", s: "down",
+      A: "left", D: "right", W: "up", S: "down",
+      " ": "fire"
     };
-    const onKeyDown = (e) => { const k = keyMap[e.key]; if (k) { keys[k] = true; if (k === "fire") e.preventDefault(); } };
+    const onKeyDown = (e) => {
+      const k = keyMap[e.key];
+      if (k) {
+        keys[k] = true;
+        if (["left", "right", "up", "down", "fire"].includes(k)) {
+          e.preventDefault();
+        }
+      }
+    };
     const onKeyUp = (e) => { const k = keyMap[e.key]; if (k) keys[k] = false; };
     const onClick = (e) => {
       canvas.focus();
-      const rect = canvas.getBoundingClientRect();
-      mouse.click((e.clientX - rect.left) * (w / rect.width), (e.clientY - rect.top) * (h / rect.height));
+      if (typeof mouse.click === "function") {
+        const rect = canvas.getBoundingClientRect();
+        mouse.click((e.clientX - rect.left) * (w / rect.width), (e.clientY - rect.top) * (h / rect.height));
+      }
     };
     canvas.addEventListener("keydown", onKeyDown);
     canvas.addEventListener("keyup", onKeyUp);

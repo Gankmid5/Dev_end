@@ -964,12 +964,18 @@
     const keyMap = {
       ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down",
       a: "left", d: "right", w: "up", s: "down",
+      A: "left", D: "right", W: "up", S: "down",
       " ": "fire"
     };
 
     const onKeyDown = (e) => {
       const k = keyMap[e.key];
-      if (k) { keys[k] = true; if (k === "fire") e.preventDefault(); }
+      if (k) {
+        keys[k] = true;
+        if (["left", "right", "up", "down", "fire"].includes(k)) {
+          e.preventDefault();
+        }
+      }
     };
     const onKeyUp = (e) => {
       const k = keyMap[e.key];
