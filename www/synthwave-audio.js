@@ -325,39 +325,40 @@ const SynthwaveAudio = {
   _playKick(time) {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(150, time);
-    osc.frequency.exponentialRampToValueAtTime(40, time + 0.12);
-    gain.gain.setValueAtTime(0.7, time);
-    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.15);
+    osc.type = "triangle"; // NES triangle kick channel simulation
+    osc.frequency.setValueAtTime(220, time);
+    osc.frequency.exponentialRampToValueAtTime(45, time + 0.08);
+    gain.gain.setValueAtTime(0.85, time);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.09);
     osc.connect(gain);
     gain.connect(this.musicBus);
     osc.start(time);
-    osc.stop(time + 0.16);
+    osc.stop(time + 0.10);
   },
 
   _playSnare(time) {
-    const len = this.ctx.sampleRate * 0.12;
+    const len = this.ctx.sampleRate * 0.09;
     const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
     const d = buf.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
     const src = this.ctx.createBufferSource();
     src.buffer = buf;
     const filt = this.ctx.createBiquadFilter();
-    filt.type = "highpass";
-    filt.frequency.value = 1200;
+    filt.type = "bandpass"; // Chiptune bandpassed snare noise
+    filt.frequency.value = 1500;
+    filt.Q.value = 1.8;
     const gain = this.ctx.createGain();
-    gain.gain.setValueAtTime(0.35, time);
-    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
+    gain.gain.setValueAtTime(0.42, time);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
     src.connect(filt);
     filt.connect(gain);
     gain.connect(this.musicBus);
     src.start(time);
-    src.stop(time + 0.12);
+    src.stop(time + 0.09);
   },
 
   _playHat(time) {
-    const len = this.ctx.sampleRate * 0.04;
+    const len = this.ctx.sampleRate * 0.025;
     const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
     const d = buf.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
@@ -365,59 +366,62 @@ const SynthwaveAudio = {
     src.buffer = buf;
     const filt = this.ctx.createBiquadFilter();
     filt.type = "highpass";
-    filt.frequency.value = 6000;
+    filt.frequency.value = 7500;
     const gain = this.ctx.createGain();
-    gain.gain.setValueAtTime(0.12, time);
-    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.03);
+    gain.gain.setValueAtTime(0.16, time);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.02);
     src.connect(filt);
     filt.connect(gain);
     gain.connect(this.musicBus);
     src.start(time);
-    src.stop(time + 0.04);
+    src.stop(time + 0.025);
   },
 
   _playBass(freq, time, vol) {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    osc.type = "sawtooth";
+    osc.type = "triangle"; // Pure 8-bit NES triangle bass
     osc.frequency.value = freq;
-    const filt = this.ctx.createBiquadFilter();
-    filt.type = "lowpass";
-    filt.frequency.setValueAtTime(900, time);
-    filt.frequency.linearRampToValueAtTime(400, time + 0.18);
-    gain.gain.setValueAtTime(vol, time);
-    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.22);
-    osc.connect(filt);
-    filt.connect(gain);
+    gain.gain.setValueAtTime(vol * 1.5, time); // Triangle is naturally softer, so boost volume
+    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.18);
+    osc.connect(gain);
     gain.connect(this.musicBus);
     osc.start(time);
-    osc.stop(time + 0.24);
+    osc.stop(time + 0.20);
   },
 
   _playArp(freq, time, vol) {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    osc.type = "square";
+    osc.type = "square"; // Chiptune square/pulse wave channel
     osc.frequency.value = freq;
-    const filt = this.ctx.createBiquadFilter();
-    filt.type = "lowpass";
-    filt.frequency.value = 2800;
-    gain.gain.setValueAtTime(vol, time);
-    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.14);
-    osc.connect(filt);
-    filt.connect(gain);
+
+    // Retro Pitch LFO Vibrato (modulate frequency in real-time)
+    const lfo = this.ctx.createOscillator();
+    const lfoGain = this.ctx.createGain();
+    lfo.frequency.value = 7.5; // Vibrato rate in Hz
+    lfoGain.gain.value = freq * 0.015; // Pitch modulation depth (1.5%)
+    lfo.connect(lfoGain);
+    lfoGain.connect(osc.frequency);
+
+    gain.gain.setValueAtTime(vol * 1.1, time);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.13);
+
+    osc.connect(gain);
     gain.connect(this.musicBus);
 
-    // Send to Delay bus for rich retro bounce
+    // Send to Delay bus for rich spacey retro bounce
     if (this.delayNode) {
       const delaySend = this.ctx.createGain();
-      delaySend.gain.value = 0.32; // Send level
+      delaySend.gain.value = 0.32; // Send amount
       gain.connect(delaySend);
       delaySend.connect(this.delayNode);
     }
 
+    lfo.start(time);
     osc.start(time);
-    osc.stop(time + 0.16);
+    lfo.stop(time + 0.15);
+    osc.stop(time + 0.15);
   },
 
   playSFX(type) {

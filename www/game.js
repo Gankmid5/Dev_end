@@ -641,10 +641,6 @@ function startCapstoneProject() {
     showToast("Finish or conclude your current project before the meta finale!", "error");
     return;
   }
-  if (!confirm("Greenlight the capstone: 'Dev End: The Web Game'?\nSimulation / Game Dev · AAA · The simulation about shipping this simulation.")) {
-    return;
-  }
-
   const platformKey = "pc";
   let scaleCost = 50000;
   const platCost = PLATFORMS[platformKey].cost;
@@ -654,42 +650,47 @@ function startCapstoneProject() {
     return;
   }
 
-  gameState.cash -= totalCost;
-  gameState.current_project = ensureProjectMeta({
-    name: CAPSTONE_PROJECT_NAME,
-    genre: "Simulation",
-    topic: "Game Dev",
-    platform: platformKey,
-    scale: "AAA",
-    isCapstone: true,
-    tech_points: 0,
-    design_points: 0,
-    bug_points: 0,
-    progress: 0,
-    phase: "coding",
-    devPhase: "concept",
-    miniGamesPlayed: 0,
-    miniGamesWon: 0,
-    miniGamesLost: 0,
-    techDebt: 0,
-    hypeMeter: 55,
-    scopeFeatures: 0,
-    milestonesHit: [],
-    devDiary: [],
-    focusGroupBonus: 0.25,
-    playtestsRun: 0
-  });
-  pushDevDiary(gameState.current_project, "concept", "Greenlit the meta capstone. You are now developing a game about developing this game. Recursion depth: alarming.");
-  gameState.metaProgress.capstoneStarted = true;
-  fireMetaEvent("capstone_start");
-  fireMetaEvent("project_start");
-  addLog("Capstone Greenlit", `'${CAPSTONE_PROJECT_NAME}' enters production. The web-game arc converges here.`, "quest");
-  showToast("🌐 Capstone greenlit! Ship the complete web-game.", "success", true);
-  triggerScreenFlash(0, 229, 255);
-  saveGame();
-  switchTab("develop");
-  renderDevelopPanel();
-  updateUI();
+  showConfirm(
+    `🌐 Greenlight the CAPSTONE: <strong>'Dev End: The Web Game'</strong>?<br><small>Simulation / Game Dev · AAA · $${totalCost.toLocaleString()} · You are now developing a game about developing this game. Recursion depth: alarming.</small>`,
+    () => {
+      gameState.cash -= totalCost;
+      gameState.current_project = ensureProjectMeta({
+        name: CAPSTONE_PROJECT_NAME,
+        genre: "Simulation",
+        topic: "Game Dev",
+        platform: platformKey,
+        scale: "AAA",
+        isCapstone: true,
+        tech_points: 0,
+        design_points: 0,
+        bug_points: 0,
+        progress: 0,
+        phase: "coding",
+        devPhase: "concept",
+        miniGamesPlayed: 0,
+        miniGamesWon: 0,
+        miniGamesLost: 0,
+        techDebt: 0,
+        hypeMeter: 55,
+        scopeFeatures: 0,
+        milestonesHit: [],
+        devDiary: [],
+        focusGroupBonus: 0.25,
+        playtestsRun: 0
+      });
+      pushDevDiary(gameState.current_project, "concept", "Greenlit the meta capstone. You are now developing a game about developing this game. Recursion depth: alarming.");
+      gameState.metaProgress.capstoneStarted = true;
+      fireMetaEvent("capstone_start");
+      fireMetaEvent("project_start");
+      addLog("Capstone Greenlit", `'${CAPSTONE_PROJECT_NAME}' enters production. The web-game arc converges here.`, "quest");
+      showToast("🌐 Capstone greenlit! Ship the complete web-game.", "success", true);
+      triggerScreenFlash(0, 229, 255);
+      saveGame();
+      switchTab("develop");
+      renderDevelopPanel();
+      updateUI();
+    }
+  );
 }
 
 function updateRpgBars() {
@@ -819,9 +820,18 @@ window.addEventListener("DOMContentLoaded", async () => {
   if (!localStorage.getItem("dev_end_seen_tutorial")) {
     localStorage.setItem("dev_end_seen_tutorial", "1");
     setTimeout(() => {
-      showToast("▶ PRESS START: Pick a zone on the left rail and ship bugs!", "info", true);
-      addLog("Tutorial Skipped", "Game assumes you read the wiki. Good luck, chosen one.", "quest");
-    }, 600);
+      showConfirm(
+        "👋 Welcome to <strong>DEV_END</strong>!<br><small>Would you like to open the Developer Wiki & Manual before your coffee gets cold?</small>",
+        () => {
+          showGameGuide();
+          addLog("Onboarding", "Developer decided to read the documentation. A historic first.", "quest");
+        },
+        () => {
+          showToast("▶ PRESS START: Pick a zone on the left rail and ship bugs!", "info", true);
+          addLog("Tutorial Skipped", "Developer skipped the manual. Standard procedure.", "quest");
+        }
+      );
+    }, 1500);
   }
 });
 
@@ -2809,12 +2819,22 @@ function runStudioAction(actionId) {
       showToast(`Audit refund! +$${refund}`, "success");
     }
   } else if (actionId === "rename") {
-    const newName = prompt("New studio name:", gameState.company_name);
-    if (newName && newName.trim()) {
-      gameState.company_name = newName.trim().substring(0, 40);
-      pushStudioDiary(`Studio renamed to '${gameState.company_name}'. Trademark pending/emotional.`);
-      showToast("Studio renamed!", "info");
-    }
+    showPrompt(
+      "🏢 Enter a new studio name:<br><small>Trademark pending / spiritually binding.</small>",
+      gameState.company_name,
+      (newName) => {
+        if (newName && newName.trim()) {
+          gameState.company_name = newName.trim().substring(0, 40);
+          pushStudioDiary(`Studio renamed to '${gameState.company_name}'. Same desk, new business cards.`);
+          addLog("Studio Renamed", `Now operating as '${gameState.company_name}'.`);
+          showToast("Studio renamed successfully!", "success");
+          saveGame();
+          renderStudioDashboard();
+          updateUI();
+        }
+      }
+    );
+    return;
   } else if (actionId === "accept_opportunity") {
     const o = gameState.studioOpportunity;
     if (!o) return;
@@ -2984,7 +3004,7 @@ function renderGigsZone() {
   renderTrainingGym();
   renderDeveloperStore();
   renderActivitiesGrid();
-  renderGigsZone();
+  renderGigsBoard();
 }
 
 function renderGigsZoneMinigameSlot() {
@@ -3084,39 +3104,40 @@ function runGig(gigId) {
     return;
   }
 
-  if (!confirm(`Perform gig '${gig.name}'? Costs ${gig.nerveCost} chutzpah and ${xpCost} resume bullet points.`)) {
-    return;
-  }
+  showConfirm(
+    `🎮 Commit to gig: <strong>${gig.name}</strong>?<br><small>Costs ${gig.nerveCost} chutzpah${xpCost > 0 ? ` + ${xpCost} resume bullets` : ''}. No refunds on arrested taste.</small>`,
+    () => {
+      gameState.nerve -= gig.nerveCost;
+      gameState.xp -= xpCost;
 
-  gameState.nerve -= gig.nerveCost;
-  gameState.xp -= xpCost;
+      const attachGigMeta = (mg) => {
+        mg._refundNerve = gig.nerveCost;
+        mg._refundXp = xpCost;
+        return mg;
+      };
 
-  const attachGigMeta = (mg) => {
-    mg._refundNerve = gig.nerveCost;
-    mg._refundXp = xpCost;
-    return mg;
-  };
+      const gigArcadeId = window.ArcadeMinigames
+        ? window.ArcadeMinigames.pickForGig(gigId)
+        : "breakout";
+      const gigDuration = window.ArcadeMinigames
+        ? window.ArcadeMinigames.getDuration(gigArcadeId)
+        : 55000;
 
-  const gigArcadeId = window.ArcadeMinigames
-    ? window.ArcadeMinigames.pickForGig(gigId)
-    : "breakout";
-  const gigDuration = window.ArcadeMinigames
-    ? window.ArcadeMinigames.getDuration(gigArcadeId)
-    : 55000;
+      activeMiniGame = attachGigMeta({
+        type: "arcade",
+        arcadeId: gigArcadeId,
+        isGig: true,
+        gigId: gigId,
+        duration: gigDuration,
+        elapsed: 0,
+        timeLeft: 100,
+        arcadeStarted: false
+      });
 
-  activeMiniGame = attachGigMeta({
-    type: "arcade",
-    arcadeId: gigArcadeId,
-    isGig: true,
-    gigId: gigId,
-    duration: gigDuration,
-    elapsed: 0,
-    timeLeft: 100,
-    arcadeStarted: false
-  });
-
-  renderGigsZone();
-  updateUI();
+      renderGigsZone();
+      updateUI();
+    }
+  );
 }
 
 // --- Staff & Office Panel Upgrades ---
@@ -3210,20 +3231,19 @@ function buyOffice(tierKey) {
   const tier = OFFICE_TIERS[tierKey];
   if (!tier || gameState.cash < tier.cost) return;
 
-  if (!confirm(`Are you sure you want to upgrade office premises to '${tier.name}' for $${tier.cost.toLocaleString()}?`)) {
-    return;
-  }
-
-  gameState.cash -= tier.cost;
-  gameState.office_tier = tierKey;
-  pushStudioDiary(`Moved to ${tier.name}. ${tier.desc.substring(0, 80)}...`);
-
-  addLog("Office Upgraded", `Moved studio premises to ${tier.name}. Cash spent: $${tier.cost}.`);
-  showToast(`Moved to ${tier.name}!`, "success");
-
-  saveGame();
-  renderStaffPanel();
-  updateUI();
+  showConfirm(
+    `🏢 Move to <strong>${tier.name}</strong> for <strong>$${tier.cost.toLocaleString()}</strong>?<br><small>Speed ×${tier.speedMult} · Capacity ${tier.capacity}. No security deposit. It was already spent on pizza.</small>`,
+    () => {
+      gameState.cash -= tier.cost;
+      gameState.office_tier = tierKey;
+      pushStudioDiary(`Moved to ${tier.name}. ${tier.desc.substring(0, 80)}...`);
+      addLog("Office Upgraded", `Moved studio premises to ${tier.name}. Cash spent: $${tier.cost}.`);
+      showToast(`Moved to ${tier.name}!`, "success");
+      saveGame();
+      renderStaffPanel();
+      updateUI();
+    }
+  );
 }
 
 function hireEmployee(empKey) {
@@ -3240,36 +3260,36 @@ function hireEmployee(empKey) {
     return;
   }
 
-  if (!confirm(`Are you sure you want to hire '${emp.name}' for a sign-on fee of $${emp.cost.toLocaleString()}?`)) {
-    return;
-  }
-
-  gameState.cash -= emp.cost;
-  gameState.employees.push({ id: empKey, name: emp.name });
-
-  addLog("Staff Hired", `Hired a ${emp.name} for a sign-on bonus of $${emp.cost}.`);
-  showToast(`${emp.name} joined team!`, "success");
-
-  fireMetaSync();
-  saveGame();
-  renderStaffPanel();
-  updateUI();
+  showConfirm(
+    `👤 Hire <strong>${emp.name}</strong> for <strong>$${emp.cost.toLocaleString()}</strong>?<br><small>Salary: $${emp.salary}/min. They will immediately start a Slack thread about their work setup.</small>`,
+    () => {
+      gameState.cash -= emp.cost;
+      gameState.employees.push({ id: empKey, name: emp.name });
+      addLog("Staff Hired", `Hired a ${emp.name} for a sign-on bonus of $${emp.cost}.`);
+      showToast(`${emp.name} joined team!`, "success");
+      fireMetaSync();
+      saveGame();
+      renderStaffPanel();
+      updateUI();
+    }
+  );
 }
 
 function fireEmployee(index) {
   if (index < 0 || index >= gameState.employees.length) return;
   const emp = gameState.employees[index];
   const info = EMPLOYEES_INFO[emp.id];
-  if (!confirm(`Fire ${info?.name || emp.name}? They will live-tweet about your 'toxic studio culture'.`)) return;
-
-  gameState.employees.splice(index, 1);
-
-  addLog("Staff Dismissed", `Fired ${info?.name || emp.name}. They left a 1-star Glassdoor review from the parking lot.`);
-  showToast(`${info?.name || emp.name} was dismissed. Morale unchanged (there was none).`, "info");
-
-  saveGame();
-  renderStaffPanel();
-  updateUI();
+  showConfirm(
+    `🔥 Fire <strong>${info?.name || emp.name}</strong>?<br><small>They will live-tweet about your 'toxic studio culture' within 4 minutes.</small>`,
+    () => {
+      gameState.employees.splice(index, 1);
+      addLog("Staff Dismissed", `Fired ${info?.name || emp.name}. They left a 1-star Glassdoor review from the parking lot.`);
+      showToast(`${info?.name || emp.name} dismissed. Their GitHub access expires in 3-5 business vibes.`, "info");
+      saveGame();
+      renderStaffPanel();
+      updateUI();
+    }
+  );
 }
 
 // --- Development Panel ---
@@ -3408,45 +3428,44 @@ function createGameProject() {
     return;
   }
 
-  if (!confirm(`Are you sure you want to start developing '${name}'? Costs $${totalCost.toLocaleString()} and ${xpCost} XP.`)) {
-    return;
-  }
-
-  gameState.cash -= totalCost;
-  gameState.xp -= xpCost;
-  const synergy = getSynergyInfo(genre, topic);
-  gameState.current_project = ensureProjectMeta({
-    name,
-    genre,
-    topic,
-    platform: platformKey,
-    scale,
-    tech_points: 0,
-    design_points: 0,
-    bug_points: 0,
-    progress: 0,
-    phase: "coding",
-    devPhase: "concept",
-    miniGamesPlayed: 0,
-    miniGamesWon: 0,
-    miniGamesLost: 0,
-    techDebt: 0,
-    hypeMeter: 5,
-    scopeFeatures: 0,
-    milestonesHit: [],
-    devDiary: [],
-    focusGroupBonus: 0,
-    playtestsRun: 0
-  });
-  pushDevDiary(gameState.current_project, "concept", `Greenlit '${name}' (${genre}/${topic}). Synergy forecast: ${synergy.label}. CFO cried, then approved.`);
-
-  addLog("Project Started", `Initiated development of '${name}' (${genre}/${topic}) on ${PLATFORMS[platformKey].name}. Budget spent: $${totalCost}. Synergy: ${synergy.label}.`);
-  showToast("Development initialized!", "success");
-  fireMetaEvent("project_start");
-
-  saveGame();
-  renderDevelopPanel();
-  updateUI();
+  showConfirm(
+    `💻 Greenlight <strong>'${name}'</strong> (${genre}/${topic} · ${scale})?<br><small>Costs $${totalCost.toLocaleString()}${xpCost > 0 ? ` + ${xpCost} XP` : ''}. The bugs are already there. This just makes them official.</small>`,
+    () => {
+      gameState.cash -= totalCost;
+      gameState.xp -= xpCost;
+      const synergy = getSynergyInfo(genre, topic);
+      gameState.current_project = ensureProjectMeta({
+        name,
+        genre,
+        topic,
+        platform: platformKey,
+        scale,
+        tech_points: 0,
+        design_points: 0,
+        bug_points: 0,
+        progress: 0,
+        phase: "coding",
+        devPhase: "concept",
+        miniGamesPlayed: 0,
+        miniGamesWon: 0,
+        miniGamesLost: 0,
+        techDebt: 0,
+        hypeMeter: 5,
+        scopeFeatures: 0,
+        milestonesHit: [],
+        devDiary: [],
+        focusGroupBonus: 0,
+        playtestsRun: 0
+      });
+      pushDevDiary(gameState.current_project, "concept", `Greenlit '${name}' (${genre}/${topic}). Synergy forecast: ${synergy.label}. CFO cried, then approved.`);
+      addLog("Project Started", `Initiated development of '${name}' (${genre}/${topic}) on ${PLATFORMS[platformKey].name}. Budget spent: $${totalCost}. Synergy: ${synergy.label}.`);
+      showToast("Development initialized! May your bugs be feature-shaped.", "success");
+      fireMetaEvent("project_start");
+      saveGame();
+      renderDevelopPanel();
+      updateUI();
+    }
+  );
 }
 
 let activeMiniGame = null;
@@ -4632,32 +4651,30 @@ function buyItem(itemType) {
     return;
   }
 
-  if (!confirm(`Are you sure you want to purchase and consume ${label} for $${cost}?`)) {
-    return;
-  }
-
-  gameState.cash -= cost;
-
-  // Start pouring mini-game!
-  activeMiniGame = {
-    type: "pour",
-    isStore: true,
-    itemId: itemType,
-    cost: cost,
-    energyGain: energyGain,
-    nerveGain: nerveGain,
-    duration: 6000,
-    elapsed: 0,
-    pointerPosition: 0,
-    pointerDirection: 1,
-    pointerSpeed: 5,
-    greenZoneStart: 38,
-    greenZoneEnd: 62
-  };
-
-  activateMiniGameTimer();
-  renderDeveloperStore();
-  updateUI();
+  showConfirm(
+    `☕ Purchase <strong>${label}</strong> for <strong>$${cost}</strong>?<br><small>Side effects include productivity, jitters, and the sudden urge to refactor everything.</small>`,
+    () => {
+      gameState.cash -= cost;
+      activeMiniGame = {
+        type: "pour",
+        isStore: true,
+        itemId: itemType,
+        cost: cost,
+        energyGain: energyGain,
+        nerveGain: nerveGain,
+        duration: 6000,
+        elapsed: 0,
+        pointerPosition: 0,
+        pointerDirection: 1,
+        pointerSpeed: 5,
+        greenZoneStart: 38,
+        greenZoneEnd: 62
+      };
+      activateMiniGameTimer();
+      renderDeveloperStore();
+      updateUI();
+    }
+  );
 }
 
 // --- Active Game Marketing Campaigns ---
@@ -4707,32 +4724,26 @@ function runMarketing(gameIndex, campaignType) {
     return;
   }
 
-  if (!confirm(`Are you sure you want to launch ${label} for '${game.name}'? Costs $${cost} and ${xpCost} XP.`)) {
-    return;
-  }
-
-  gameState.cash -= cost;
-  gameState.xp -= xpCost;
-  game.initialSalesRate = Math.ceil(game.initialSalesRate * multiplier);
-  game.age = Math.max(0, game.age - ageReduction);
-
-  // Sync to portfolio
-  if (!Array.isArray(gameState.portfolio)) gameState.portfolio = [];
-  const portItem = gameState.portfolio.find(p => p.name === game.name);
-  if (portItem) {
-    portItem.initialSalesRate = game.initialSalesRate;
-  }
-
-  ensureStudioMeta();
-  gameState.studioBuzz = Math.min(100, gameState.studioBuzz + 5);
-  pushStudioDiary(`Marketing push for '${game.name}' via ${label}. Buzz accumulates like technical debt.`);
-
-  addLog("Marketing Campaign Launched", `Promoted '${game.name}' via ${label} for $${cost}. Sales rate boosted by +${Math.round((multiplier - 1) * 100)}% and shelf life extended.`);
-  showToast(`Launched ${label}! Sales boosted`, "success");
-
-  saveGame();
-  renderStudioDashboard();
-  updateUI();
+  showConfirm(
+    `📢 Launch <strong>${label}</strong> for <strong>'${game.name}'</strong>?<br><small>Costs $${cost}${xpCost > 0 ? ` + ${xpCost} XP` : ''}. Sales boost guaranteed (results may vary in vibes only mode).</small>`,
+    () => {
+      gameState.cash -= cost;
+      gameState.xp -= xpCost;
+      game.initialSalesRate = Math.ceil(game.initialSalesRate * multiplier);
+      game.age = Math.max(0, game.age - ageReduction);
+      if (!Array.isArray(gameState.portfolio)) gameState.portfolio = [];
+      const portItem = gameState.portfolio.find(p => p.name === game.name);
+      if (portItem) portItem.initialSalesRate = game.initialSalesRate;
+      ensureStudioMeta();
+      gameState.studioBuzz = Math.min(100, gameState.studioBuzz + 5);
+      pushStudioDiary(`Marketing push for '${game.name}' via ${label}. Buzz accumulates like technical debt.`);
+      addLog("Marketing Campaign Launched", `Promoted '${game.name}' via ${label} for $${cost}. Sales rate boosted by +${Math.round((multiplier - 1) * 100)}% and shelf life extended.`);
+      showToast(`Launched ${label}! Sales boosted`, "success");
+      saveGame();
+      renderStudioDashboard();
+      updateUI();
+    }
+  );
 }
 
 // --- Research Laboratory Upgrades ---
@@ -4784,20 +4795,19 @@ function buyResearch(upgradeId) {
   }
 
   const upgradeLabel = upgradeId.replace("unlocked_", "").replace("researched_", "").replace("_", " ").toUpperCase();
-  if (!confirm(`Are you sure you want to purchase research upgrade for ${upgradeLabel}? Costs ${cost} Research Points.`)) {
-    return;
-  }
-
-  gameState.research_points -= cost;
-  gameState[upgradeId] = true;
-
-  addLog("Research Completed", `Researched upgrade: ${upgradeLabel}.`);
-  showToast("Research Upgrade unlocked!", "success");
-
-  fireMetaSync();
-  saveGame();
-  renderResearchLab();
-  updateUI();
+  showConfirm(
+    `🔬 Research <strong>${upgradeLabel}</strong> for <strong>${cost} RP</strong>?<br><small>Science is happening. Some of it may even apply to your game.</small>`,
+    () => {
+      gameState.research_points -= cost;
+      gameState[upgradeId] = true;
+      addLog("Research Completed", `Researched upgrade: ${upgradeLabel}.`);
+      showToast("Research Upgrade unlocked! You are now smarter (probably).", "success");
+      fireMetaSync();
+      saveGame();
+      renderResearchLab();
+      updateUI();
+    }
+  );
 }
 
 function showReviewModal(name, genre, topic, overallRating, reviewers, commentIndex) {
@@ -4920,10 +4930,20 @@ function runActivity(activityType) {
 
   const costLabel = cost > 0 ? `$${cost}` : "FREE";
   const xpLabel = xpCost > 0 ? `${xpCost} bullet points` : "no bullet points";
-  if (activityType !== "pretend_work" && !confirm(`Start '${label}'? Costs ${costLabel} and ${xpLabel}.`)) {
-    return;
-  }
 
+  if (activityType === "pretend_work") {
+    _executeActivity(activityType, cost, xpCost, label, energyGain, researchGain, skillGain);
+  } else {
+    showConfirm(
+      `🎉 Start activity: <strong>${label}</strong>?<br><small>Costs ${costLabel} and ${xpLabel}. No corporate refunds.</small>`,
+      () => {
+        _executeActivity(activityType, cost, xpCost, label, energyGain, researchGain, skillGain);
+      }
+    );
+  }
+}
+
+function _executeActivity(activityType, cost, xpCost, label, energyGain, researchGain, skillGain) {
   gameState.cash -= cost;
   if (xpCost > 0) gameState.xp -= xpCost;
 
@@ -5624,81 +5644,83 @@ function launchRemaster() {
   const activeGame = gameState.active_games.find(g => g.name === proj.name);
   if (activeGame) { showToast("Wait for sales to end before remastering!", "error"); return; }
   if (gameState.cash < 2000) { showToast("4K Remaster costs $2000!", "error"); return; }
-  if (!confirm(`Relaunch '${proj.name}' as a Definitive Edition for $2000?`)) return;
-
-  gameState.cash -= 2000;
-  const portItem = gameState.portfolio.find(p => p.name === proj.name) || proj;
-  proj.rating = Math.min(10, proj.rating + 0.8);
-  const relaunch = {
-    name: proj.name,
-    genre: proj.genre,
-    topic: proj.topic,
-    scale: proj.scale,
-    price: (portItem.price || proj.price || 14.99) + 5,
-    rating: proj.rating,
-    initialSalesRate: Math.ceil((portItem.initialSalesRate || proj.initialSalesRate || 100) * 1.5),
-    totalSold: portItem.totalSold || 0,
-    totalRevenue: portItem.totalRevenue || 0,
-    age: 0,
-    revenueCap: (portItem.revenueCap || 3000) + 2000,
-    decayHalfLife: 120
-  };
-  gameState.active_games.push(relaunch);
-  syncActiveGameStats(proj);
-  proj.legacyScore = (proj.legacyScore || 0) + 25;
-  if (!proj.awards.includes("Definitive Re-Re-Release")) proj.awards.push("Definitive Re-Re-Release");
-  pushDevDiary(proj, "post_release", "Remastered with 4K shadows and 8K marketing. Same bugs, prettier.");
-  addLog("Remaster Launched", `'${proj.name}' Definitive Edition back on shelves!`);
-  showToast("Remaster live! Sales relaunched.", "success");
-  saveGame();
-  renderPostReleaseDashboard();
-  updateUI();
+  showConfirm(
+    `✨ Relaunch <strong>'${proj.name}'</strong> as Definitive Edition for <strong>$2000</strong>?<br><small>4K shadows. 8K marketing. 1:1 original bugs preserved for authenticity.</small>`,
+    () => {
+      gameState.cash -= 2000;
+      const portItem = gameState.portfolio.find(p => p.name === proj.name) || proj;
+      proj.rating = Math.min(10, proj.rating + 0.8);
+      const relaunch = {
+        name: proj.name, genre: proj.genre, topic: proj.topic, scale: proj.scale,
+        price: (portItem.price || proj.price || 14.99) + 5,
+        rating: proj.rating,
+        initialSalesRate: Math.ceil((portItem.initialSalesRate || proj.initialSalesRate || 100) * 1.5),
+        totalSold: portItem.totalSold || 0, totalRevenue: portItem.totalRevenue || 0,
+        age: 0, revenueCap: (portItem.revenueCap || 3000) + 2000, decayHalfLife: 120
+      };
+      gameState.active_games.push(relaunch);
+      syncActiveGameStats(proj);
+      proj.legacyScore = (proj.legacyScore || 0) + 25;
+      if (!proj.awards.includes("Definitive Re-Re-Release")) proj.awards.push("Definitive Re-Re-Release");
+      pushDevDiary(proj, "post_release", "Remastered with 4K shadows and 8K marketing. Same bugs, prettier.");
+      addLog("Remaster Launched", `'${proj.name}' Definitive Edition back on shelves!`);
+      showToast("Remaster live! Sales relaunched.", "success");
+      saveGame();
+      renderPostReleaseDashboard();
+      updateUI();
+    }
+  );
 }
 
 function startSequelProject() {
   if (!gameState.current_project || gameState.current_project.phase !== "post_release") return;
   const parent = ensureProjectMeta(gameState.current_project);
-  if (!confirm(`Greenlight sequel to '${parent.name}'? Development starts immediately with franchise bonuses.`)) return;
-
-  markRoadmapDone(parent, "sequel");
-  const baseName = parent.name.replace(/\s+\d+:.*$/, "");
-  const sequelName = `${baseName} 2: Electric Bugaloo`;
-  const scaleOrder = ["Small", "Medium", "Large", "AAA"];
-  let sequelScale = parent.scale;
-  const idx = scaleOrder.indexOf(parent.scale);
-  if (idx < scaleOrder.length - 1 && parent.rating >= 7) sequelScale = scaleOrder[idx + 1];
-
-  const target = getTargetPointsForScale(sequelScale);
-  gameState.current_project = ensureProjectMeta({
-    name: sequelName,
-    genre: parent.genre,
-    topic: parent.topic,
-    platform: parent.platform,
-    scale: sequelScale,
-    tech_points: Math.ceil(target * 0.12),
-    design_points: Math.ceil(target * 0.1),
-    bug_points: 3,
-    phase: "coding",
-    hypeMeter: Math.min(100, (parent.hypeMeter || 20) + 20),
-    franchiseParent: parent.name,
-    miniGamesPlayed: 0,
-    miniGamesWon: 0,
-    miniGamesLost: 0
-  });
-  pushDevDiary(gameState.current_project, "concept", `Sequel greenlit off '${parent.name}'. Fan forums already arguing about canon.`);
-  addLog("Sequel Greenlit", `'${sequelName}' enters production.`);
-  showToast(`Sequel '${sequelName}' now in development!`, "success");
-  saveGame();
-  renderDevelopPanel();
-  updateUI();
+  showConfirm(
+    `🎮 Greenlight sequel to <strong>'${parent.name}'</strong>?<br><small>Fan forums already arguing about what the canon means. Studio in chaos: normal.</small>`,
+    () => {
+      markRoadmapDone(parent, "sequel");
+      const baseName = parent.name.replace(/\s+\d+:.*$/, "");
+      const sequelName = `${baseName} 2: Electric Bugaloo`;
+      const scaleOrder = ["Small", "Medium", "Large", "AAA"];
+      let sequelScale = parent.scale;
+      const idx = scaleOrder.indexOf(parent.scale);
+      if (idx < scaleOrder.length - 1 && parent.rating >= 7) sequelScale = scaleOrder[idx + 1];
+      const target = getTargetPointsForScale(sequelScale);
+      gameState.current_project = ensureProjectMeta({
+        name: sequelName, genre: parent.genre, topic: parent.topic, platform: parent.platform,
+        scale: sequelScale,
+        tech_points: Math.ceil(target * 0.12), design_points: Math.ceil(target * 0.1),
+        bug_points: 3, phase: "coding",
+        hypeMeter: Math.min(100, (parent.hypeMeter || 20) + 20),
+        franchiseParent: parent.name,
+        miniGamesPlayed: 0, miniGamesWon: 0, miniGamesLost: 0
+      });
+      pushDevDiary(gameState.current_project, "concept", `Sequel greenlit off '${parent.name}'. Fan forums already arguing about canon.`);
+      addLog("Sequel Greenlit", `'${sequelName}' enters production.`);
+      showToast(`Sequel '${sequelName}' now in development!`, "success");
+      saveGame();
+      renderDevelopPanel();
+      updateUI();
+    }
+  );
 }
 
 function concludeGameProject() {
   if (!gameState.current_project) return;
   const proj = ensureProjectMeta(gameState.current_project);
-  if (!proj.postMortemDone && !confirm("Conclude without a post-mortem? You'll miss +35 XP and priceless industry wisdom.")) {
+  if (!proj.postMortemDone) {
+    showConfirm(
+      `📝 Conclude without post-mortem? You'll miss <strong>+35 XP</strong> and priceless industry wisdom.<br><small>Those who ignore history are condemned to repeat the same NullPointerException.</small>`,
+      () => {
+        _concludeProject(proj);
+      }
+    );
     return;
   }
+  _concludeProject(proj);
+}
+
+function _concludeProject(proj) {
   proj.legacyScore = (proj.legacyScore || 0) + Math.round((proj.rating || 5) * 2);
   addLog("Project Concluded", `Finalized '${proj.name}'. Legacy score: ${proj.legacyScore}. Studio catalog updated.`);
   showToast(`Concluded '${proj.name}'! Legacy +${proj.legacyScore}`, "info");
@@ -5874,6 +5896,114 @@ function showToast(message, type = "info", gameStyle = false) {
 }
 window.showToast = showToast;
 
+// In-game confirm dialog — no more browser popups!
+let _pendingConfirm = null;
+function showConfirm(message, onConfirm, onCancel) {
+  // Cancel any existing confirm
+  const existing = document.getElementById("game-confirm-toast");
+  if (existing) existing.remove();
+  _pendingConfirm = null;
+
+  const container = document.getElementById("toast-container");
+  if (!container) { if (onConfirm) onConfirm(); return; }
+
+  _pendingConfirm = { onConfirm, onCancel };
+
+  const toast = document.createElement("div");
+  toast.id = "game-confirm-toast";
+  toast.className = "toast confirm-toast game-toast";
+  toast.innerHTML = `
+    <div class="confirm-toast-msg">${message}</div>
+    <div class="confirm-toast-btns">
+      <button class="confirm-toast-yes" onclick="resolveConfirm(true)">✅ Confirm</button>
+      <button class="confirm-toast-no" onclick="resolveConfirm(false)">❌ Cancel</button>
+    </div>
+  `;
+  container.appendChild(toast);
+  setTimeout(() => toast.classList.add("visible"), 50);
+}
+
+function resolveConfirm(confirmed) {
+  const toast = document.getElementById("game-confirm-toast");
+  if (toast) { toast.classList.remove("visible"); setTimeout(() => toast.remove(), 300); }
+  const cb = _pendingConfirm;
+  _pendingConfirm = null;
+  if (cb) {
+    if (confirmed && cb.onConfirm) cb.onConfirm();
+    else if (!confirmed && cb.onCancel) cb.onCancel();
+  }
+}
+window.resolveConfirm = resolveConfirm;
+window.showConfirm = showConfirm;
+
+// In-game prompt dialog — no more browser text entry popups!
+let _pendingPrompt = null;
+function showPrompt(message, defaultValue, onSubmit, onCancel) {
+  // Cancel any existing prompt
+  const existing = document.getElementById("game-prompt-toast");
+  if (existing) existing.remove();
+  _pendingPrompt = null;
+
+  const container = document.getElementById("toast-container");
+  if (!container) { 
+    const val = window.prompt(message, defaultValue);
+    if (val !== null && onSubmit) onSubmit(val);
+    return;
+  }
+
+  _pendingPrompt = { onSubmit, onCancel };
+
+  const toast = document.createElement("div");
+  toast.id = "game-prompt-toast";
+  toast.className = "toast prompt-toast game-toast";
+  toast.innerHTML = `
+    <div class="prompt-toast-msg">${message}</div>
+    <div class="prompt-toast-input-wrap" style="margin-bottom:10px;">
+      <input type="text" id="prompt-toast-input" class="prompt-toast-input" value="${defaultValue || ''}" maxlength="40" 
+        style="width:100%; padding:6px 8px; font-family:'Outfit',sans-serif; background:rgba(0,0,0,0.4); border:1px solid var(--neon-cyan); color:var(--color-text-main); border-radius:4px; font-size:0.8rem; box-sizing:border-box;">
+    </div>
+    <div class="prompt-toast-btns" style="display:flex; gap:8px;">
+      <button class="confirm-toast-yes" onclick="resolvePrompt(true)" style="flex:1;">✅ Submit</button>
+      <button class="confirm-toast-no" onclick="resolvePrompt(false)" style="flex:1;">❌ Cancel</button>
+    </div>
+  `;
+  container.appendChild(toast);
+  
+  // Focus the input field
+  const inp = toast.querySelector("#prompt-toast-input");
+  if (inp) {
+    setTimeout(() => {
+      inp.focus();
+      inp.select();
+    }, 100);
+    
+    inp.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        resolvePrompt(true);
+      } else if (e.key === "Escape") {
+        resolvePrompt(false);
+      }
+    });
+  }
+
+  setTimeout(() => toast.classList.add("visible"), 50);
+}
+
+function resolvePrompt(submitted) {
+  const toast = document.getElementById("game-prompt-toast");
+  const inp = document.getElementById("prompt-toast-input");
+  let val = inp ? inp.value : "";
+  if (toast) { toast.classList.remove("visible"); setTimeout(() => toast.remove(), 300); }
+  const cb = _pendingPrompt;
+  _pendingPrompt = null;
+  if (cb) {
+    if (submitted && cb.onSubmit) cb.onSubmit(val);
+    else if (!submitted && cb.onCancel) cb.onCancel();
+  }
+}
+window.resolvePrompt = resolvePrompt;
+window.showPrompt = showPrompt;
+
 function triggerScreenFlash(r, g, b) {
   const main = document.getElementById("zone-main");
   if (!main) return;
@@ -5935,34 +6065,24 @@ function nukeGameProject() {
   const gameName = proj.name;
   const wasReleased = proj.phase === "post_release";
   
-  if (!confirm(`Are you sure you want to NUKE '${gameName}'? This will permanently cancel/pull the project and delete all progress!`)) {
-    return;
-  }
-  
-  if (miniGameTimer) {
-    clearInterval(miniGameTimer);
-    miniGameTimer = null;
-  }
-  stopArcadeMiniGame();
-  activeMiniGame = null;
-  
-  // If it was post-release, remove from active games list so sales stop!
-  if (wasReleased) {
-    gameState.active_games = gameState.active_games.filter(g => g.name !== gameName);
-  }
-  gameState.portfolio = (gameState.portfolio || []).filter(g => g.name !== gameName);
-
-  ChiptuneAudio.playSFX("fail");
-
-  gameState.current_project = null;
-
-  unlockStudioBadge("first_nuke");
-  addLog("PROJECT NUKED", `'${gameName}' was vaporized. Store delisted. Portfolio entry sent to /dev/null (not really — we fixed that).`);
-  
-  saveGame();
-  
-  // Show nuke modal with crowd reactions
-  showNukeModal(gameName, wasReleased);
+  showConfirm(
+    `💥 NUKE <strong>'${gameName}'</strong>? This will <strong>permanently delete</strong> all progress and delist the project!<br><small>There is no undo. Jira tickets will outlive the game. So will regret.</small>`,
+    () => {
+      if (miniGameTimer) { clearInterval(miniGameTimer); miniGameTimer = null; }
+      stopArcadeMiniGame();
+      activeMiniGame = null;
+      if (wasReleased) {
+        gameState.active_games = gameState.active_games.filter(g => g.name !== gameName);
+      }
+      gameState.portfolio = (gameState.portfolio || []).filter(g => g.name !== gameName);
+      if (window.SynthwaveAudio) SynthwaveAudio.playSFX("fail");
+      gameState.current_project = null;
+      unlockStudioBadge("first_nuke");
+      addLog("PROJECT NUKED", `'${gameName}' was vaporized. Store delisted. Portfolio entry sent to /dev/null (not really — we fixed that).`);
+      saveGame();
+      showNukeModal(gameName, wasReleased);
+    }
+  );
 }
 
 function showNukeModal(gameName, wasReleased) {

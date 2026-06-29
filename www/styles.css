@@ -4975,3 +4975,144 @@ h4, .dev-section-label {
   color: #39ff14 !important;
   text-shadow: 0 0 10px rgba(57, 255, 20, 0.4) !important;
 }
+
+/* ═══════════════════════════════════════
+   IN-GAME CONFIRM TOAST
+   ═══════════════════════════════════════ */
+.toast.confirm-toast {
+  background: linear-gradient(135deg, rgba(6, 2, 26, 0.98) 0%, rgba(12, 4, 38, 0.98) 100%) !important;
+  border: 2px solid var(--neon-cyan) !important;
+  box-shadow: 0 0 24px rgba(0, 229, 255, 0.35), 0 0 8px rgba(255, 0, 128, 0.2) !important;
+  padding: 14px 16px !important;
+  max-width: 380px !important;
+  width: 380px !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 0.82rem !important;
+  color: var(--color-text-main) !important;
+  /* Don't auto-dismiss — user must click */
+  cursor: default !important;
+  pointer-events: all !important;
+}
+
+.confirm-toast-msg {
+  margin-bottom: 12px;
+  line-height: 1.5;
+  font-size: 0.85rem;
+  color: var(--color-text-main);
+}
+
+.confirm-toast-msg strong {
+  color: var(--neon-cyan);
+  font-weight: 700;
+}
+
+.confirm-toast-msg small {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.confirm-toast-btns {
+  display: flex;
+  gap: 8px;
+}
+
+.confirm-toast-yes,
+.confirm-toast-no {
+  flex: 1;
+  padding: 7px 12px;
+  border-radius: 6px;
+  border: 1px solid;
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.confirm-toast-yes {
+  background: rgba(57, 255, 20, 0.15);
+  border-color: #39ff14;
+  color: #39ff14;
+}
+.confirm-toast-yes:hover {
+  background: rgba(57, 255, 20, 0.28);
+  box-shadow: 0 0 10px rgba(57, 255, 20, 0.4);
+}
+
+.confirm-toast-no {
+  background: rgba(255, 23, 68, 0.12);
+  border-color: #ff1744;
+  color: #ff1744;
+}
+.confirm-toast-no:hover {
+  background: rgba(255, 23, 68, 0.25);
+  box-shadow: 0 0 10px rgba(255, 23, 68, 0.4);
+}
+
+/* ═══════════════════════════════════════
+   ENHANCED TOAST STYLES FOR BETTER READING
+   ═══════════════════════════════════════ */
+.toast-container {
+  gap: 8px !important;
+}
+
+.toast {
+  font-size: 0.84rem !important;
+  line-height: 1.45 !important;
+}
+
+/* Ensure game-toast confirm shows on top */
+#game-confirm-toast {
+  z-index: 9999;
+  order: -1;
+}
+
+/* ═══════════════════════════════════════
+   IN-GAME PROMPT TOAST
+   ═══════════════════════════════════════ */
+.toast.prompt-toast {
+  background: linear-gradient(135deg, rgba(6, 2, 26, 0.98) 0%, rgba(12, 4, 38, 0.98) 100%) !important;
+  border: 2px solid var(--neon-cyan) !important;
+  box-shadow: 0 0 24px rgba(0, 229, 255, 0.35), 0 0 8px rgba(255, 0, 128, 0.2) !important;
+  padding: 14px 16px !important;
+  max-width: 380px !important;
+  width: 380px !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 0.82rem !important;
+  color: var(--color-text-main) !important;
+  cursor: default !important;
+  pointer-events: all !important;
+  z-index: 9999;
+  order: -1;
+}
+
+.prompt-toast-msg {
+  margin-bottom: 8px;
+  line-height: 1.5;
+  font-size: 0.85rem;
+  color: var(--color-text-main);
+}
+
+.prompt-toast-msg strong {
+  color: var(--neon-cyan);
+  font-weight: 700;
+}
+
+.prompt-toast-msg small {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.prompt-toast-input:focus {
+  outline: none !important;
+  border-color: var(--neon-magenta) !important;
+  box-shadow: 0 0 8px rgba(255, 0, 128, 0.5) !important;
+}
