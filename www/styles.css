@@ -3610,22 +3610,22 @@ h1.logo-title {
 
 .gigs-compact-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 10px;
 }
 
 .gigs-crimes-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
 }
 
 .gigs-action-card,
 .gigs-crime-card {
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(0, 0, 0, 0.22);
+  padding: 12px 14px;
+  border-radius: 4px !important;
+  border: 3px double var(--border-glass) !important;
+  background: #000000 !important;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -3636,19 +3636,19 @@ h1.logo-title {
   justify-content: space-between;
   align-items: center;
   gap: 8px;
-  font-size: 0.82rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 700;
 }
 
 .gigs-action-cost {
-  font-size: 0.68rem;
-  font-weight: 500;
-  color: var(--color-text-muted);
+  font-family: 'VT323', monospace !important;
+  font-size: 1.15rem !important;
+  color: var(--neon-magenta) !important;
+  text-shadow: 0 0 5px rgba(255, 0, 128, 0.4) !important;
   white-space: nowrap;
 }
 
 .gigs-crime-meta {
-  font-size: 0.68rem;
   color: var(--color-text-muted);
 }
 
@@ -3662,17 +3662,44 @@ h1.logo-title {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 2px;
-  padding: 8px 12px;
-  min-width: 100px;
-  border-radius: 8px;
-  font-size: 0.72rem;
+  gap: 4px;
+  padding: 10px 14px;
+  border-radius: 4px !important;
+  border: 1px solid var(--border-glass) !important;
+  background: transparent !important;
+  font-size: 0.95rem !important;
+  font-family: 'VT323', monospace !important;
   text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-.gigs-activity-emoji { font-size: 1rem; }
-.gigs-activity-label { font-weight: 600; }
-.gigs-activity-cost { font-size: 0.65rem; opacity: 0.75; }
+.gigs-activity-chip:hover {
+  background: var(--border-glass) !important;
+  color: #000000 !important;
+  box-shadow: 0 0 10px rgba(139, 92, 255, 0.5) !important;
+}
+
+.gigs-activity-chip:hover * {
+  color: #000000 !important;
+  text-shadow: none !important;
+}
+
+.gigs-activity-emoji {
+  font-size: 1.4rem;
+}
+
+.gigs-activity-label {
+  font-weight: 700;
+}
+
+.gigs-activity-reward {
+  font-family: 'Courier New', Courier, monospace !important;
+  font-size: 0.74rem !important;
+  font-weight: 700 !important;
+  color: var(--color-text-muted) !important;
+  margin-top: 2px;
+}
 
 .gigs-active-hint {
   font-size: 0.75rem;

@@ -3075,10 +3075,10 @@ function renderActivitiesGrid() {
     const disabled = owned ? " disabled" : "";
     const label = owned ? (act.ownedLabel || "Done") : act.label;
     return `
-      <button type="button" class="gigs-activity-chip ${btnCls}"${idAttr}${disabled} onclick="${act.fn}" title="${act.reward}">
+      <button type="button" class="gigs-activity-chip ${btnCls}"${idAttr}${disabled} onclick="${act.fn}">
         <span class="gigs-activity-emoji">${act.emoji}</span>
         <span class="gigs-activity-label">${label}</span>
-        <span class="gigs-activity-cost">${act.cost}</span>
+        <span class="gigs-activity-reward">${act.reward} (${act.cost})</span>
       </button>
     `;
   }).join("");
