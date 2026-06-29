@@ -1,30 +1,31 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Press+Start+2P&family=VT323&display=swap');
 
 :root {
-  --bg-primary: #030008;
-  --bg-secondary: #080012;
-  --bg-glass: rgba(6, 2, 18, 0.72);
-  --bg-glass-hover: rgba(12, 4, 32, 0.82);
-  --border-glass: rgba(0, 255, 213, 0.22);
-  --border-glass-active: rgba(255, 0, 128, 0.55);
-  --neon-cyan: #00fff0;
-  --neon-magenta: #ff0080;
-  --neon-violet: #8b5cff;
+  /* Core HSL Design Tokens */
+  --bg-primary: hsl(260, 45%, 4%);
+  --bg-secondary: hsl(260, 35%, 6%);
+  --bg-glass: hsla(260, 40%, 8%, 0.65);
+  --bg-glass-hover: hsla(260, 40%, 12%, 0.85);
+  --border-glass: hsla(185, 100%, 50%, 0.22);
+  --border-glass-active: hsla(325, 100%, 50%, 0.55);
+  --neon-cyan: hsl(185, 100%, 50%);
+  --neon-magenta: hsl(325, 100%, 50%);
+  --neon-violet: hsl(265, 100%, 65%);
 
-  --color-text-main: #f0e6ff;
-  --color-text-muted: #c3afd9;
+  --color-text-main: hsl(260, 100%, 95%);
+  --color-text-muted: hsl(260, 25%, 75%);
 
-  --color-cyan: #00e5ff;
-  --color-purple: #b388ff;
-  --color-pink: #ff2a9a;
-  --color-gold: #ffd700;
-  --color-white: #ffffff;
-  --color-light-grey: #e0c8ff;
-  --color-dark-grey: #1a0828;
+  --color-cyan: hsl(185, 100%, 50%);
+  --color-purple: hsl(265, 100%, 75%);
+  --color-pink: hsl(325, 100%, 55%);
+  --color-gold: hsl(45, 100%, 50%);
+  --color-white: hsl(0, 0%, 100%);
+  --color-light-grey: hsl(260, 40%, 88%);
+  --color-dark-grey: hsl(260, 40%, 10%);
 
-  --shadow-neon-main: 0 0 20px rgba(255, 42, 154, 0.35);
-  --shadow-neon-cyan: 0 0 18px rgba(0, 229, 255, 0.45);
-  --synth-gradient: linear-gradient(135deg, rgba(255, 42, 154, 0.12), rgba(0, 229, 255, 0.08));
+  --shadow-neon-main: 0 0 24px hsla(325, 100%, 50%, 0.35);
+  --shadow-neon-cyan: 0 0 20px hsla(185, 100%, 50%, 0.45);
+  --synth-gradient: linear-gradient(135deg, hsla(325, 100%, 50%, 0.15), hsla(185, 100%, 50%, 0.1));
 }
 
 *,
@@ -39,11 +40,57 @@ body,
 .synthwave-body,
 .neon-body {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: #0a0812;
+  background: var(--bg-primary) !important;
   color: var(--color-text-main);
   min-height: 100vh;
   margin: 0;
   overflow-x: hidden;
+  position: relative;
+}
+
+/* Ambient glow system */
+.ambient-glow-wrapper {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.ambient-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(140px);
+  opacity: 0.18;
+  mix-blend-mode: screen;
+}
+
+.ambient-orb-1 {
+  width: 50vw;
+  height: 50vw;
+  background: radial-gradient(circle, var(--neon-magenta) 0%, transparent 70%);
+  top: -10vw;
+  left: -10vw;
+  animation: float-glow-1 25s ease-in-out infinite alternate;
+}
+
+.ambient-orb-2 {
+  width: 60vw;
+  height: 60vw;
+  background: radial-gradient(circle, var(--neon-cyan) 0%, transparent 75%);
+  bottom: -15vw;
+  right: -10vw;
+  animation: float-glow-2 30s ease-in-out infinite alternate;
+}
+
+@keyframes float-glow-1 {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(8vw, 6vw) scale(1.15); }
+}
+
+@keyframes float-glow-2 {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(-10vw, -8vw) scale(0.9); }
 }
 
 .app-wrapper {
@@ -154,21 +201,21 @@ h1.logo-title span {
 
 /* Panels (Synthwave chrome) */
 .glass-panel {
-  background: linear-gradient(145deg, rgba(8, 2, 20, 0.88), rgba(4, 0, 12, 0.92));
-  border: 1px solid var(--border-glass);
-  border-radius: 8px;
+  background: var(--bg-glass) !important;
+  border: 1px solid var(--border-glass) !important;
+  border-radius: 12px !important;
   padding: 24px;
-  backdrop-filter: blur(5px) saturate(1.2);
-  -webkit-backdrop-filter: blur(5px) saturate(1.2);
+  backdrop-filter: blur(14px) saturate(1.4) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(1.4) !important;
   display: flex;
   flex-direction: column;
   gap: 20px;
-  box-shadow:
-    0 0 0 1px rgba(0, 255, 240, 0.06) inset,
-    0 8px 32px rgba(0, 0, 0, 0.55),
-    0 0 30px rgba(255, 0, 128, 0.06),
-    0 0 60px rgba(0, 255, 240, 0.03);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.4), 
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 0 20px rgba(0, 229, 255, 0.03) !important;
   position: relative;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .glass-panel::before {
@@ -178,9 +225,9 @@ h1.logo-title span {
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, var(--neon-magenta), var(--neon-cyan), var(--neon-violet));
-  opacity: 0.85;
-  box-shadow: 0 0 12px rgba(0, 255, 240, 0.3);
+  background: linear-gradient(90deg, var(--neon-magenta), var(--neon-cyan));
+  opacity: 0.4;
+  border-radius: 12px 12px 0 0;
 }
 
 .panel-title {
@@ -5264,4 +5311,458 @@ h4, .dev-section-label {
   color: #ff1744 !important;
   text-shadow: 0 0 5px rgba(255, 23, 68, 0.4);
 }
+
+/* ═══════════════════════════════════════
+   PREMIUM CYBERPUNK DESIGN SYSTEM OVERRIDES
+   ═══════════════════════════════════════ */
+
+/* 1. Header Design Overhaul */
+.synth-header {
+  background: var(--bg-glass) !important;
+  border: 1px solid var(--border-glass) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  padding: 16px 24px !important;
+  margin-bottom: 8px !important;
+}
+
+h1.logo-title {
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.35) !important;
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: 1.6rem !important;
+}
+
+.logo-subtitle {
+  font-family: 'VT323', monospace !important;
+  font-size: 1rem !important;
+  color: var(--color-text-muted) !important;
+  letter-spacing: 0.5px !important;
+  margin-top: 4px !important;
+}
+
+/* Header Action Buttons */
+.synth-btn-mini {
+  background: rgba(26, 8, 40, 0.6) !important;
+  border: 1px solid var(--border-glass) !important;
+  color: var(--color-cyan) !important;
+  border-radius: 6px !important;
+  font-weight: 700 !important;
+  text-shadow: 0 0 4px rgba(0, 229, 255, 0.3) !important;
+  transition: all 0.2s ease !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05) !important;
+}
+
+.synth-btn-mini:hover {
+  background: var(--bg-glass-hover) !important;
+  border-color: var(--neon-cyan) !important;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.45) !important;
+  transform: translateY(-1px) !important;
+}
+
+.synth-btn-mini.panic-btn {
+  border-color: #ff1744 !important;
+  color: #ff1744 !important;
+}
+.synth-btn-mini.panic-btn:hover {
+  background: rgba(255, 23, 68, 0.15) !important;
+  box-shadow: 0 0 12px rgba(255, 23, 68, 0.5) !important;
+}
+
+.synth-btn-mini.quest-roadmap-btn {
+  border-color: var(--color-gold) !important;
+  color: var(--color-gold) !important;
+}
+.synth-btn-mini.quest-roadmap-btn:hover {
+  background: rgba(255, 215, 0, 0.12) !important;
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.45) !important;
+}
+
+#header-profile-badge {
+  background: linear-gradient(135deg, rgba(255, 0, 128, 0.12) 0%, rgba(139, 92, 255, 0.15) 100%) !important;
+  border: 1px solid var(--neon-magenta) !important;
+  box-shadow: 0 0 10px rgba(255, 0, 128, 0.35) !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  padding: 6px 12px !important;
+  border-radius: 6px !important;
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: 0.65rem !important;
+  letter-spacing: 0.5px !important;
+}
+
+/* 2. HUD Telemetry Overhaul */
+.hud-panel {
+  border: 1px solid var(--border-glass) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.05) !important;
+  padding: 16px 20px !important;
+}
+
+.hud-top-row {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+  gap: 14px !important;
+  width: 100% !important;
+}
+
+.stat-card.hud-cash-card {
+  background: rgba(0, 0, 0, 0.25) !important;
+  border: 1px solid rgba(57, 255, 20, 0.2) !important;
+  box-shadow: inset 0 0 8px rgba(57, 255, 20, 0.05) !important;
+  border-radius: 8px !important;
+  padding: 10px 14px !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.stat-card.hud-cash-card .stat-value {
+  font-family: 'VT323', monospace !important;
+  font-size: 2.2rem !important;
+  color: #39ff14 !important;
+  text-shadow: 0 0 8px rgba(57, 255, 20, 0.5) !important;
+  margin: 2px 0 !important;
+}
+
+.status-bar-container.hud-bar-block {
+  background: rgba(0, 0, 0, 0.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-radius: 8px !important;
+  padding: 10px 14px !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.status-bar-header {
+  font-family: 'VT323', monospace !important;
+  font-size: 1rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  color: var(--color-text-muted) !important;
+}
+
+.status-bar-track {
+  background: rgba(0,0,0,0.5) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 4px !important;
+  height: 8px !important;
+  overflow: hidden !important;
+  margin: 6px 0 !important;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.5) !important;
+}
+
+.status-bar-fill {
+  border-radius: 4px !important;
+  box-shadow: 0 0 8px currentColor !important;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.status-bar-fill.energy {
+  background: linear-gradient(90deg, #ff1744, #ff8f00) !important;
+  color: #ff8f00 !important;
+}
+
+.status-bar-fill.nerve {
+  background: linear-gradient(90deg, #b388ff, #ff0080) !important;
+  color: #ff0080 !important;
+}
+
+.hud-stat-flavor {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 0.72rem !important;
+  color: var(--color-text-muted) !important;
+  opacity: 0.8 !important;
+  font-style: italic !important;
+}
+
+.quest-tracker {
+  background: linear-gradient(90deg, rgba(255, 215, 0, 0.06) 0%, rgba(0, 0, 0, 0) 100%) !important;
+  border-left: 3px solid var(--color-gold) !important;
+  border-radius: 0 6px 6px 0 !important;
+  padding: 8px 14px !important;
+  margin-top: 10px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 3px !important;
+}
+
+.quest-tracker-label {
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: 0.58rem !important;
+  color: var(--color-gold) !important;
+  letter-spacing: 0.5px !important;
+}
+
+.quest-tracker-text {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 0.86rem !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+}
+
+/* 3. Navigation Rail Design */
+.studio-shell {
+  display: flex !important;
+  gap: 16px !important;
+  width: 100% !important;
+}
+
+.zone-rail {
+  background: var(--bg-glass) !important;
+  border: 1px solid var(--border-glass) !important;
+  border-radius: 12px !important;
+  padding: 12px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  width: 140px !important;
+  flex-shrink: 0 !important;
+}
+
+.zone-rail-title {
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: 0.6rem !important;
+  color: var(--color-text-muted) !important;
+  text-align: center !important;
+  padding-bottom: 6px !important;
+  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+}
+
+.zone-node {
+  background: rgba(0,0,0,0.15) !important;
+  border: 1px solid rgba(255,255,255,0.05) !important;
+  border-radius: 8px !important;
+  padding: 10px 8px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 4px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  position: relative !important;
+}
+
+.zone-node:hover {
+  background: var(--bg-glass-hover) !important;
+  border-color: var(--neon-cyan) !important;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.18) !important;
+}
+
+.zone-node.active {
+  background: linear-gradient(135deg, rgba(255, 0, 128, 0.1) 0%, rgba(139, 92, 255, 0.12) 100%) !important;
+  border-color: var(--neon-magenta) !important;
+  box-shadow: 0 0 12px rgba(255, 0, 128, 0.25) !important;
+}
+
+.zone-icon {
+  font-size: 1.4rem !important;
+}
+
+.zone-label {
+  font-family: 'VT323', monospace !important;
+  font-size: 1.05rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.5px !important;
+  color: var(--color-text-main) !important;
+}
+
+.zone-node.active .zone-label {
+  color: var(--neon-magenta) !important;
+  text-shadow: 0 0 8px rgba(255,0,128,0.4) !important;
+}
+
+.zone-desc {
+  font-size: 0.65rem !important;
+  color: var(--color-text-muted) !important;
+  text-align: center !important;
+  opacity: 0.7 !important;
+}
+
+/* 4. Crew Dossiers and Store Grid Design */
+.staff-stack {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+  gap: 16px !important;
+  margin-top: 10px !important;
+}
+
+.employee-card,
+.upgrade-card {
+  background: rgba(10, 6, 22, 0.65) !important;
+  border: 1px solid var(--border-glass) !important;
+  border-radius: 10px !important;
+  padding: 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  transition: all 0.25s ease !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.employee-card:hover,
+.upgrade-card:hover {
+  border-color: var(--neon-cyan) !important;
+  box-shadow: 0 4px 18px rgba(0, 229, 255, 0.15), inset 0 1px 0 rgba(255,255,255,0.05) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* Action button inside cards */
+.employee-card button,
+.upgrade-card button {
+  font-family: 'VT323', monospace !important;
+  font-size: 1.15rem !important;
+  padding: 6px 12px !important;
+  border-radius: 6px !important;
+  text-transform: uppercase !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+}
+
+/* Compiling styling for lists and scrollbars */
+.terminal-console {
+  background: rgba(2, 0, 8, 0.8) !important;
+  border: 1px dashed var(--border-glass) !important;
+  border-radius: 8px !important;
+  font-family: 'Courier New', Courier, monospace !important;
+  padding: 12px !important;
+  font-size: 0.74rem !important;
+}
+
+/* Neon Scrollbar customization */
+.terminal-console::-webkit-scrollbar,
+.guide-scroll-container::-webkit-scrollbar,
+.roadmap-steps-list::-webkit-scrollbar {
+  width: 6px !important;
+  height: 6px !important;
+}
+
+.terminal-console::-webkit-scrollbar-track,
+.guide-scroll-container::-webkit-scrollbar-track,
+.roadmap-steps-list::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.35) !important;
+}
+
+.terminal-console::-webkit-scrollbar-thumb,
+.guide-scroll-container::-webkit-scrollbar-thumb,
+.roadmap-steps-list::-webkit-scrollbar-thumb {
+  background: var(--neon-magenta) !important;
+  border-radius: 3px !important;
+  box-shadow: 0 0 6px var(--neon-magenta) !important;
+}
+
+/* Live dot animation */
+.live-dot {
+  width: 6px !important;
+  height: 6px !important;
+  background: #ff1744 !important;
+  border-radius: 50% !important;
+  display: inline-block !important;
+  margin-right: 6px !important;
+  box-shadow: 0 0 8px #ff1744 !important;
+  animation: live-blink 1s ease-in-out infinite alternate !important;
+}
+
+@keyframes live-blink {
+  0% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+
+/* ═══════════════════════════════════════
+   CARD ITEM & LIST OVERRIDES
+   ═══════════════════════════════════════ */
+.card-item {
+  background: rgba(12, 4, 32, 0.45) !important;
+  border: 1px solid var(--border-glass) !important;
+  border-radius: 10px !important;
+  padding: 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  transition: all 0.25s ease !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03), 0 4px 12px rgba(0,0,0,0.3) !important;
+  position: relative !important;
+}
+
+.card-item:hover {
+  border-color: var(--neon-cyan) !important;
+  box-shadow: 0 4px 20px rgba(0, 229, 255, 0.22), inset 0 1px 0 rgba(255,255,255,0.05) !important;
+  transform: translateY(-2px) !important;
+  background: rgba(22, 8, 48, 0.6) !important;
+}
+
+.card-item.card-owned {
+  border-color: var(--neon-magenta) !important;
+  background: linear-gradient(135deg, rgba(255, 0, 128, 0.08) 0%, rgba(139, 92, 255, 0.08) 100%) !important;
+  box-shadow: 0 0 14px rgba(255, 0, 128, 0.15) !important;
+}
+
+.card-item-title {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 0.95rem !important;
+  color: #ffffff !important;
+}
+
+.card-item-desc {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 0.78rem !important;
+  color: var(--color-text-muted) !important;
+  line-height: 1.4 !important;
+}
+
+.cost-green {
+  color: #39ff14 !important;
+  font-family: 'VT323', monospace !important;
+  font-size: 1.1rem !important;
+  text-shadow: 0 0 4px rgba(57, 255, 20, 0.3) !important;
+}
+
+.cost-cyan {
+  color: var(--color-cyan) !important;
+  font-family: 'VT323', monospace !important;
+  font-size: 1.1rem !important;
+  text-shadow: 0 0 4px rgba(0, 229, 255, 0.3) !important;
+}
+
+/* Active staff rows */
+.staff-row {
+  background: rgba(0, 0, 0, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-radius: 8px !important;
+  padding: 10px 14px !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 12px !important;
+  margin-bottom: 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+.staff-row:hover {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.staff-name {
+  font-family: 'Outfit', sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 0.88rem !important;
+  color: #ffffff !important;
+  display: block !important;
+}
+
+.staff-details {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 0.74rem !important;
+  color: var(--color-text-muted) !important;
+  display: block !important;
+  margin-top: 2px !important;
+}
+
+
 
