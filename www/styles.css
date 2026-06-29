@@ -1,31 +1,31 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Press+Start+2P&family=VT323&display=swap');
 
 :root {
-  /* Core HSL Design Tokens */
-  --bg-primary: hsl(260, 45%, 4%);
-  --bg-secondary: hsl(260, 35%, 6%);
-  --bg-glass: hsla(260, 40%, 8%, 0.65);
-  --bg-glass-hover: hsla(260, 40%, 12%, 0.85);
-  --border-glass: hsla(185, 100%, 50%, 0.22);
-  --border-glass-active: hsla(325, 100%, 50%, 0.55);
-  --neon-cyan: hsl(185, 100%, 50%);
-  --neon-magenta: hsl(325, 100%, 50%);
-  --neon-violet: hsl(265, 100%, 65%);
+  /* High-Contrast Monochrome Phosphor Green Retro Terminal System */
+  --bg-primary: #020603;             /* Deepest forest black-green background */
+  --bg-secondary: #041006;           /* Subtle dark green accent background */
+  --bg-glass: rgba(2, 10, 4, 0.95);   /* Heavy opaque dark green terminal block */
+  --bg-glass-hover: rgba(6, 26, 10, 0.98);
+  --border-glass: #39ff14;           /* Classic bright green phosphor border */
+  --border-glass-active: #ffb000;    /* Amber active state */
+  --neon-cyan: #39ff14;              /* Primary green phosphor */
+  --neon-magenta: #ffb000;           /* Amber secondary/warning indicator */
+  --neon-violet: #88ff88;            /* Bright white-green highlight */
 
-  --color-text-main: hsl(260, 100%, 95%);
-  --color-text-muted: hsl(260, 25%, 75%);
+  --color-text-main: #39ff14;        /* All normal text is green */
+  --color-text-muted: #1cb003;       /* Muted text is darker forest green */
 
-  --color-cyan: hsl(185, 100%, 50%);
-  --color-purple: hsl(265, 100%, 75%);
-  --color-pink: hsl(325, 100%, 55%);
-  --color-gold: hsl(45, 100%, 50%);
-  --color-white: hsl(0, 0%, 100%);
-  --color-light-grey: hsl(260, 40%, 88%);
-  --color-dark-grey: hsl(260, 40%, 10%);
+  --color-cyan: #39ff14;
+  --color-purple: #88ff88;
+  --color-pink: #ffb000;
+  --color-gold: #ffb000;
+  --color-white: #ffffff;
+  --color-light-grey: #a0ffa0;
+  --color-dark-grey: #030a04;
 
-  --shadow-neon-main: 0 0 24px hsla(325, 100%, 50%, 0.35);
-  --shadow-neon-cyan: 0 0 20px hsla(185, 100%, 50%, 0.45);
-  --synth-gradient: linear-gradient(135deg, hsla(325, 100%, 50%, 0.15), hsla(185, 100%, 50%, 0.1));
+  --shadow-neon-main: 0 0 10px rgba(57, 255, 20, 0.4);
+  --shadow-neon-cyan: 0 0 10px rgba(57, 255, 20, 0.4);
+  --synth-gradient: linear-gradient(135deg, rgba(2,10,4,0.95), rgba(4,20,8,0.98));
 }
 
 *,
@@ -5763,6 +5763,259 @@ h1.logo-title {
   display: block !important;
   margin-top: 2px !important;
 }
+
+/* ═══════════════════════════════════════
+   PREMIUM RETRO MONOCHROME GREEN OVERRIDES
+   ═══════════════════════════════════════ */
+
+/* Global Readability Overrides */
+body, 
+p, 
+span, 
+div, 
+h1, h2, h3, h4, h5, h6,
+button, 
+a, 
+table, 
+td, 
+th, 
+input, 
+textarea {
+  font-family: 'VT323', monospace !important;
+  color: var(--color-text-main) !important;
+  text-shadow: 0 0 5px rgba(57, 255, 20, 0.4) !important;
+}
+
+/* Set readable larger font size for VT323 monospaced elements */
+body {
+  font-size: 1.35rem !important;
+  line-height: 1.4 !important;
+}
+
+/* Make body descriptions, details, help lines and guides use a crisp Courier layout for absolute readability */
+.card-item-desc, 
+.hud-stat-flavor, 
+.roadmap-step-hint, 
+.guide-section p, 
+.narrative-body-text, 
+.confirm-toast-msg, 
+.prompt-toast-msg,
+.history-table td, 
+.history-table th, 
+.terminal-line,
+.modal-meta,
+.dev-section-hint,
+.employee-card .card-item-desc {
+  font-family: 'Courier New', Courier, monospace !important;
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  line-height: 1.5 !important;
+  color: var(--color-text-main) !important;
+  text-shadow: none !important;
+}
+
+/* Clean double line retro borders for panels */
+.glass-panel {
+  background: var(--bg-primary) !important;
+  border: 3px double var(--neon-cyan) !important;
+  border-radius: 4px !important;
+  box-shadow: 0 0 15px rgba(57, 255, 20, 0.25) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.glass-panel::before {
+  display: none !important;
+}
+
+/* Soften scanline overlay to keep text extremely crisp and readable */
+body::before {
+  opacity: 0.18 !important;
+  background-size: 100% 3px, 3px 100% !important;
+}
+
+/* CRT Screen bezel framing adjustments */
+.app-wrapper {
+  border: 10px solid #081a0c !important;
+  border-radius: 12px !important;
+  box-shadow: 0 0 30px rgba(57, 255, 20, 0.3) !important;
+  background: var(--bg-primary) !important;
+}
+
+/* Header Adjustments */
+.synth-header {
+  border: 3px double var(--neon-cyan) !important;
+  border-radius: 4px !important;
+  background: var(--bg-primary) !important;
+  box-shadow: 0 0 10px rgba(57, 255, 20, 0.2) !important;
+}
+
+h1.logo-title {
+  color: var(--neon-cyan) !important;
+  font-size: 2rem !important;
+}
+
+h1.logo-title span {
+  -webkit-text-fill-color: initial !important;
+  -webkit-background-clip: initial !important;
+  color: var(--neon-cyan) !important;
+  text-shadow: 0 0 10px rgba(57, 255, 20, 0.4) !important;
+}
+
+/* Zone navigation rail buttons */
+.zone-rail {
+  border: 3px double var(--neon-cyan) !important;
+  border-radius: 4px !important;
+  background: var(--bg-primary) !important;
+}
+
+.zone-node {
+  border: 1px solid var(--neon-cyan) !important;
+  border-radius: 4px !important;
+  background: transparent !important;
+  color: var(--neon-cyan) !important;
+  transition: all 0.12s ease !important;
+}
+
+.zone-node:hover {
+  background: rgba(57, 255, 20, 0.15) !important;
+  box-shadow: 0 0 8px rgba(57, 255, 20, 0.3) !important;
+}
+
+.zone-node.active {
+  background: var(--neon-cyan) !important;
+  color: #000000 !important;
+  box-shadow: 0 0 12px rgba(57, 255, 20, 0.5) !important;
+}
+
+.zone-node.active .zone-label,
+.zone-node.active .zone-icon,
+.zone-node.active .zone-desc {
+  color: #000000 !important;
+  text-shadow: none !important;
+}
+
+/* Stat telemetry adjustments */
+.stat-card.hud-cash-card {
+  border: 1px solid var(--neon-cyan) !important;
+  background: transparent !important;
+}
+
+.status-bar-container.hud-bar-block {
+  border: 1px solid var(--neon-cyan) !important;
+  background: transparent !important;
+}
+
+.status-bar-track {
+  background: #000000 !important;
+  border: 1px solid var(--neon-cyan) !important;
+}
+
+.status-bar-fill {
+  background: var(--neon-cyan) !important;
+  box-shadow: 0 0 8px var(--neon-cyan) !important;
+}
+
+/* Card item grid boxes */
+.card-item {
+  border: 3px double var(--neon-cyan) !important;
+  border-radius: 4px !important;
+  background: #000000 !important;
+  box-shadow: none !important;
+}
+
+.card-item:hover {
+  background: rgba(57, 255, 20, 0.08) !important;
+  border-color: var(--neon-cyan) !important;
+  box-shadow: 0 0 10px rgba(57, 255, 20, 0.25) !important;
+}
+
+.card-item.card-owned {
+  border-color: var(--neon-magenta) !important;
+  background: rgba(255, 176, 0, 0.06) !important;
+}
+
+.card-item-title span {
+  color: var(--neon-cyan) !important;
+}
+
+/* Crew list items and grids */
+.staff-row {
+  border: 1px solid var(--neon-cyan) !important;
+  border-radius: 4px !important;
+  background: transparent !important;
+}
+
+.staff-row:hover {
+  background: rgba(57, 255, 20, 0.08) !important;
+}
+
+.staff-name, .staff-details {
+  color: var(--neon-cyan) !important;
+}
+
+/* Button UI */
+.btn-primary,
+.btn-secondary {
+  border: 1px solid var(--neon-cyan) !important;
+  background: transparent !important;
+  color: var(--neon-cyan) !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.btn-primary:hover,
+.btn-secondary:hover {
+  background: var(--neon-cyan) !important;
+  color: #000000 !important;
+  box-shadow: 0 0 10px rgba(57, 255, 20, 0.5) !important;
+}
+
+.btn-primary:hover *,
+.btn-secondary:hover * {
+  color: #000000 !important;
+  text-shadow: none !important;
+}
+
+/* Scrollbars overrides in Phosphor green */
+::-webkit-scrollbar-thumb {
+  background: var(--neon-cyan) !important;
+  box-shadow: 0 0 6px var(--neon-cyan) !important;
+}
+
+/* Warnings and highlights */
+.cost-green, .cost-cyan, .cash-green {
+  color: var(--neon-cyan) !important;
+  text-shadow: 0 0 5px rgba(57, 255, 20, 0.4) !important;
+}
+
+.cost-pink, .cost-gold, .log-warn, .log-error, .modal-title--danger, .modal-title--warning {
+  color: var(--neon-magenta) !important;
+  text-shadow: 0 0 5px rgba(255, 176, 0, 0.4) !important;
+}
+
+.confirm-toast-yes, .confirm-toast-no {
+  background: transparent !important;
+  border-radius: 4px !important;
+}
+.confirm-toast-yes {
+  border-color: var(--neon-cyan) !important;
+  color: var(--neon-cyan) !important;
+}
+.confirm-toast-yes:hover {
+  background: var(--neon-cyan) !important;
+  color: #000000 !important;
+}
+.confirm-toast-no {
+  border-color: var(--neon-magenta) !important;
+  color: var(--neon-magenta) !important;
+}
+.confirm-toast-no:hover {
+  background: var(--neon-magenta) !important;
+  color: #000000 !important;
+}
+
 
 
 
