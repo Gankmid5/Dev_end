@@ -121,6 +121,7 @@ const GIGS = [
 
 // --- Core Game State ---
 let gameState = {
+  day: 1,
   company_name: "Underpaid Garage Interns",
   office_tier: "Garage",
   cash: 500.00,
@@ -839,8 +840,8 @@ window.addEventListener("DOMContentLoaded", async () => {
     MetaProgression.syncProgress(gameState);
   }
 
-  // Start the tick loops
-  setInterval(gameTick, 1000);
+  // Real-time ticks deactivated. Overhauled to turn-based progression!
+  // setInterval(gameTick, 1000);
 
   // Renders
   addLog("System initialized.", "Garage studio online. Basement humidity: 94%. Morale: unmeasured.");
@@ -1375,6 +1376,176 @@ function gameTick() {
   }
 
   updateUI();
+}
+
+function triggerAdvanceDay() {
+  advanceDay("Manual End Day");
+}
+
+function advanceDay(actionLog = "") {
+  // 1. Increment day
+  gameState.day = (gameState.day || 1) + 1;
+
+  let passiveIncome = 0;
+  let salariesPaid = 0;
+  let rentAccrued = 0;
+  let techGenerated = 0;
+  let designGenerated = 0;
+  let researchGenerated = 0;
+
+  // 2. Passive Developer Staff Progress (1 day sprint equivalent)
+  const speedMult = OFFICE_TIERS[gameState.office_tier]?.speedMult || 1.0;
+  if (gameState.current_project && gameState.current_project.phase !== "post_release") {
+    gameState.employees.forEach(emp => {
+      const info = EMPLOYEES_INFO[emp.id];
+      if (!info) return;
+      // Passive values per day
+      techGenerated += (info.techRate || 0) * 1.5 * speedMult;
+      designGenerated += (info.designRate || 0) * 1.5 * speedMult;
+      const bugFix = (info.bugFixRate || 0) * 0.8 * speedMult;
+      gameState.current_project.bug_points = Math.max(0, gameState.current_project.bug_points - bugFix);
+    });
+
+    gameState.current_project.tech_points += techGenerated;
+    gameState.current_project.design_points += designGenerated;
+
+    if (gameState.ai_behavior && Math.random() < 0.3) {
+      gameState.current_project.bug_points = Math.max(0, gameState.current_project.bug_points - 1);
+    }
+  }
+
+  // 3. Passive Research Points (RP)
+  gameState.employees.forEach(emp => {
+    if (emp.id === "junior_dev" || emp.id === "junior_artist") {
+      researchGenerated += 1;
+    } else if (emp.id === "senior_dev" || emp.id === "senior_artist") {
+      researchGenerated += 3;
+    } else if (emp.id === "project_mgr") {
+      researchGenerated += 8;
+    }
+  });
+  if (researchGenerated > 0) {
+    gameState.research_points += researchGenerated * speedMult;
+  }
+
+  // 4. Energy & Nerve Recovery
+  const recoveryBonus = gameState.ergonomic_chairs ? 1.5 : 1.0;
+  const plantBonus = gameState.officePlant ? 1.08 : 1.0;
+  gameState.energy = Math.min(gameState.max_energy, gameState.energy + 15 * recoveryBonus * plantBonus);
+  gameState.nerve = Math.min(gameState.max_nerve, gameState.nerve + 2);
+
+  if (gameState.officePlant && Math.random() < 0.2) {
+    ensureStudioMeta();
+    gameState.studioMorale = Math.min(100, gameState.studioMorale + 1);
+  }
+
+  // 5. Active games revenue generation
+  if (gameState.active_games.length > 0) {
+    gameState.active_games.forEach((game, index) => {
+      game.age = (game.age || 0) + 1;
+      const baseUnits = (game.initialSalesRate || 100);
+      const halfLife = game.decayHalfLife || 15; // Adjusted half-life for days
+      const decayMult = Math.max(0.01, Math.exp(-game.age / halfLife));
+      const copiesSold = Math.ceil(baseUnits * decayMult * 2.5); // Scaled daily sales
+
+      const revenue = copiesSold * game.price * 0.70;
+      passiveIncome += revenue;
+      game.totalSold = (game.totalSold || 0) + copiesSold;
+      game.totalRevenue = (game.totalRevenue || 0) + revenue;
+      gameState.games_sold += copiesSold;
+
+      if (!Array.isArray(gameState.portfolio)) gameState.portfolio = [];
+      const portItem = gameState.portfolio.find(p => p.name === game.name);
+      if (portItem) {
+        portItem.totalSold = game.totalSold;
+        portItem.totalRevenue = game.totalRevenue;
+      }
+    });
+
+    if (passiveIncome > 0) {
+      gameState.cash += passiveIncome;
+    }
+
+    // Prune dead games (shelf life in turns)
+    gameState.active_games = gameState.active_games.filter(g => {
+      let cap = g.revenueCap;
+      if (cap === undefined) {
+        const scale = g.scale || "Small";
+        cap = 300;
+        if (scale === "Medium") cap = 1500;
+        if (scale === "Large") cap = 6000;
+        if (scale === "AAA") cap = 20000;
+      }
+      const isDead = g.age >= 45 || (g.totalRevenue || 0) >= cap;
+      if (isDead) {
+        addLog("Sales Concluded", `'${g.name}' has concluded its sales run (Lifetime Rev: $${parseFloat(g.totalRevenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}).`);
+      }
+      return !isDead;
+    });
+  }
+
+  // 6. Pay Salaries & Rent (every 7 turns)
+  if (gameState.day % 7 === 0) {
+    salariesPaid = gameState.employees.reduce((acc, emp) => acc + (EMPLOYEES_INFO[emp.id]?.salary || 0), 0);
+    if (salariesPaid > 0) {
+      gameState.cash = Math.max(0, gameState.cash - salariesPaid);
+    }
+
+    ensureStudioMeta();
+    gameState.rentOverdue += 1;
+    if (gameState.rentOverdue >= 2) {
+      gameState.studioMorale = Math.max(0, gameState.studioMorale - 10);
+      pushStudioDiary("Rent overdue. Landlord left a voicemail composed entirely of sighs.");
+    }
+    rentAccrued = getStudioRentCost();
+  }
+
+  // 7. Random events (20% probability per day)
+  let rolledEvent = "None";
+  if (Math.random() < 0.20) {
+    rolledEvent = "Random Incident";
+    triggerRandomEvent();
+  }
+
+  // 8. Choice narrative events (12% probability per day)
+  if (Math.random() < 0.12) {
+    rolledEvent = "Choice Event";
+    triggerNarrativeEvent();
+  }
+
+  // 9. Chats & Slack simulators
+  if (Math.random() < 0.5) generateLiveChatMessage();
+  if (Math.random() < 0.2) postSlackNotification();
+
+  // 10. Print Detailed ASCII Day Report
+  logTurnSummary(actionLog, passiveIncome, salariesPaid, rentAccrued, researchGenerated, techGenerated, designGenerated, rolledEvent);
+
+  // 11. Save & UI Sync
+  saveGame();
+  updateUI();
+  refreshHudHumor();
+  checkFunnyAchievements();
+}
+
+function logTurnSummary(actionLog, passiveIncome, salariesPaid, rentAccrued, researchGenerated, techGenerated, designGenerated, rolledEvent) {
+  const line = "==================================================";
+  const header = `📅 DAY ${gameState.day} SUMMARY REPORT`;
+  const actionLine = actionLog ? `▶ Action Taken: ${actionLog}` : "▶ Action Taken: End Day (Rest)";
+  
+  let report = `\n${line}\n${header}\n${line}\n${actionLine}\n`;
+  report += `• Cash Runway:  $${gameState.cash.toFixed(2)}\n`;
+  if (passiveIncome > 0) report += `• Game Sales:   +$${passiveIncome.toFixed(2)}\n`;
+  if (salariesPaid > 0) report += `• Staff Payroll: -$${salariesPaid.toFixed(2)}\n`;
+  if (rentAccrued > 0) report += `• Studio Rent:   -$${rentAccrued.toFixed(2)}\n`;
+  if (techGenerated > 0 || designGenerated > 0) {
+    report += `• Sprints:       +${techGenerated.toFixed(1)} Tech, +${designGenerated.toFixed(1)} Design\n`;
+  }
+  if (researchGenerated > 0) report += `• Research:      +${researchGenerated} RP\n`;
+  report += `• Recovery:      +15 Caffeine, +2 Chutzpah\n`;
+  if (rolledEvent !== "None") report += `• Incidents:     ${rolledEvent} rolled\n`;
+  report += line;
+
+  addLog(`Day ${gameState.day} Complete`, report);
 }
 
 function unlockStudioBadge(badgeId) {
@@ -2956,6 +3127,11 @@ function suspendMiniGameForTabChange(nextTab) {
 
 // --- UI Sync Update ---
 function updateUI() {
+  const calendarVal = document.getElementById("hud-calendar-val");
+  if (calendarVal) {
+    calendarVal.innerText = gameState.day || 1;
+  }
+
   // Resource displays
   const cashEl = document.getElementById("header-cash");
   const energyVal = document.getElementById("header-energy-val");
@@ -3153,37 +3329,47 @@ function runGig(gigId) {
   }
 
   showConfirm(
-    `🎮 Commit to gig: <strong>${gig.name}</strong>?<br><small>Costs ${gig.nerveCost} chutzpah${xpCost > 0 ? ` + ${xpCost} resume bullets` : ''}. No refunds on arrested taste.</small>`,
+    `🎮 Commit to gig: <strong>${gig.name}</strong>?<br><small>Costs ${gig.nerveCost} chutzpah${xpCost > 0 ? ` + ${xpCost} resume bullets` : ''}. Resolves via a text-based skill check.</small>`,
     () => {
       gameState.nerve -= gig.nerveCost;
       gameState.xp -= xpCost;
 
-      const attachGigMeta = (mg) => {
-        mg._refundNerve = gig.nerveCost;
-        mg._refundXp = xpCost;
-        return mg;
-      };
+      // Determine difficulty
+      let diff = 12;
+      if (gigId === "crack_competitor") diff = 15;
+      if (gigId === "ransomware") diff = 19;
+      if (gigId === "ddos_rival") diff = 24;
 
-      const gigArcadeId = window.ArcadeMinigames
-        ? window.ArcadeMinigames.pickForGig(gigId)
-        : "breakout";
-      const gigDuration = window.ArcadeMinigames
-        ? window.ArcadeMinigames.getDuration(gigArcadeId)
-        : 55000;
+      const skillVal = gameState[gig.skillRequired] || 10;
+      const roll = Math.floor(Math.random() * 20) + 1;
+      const skillMod = Math.floor(skillVal / 2);
+      const total = roll + skillMod;
+      const success = total >= diff;
 
-      activeMiniGame = attachGigMeta({
-        type: "arcade",
-        arcadeId: gigArcadeId,
-        isGig: true,
-        gigId: gigId,
-        duration: gigDuration,
-        elapsed: 0,
-        timeLeft: 100,
-        arcadeStarted: false
-      });
+      let logTitle = "";
+      let logDesc = "";
 
+      if (success) {
+        const rewardRange = gig.rewardMax - gig.rewardMin;
+        const rewardCash = Math.floor(gig.rewardMin + Math.random() * rewardRange);
+        gameState.cash += rewardCash;
+        gameState.xp = Math.min(gameState.xp_needed, gameState.xp + (gig.xpReward || 2) * 15);
+        gameState.gigsCompleted = (gameState.gigsCompleted || 0) + 1;
+
+        logTitle = "Gig Succeeded!";
+        logDesc = `[SKILL CHECK SUCCESS] Roll: ${roll} + SkillMod: ${skillMod} = ${total} vs Diff ${diff}. Client is ecstatic! Rewarded $${rewardCash.toLocaleString()} and +${gig.xpReward} XP.`;
+        showToast(`Gig Success! Rewarded $${rewardCash}`, "success");
+      } else {
+        ensureStudioMeta();
+        gameState.studioMorale = Math.max(0, gameState.studioMorale - 6);
+        logTitle = "Gig Failed";
+        logDesc = `[SKILL CHECK FAILED] Roll: ${roll} + SkillMod: ${skillMod} = ${total} vs Diff ${diff}. Code crashed during delivery. Lost 6 morale.`;
+        showToast("Gig failed! Morale damaged.", "error");
+      }
+
+      // Advance day
+      advanceDay(`Freelance Gig: ${logTitle} - ${logDesc}`);
       renderGigsZone();
-      updateUI();
     }
   );
 }
@@ -3845,38 +4031,82 @@ function startMiniGame(type, isTraining = false) {
     return;
   }
 
-  // Clear previous timer
-  if (miniGameTimer) clearInterval(miniGameTimer);
-
-  const arcadeId = window.ArcadeMinigames
-    ? window.ArcadeMinigames.pickForCategory(type)
-    : "snake";
-  let arcadeDuration = window.ArcadeMinigames
-    ? window.ArcadeMinigames.getDuration(arcadeId)
-    : 55000;
-  if (gameState.ai_behavior) arcadeDuration = Math.round(arcadeDuration * 1.25);
-
-  activeMiniGame = {
-    type: "arcade",
-    arcadeId,
-    sprintCategory: type,
-    isTraining: isTraining,
-    timeLeft: 100,
-    duration: arcadeDuration,
-    elapsed: 0,
-    arcadeStarted: false
-  };
-
   // Deduct energy & XP
   gameState.energy -= energyCost;
   if (isTraining) {
     gameState.xp -= xpCost;
   }
-  updateUI();
 
   if (isTraining) {
+    // 1. Train Action Resolution (Bypasses Arcade, Resolves Instantly)
+    let trainedSkill = "coding_skill";
+    let skillLabel = "Arcade Coding";
+    if (type === "design_skill") { trainedSkill = "design_skill"; skillLabel = "BBS UI Design"; }
+    if (type === "management_skill") { trainedSkill = "management_skill"; skillLabel = "Git Overlordship"; }
+    // Also map simple category strings if they were passed
+    if (type === "code") { trainedSkill = "coding_skill"; skillLabel = "Arcade Coding"; }
+    if (type === "design") { trainedSkill = "design_skill"; skillLabel = "BBS UI Design"; }
+    if (type === "polish") { trainedSkill = "management_skill"; skillLabel = "Git Overlordship"; }
+
+    // Roll d20 + current skill level
+    const roll = Math.floor(Math.random() * 20) + 1;
+    const currentVal = gameState[trainedSkill] || 10;
+    const gain = roll >= 8 ? 1 : 0;
+    
+    let resultMsg = "";
+    if (gain > 0) {
+      gameState[trainedSkill] = currentVal + gain;
+      resultMsg = `SUCCESS (Roll: ${roll} vs Diff 8). Upgraded ${skillLabel} to ${gameState[trainedSkill]}! (+15 XP)`;
+      gameState.xp = Math.min(gameState.xp_needed, gameState.xp + 15); // Bonus training XP
+    } else {
+      resultMsg = `FAILED (Roll: ${roll} vs Diff 8). Gained nothing but eye strain and compile errors.`;
+    }
+
+    advanceDay(`Trained ${skillLabel}: ${resultMsg}`);
+    showToast(gain > 0 ? "Skill Upgraded!" : "Training failed.", gain > 0 ? "success" : "warning");
     renderGigsZone();
+
   } else {
+    // 2. Dev Sprint Action Resolution (Bypasses Arcade, Resolves Instantly)
+    if (!gameState.current_project || gameState.current_project.phase === "post_release") {
+      showToast("No active project to sprint on!", "error");
+      return;
+    }
+    const proj = ensureProjectMeta(gameState.current_project);
+    const target = getTargetPointsForScale(proj.scale);
+    
+    // Roll skill + d20
+    const roll = Math.floor(Math.random() * 20) + 1;
+    let pointsAdded = 0;
+    let bugsAdded = 0;
+    let desc = "";
+
+    if (type === "code") {
+      pointsAdded = Math.ceil(target * 0.15) + Math.floor((gameState.coding_skill || 10) * 0.5) + Math.floor(roll * 0.6);
+      bugsAdded = Math.max(0, Math.floor(Math.random() * 5) - Math.floor((gameState.design_skill || 10) / 10));
+      proj.tech_points += pointsAdded;
+      proj.bug_points += bugsAdded;
+      desc = `Code Sprint: Added +${pointsAdded} Tech points and +${bugsAdded} bugs.`;
+    } else if (type === "design") {
+      pointsAdded = Math.ceil(target * 0.15) + Math.floor((gameState.design_skill || 10) * 0.5) + Math.floor(roll * 0.6);
+      bugsAdded = Math.max(0, Math.floor(Math.random() * 2) - 1);
+      proj.design_points += pointsAdded;
+      proj.bug_points += bugsAdded;
+      desc = `Design Sprint: Added +${pointsAdded} Design points and +${bugsAdded} bugs.`;
+    } else { // polish
+      pointsAdded = Math.ceil(target * 0.1) + Math.floor((gameState.management_skill || 10) * 0.4);
+      const bugFix = Math.ceil(5 + (gameState.coding_skill || 10) * 0.3 + roll * 0.4);
+      proj.bug_points = Math.max(0, proj.bug_points - bugFix);
+      proj.tech_points += Math.ceil(pointsAdded * 0.5);
+      proj.design_points += Math.ceil(pointsAdded * 0.5);
+      desc = `Polish Sprint: Fixed -${bugFix} bugs, added +${Math.ceil(pointsAdded * 0.5)} Tech/Design.`;
+    }
+
+    // Award XP
+    gameState.xp = Math.min(gameState.xp_needed, gameState.xp + 10);
+
+    advanceDay(`Dev Sprint: ${desc}`);
+    showToast(desc, "success");
     renderProjectProgress();
   }
 }

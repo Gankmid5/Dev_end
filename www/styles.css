@@ -6049,7 +6049,29 @@ h1.logo-title span {
   color: #000000 !important;
 }
 
+/* Turn-Based Action Styles */
+.advance-day-btn {
+  border-color: var(--neon-cyan) !important;
+  color: var(--neon-cyan) !important;
+  box-shadow: 0 0 10px rgba(0, 255, 240, 0.2) !important;
+  animation: pulse-advance-btn 2s infinite ease-in-out;
+}
 
+.advance-day-btn:hover {
+  background: var(--neon-cyan) !important;
+  color: #000000 !important;
+  box-shadow: 0 0 15px rgba(0, 255, 240, 0.6) !important;
+}
 
+@keyframes pulse-advance-btn {
+  0% { box-shadow: 0 0 5px rgba(0, 255, 240, 0.2); }
+  50% { box-shadow: 0 0 15px rgba(0, 255, 240, 0.5); }
+  100% { box-shadow: 0 0 5px rgba(0, 255, 240, 0.2); }
+}
 
-
+.turn-summary-block {
+  margin: 12px 0;
+  padding: 8px 12px;
+  border-left: 4px solid var(--neon-cyan);
+  background: rgba(0, 255, 240, 0.03);
+}

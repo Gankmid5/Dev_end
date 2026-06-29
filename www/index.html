@@ -197,6 +197,10 @@
         <a href="signup.html" class="nav-tab">Profile</a>
       </nav>
       <div class="wallet-widget">
+        <div class="hud-calendar-box" style="display:inline-flex; align-items:center; margin-right:10px; font-family:'VT323',monospace; font-size:1.4rem; border:1px solid var(--border-glass); padding:4px 8px; border-radius:4px;">
+          📅 DAY <span id="hud-calendar-val" style="margin-left:4px; font-weight:bold; color:var(--neon-cyan);">1</span>
+        </div>
+        <button id="advance-day-btn" class="synth-btn-mini advance-day-btn" onclick="triggerAdvanceDay()" title="End your day and advance the calendar" style="font-weight:bold; border-color:var(--neon-cyan); color:var(--neon-cyan);">▶ ADVANCE DAY</button>
         <button id="panic-btn" class="synth-btn-mini panic-btn" onclick="triggerPanic()" title="Simulate a production disaster">🚨 PANIC</button>
         <button id="guide-toggle-btn" class="synth-btn-mini guide-btn" onclick="showGameGuide()" title="Open Developer Wiki / Help Guide">📖 GUIDE</button>
         <button id="music-toggle-btn" class="synth-btn-mini" onclick="toggleMusic()">🎵 OFF</button>
@@ -212,7 +216,7 @@
         <div class="stat-card hud-cash-card">
           <span class="stat-label">💸 Runway (Probably)</span>
           <span class="stat-value cash-green" id="header-cash">$500.00</span>
-          <span class="hud-stat-flavor">Audited by nobody. Trusted by investors anyway.</span>
+          <span class="hud-stat-flavor">Audited by nobody. Paid out daily.</span>
         </div>
 
         <div class="status-bar-container hud-bar-block">
@@ -223,7 +227,7 @@
           <div class="status-bar-track">
             <div class="status-bar-fill energy" id="header-energy-bar" style="width: 100%;"></div>
           </div>
-          <span class="hud-stat-flavor" id="hud-caffeine-flavor">Jitters within industry-standard parameters.</span>
+          <span class="hud-stat-flavor" id="hud-caffeine-flavor">Regenerates +15 mg daily or via coffee pour.</span>
         </div>
 
         <div class="status-bar-container hud-bar-block">
@@ -234,7 +238,7 @@
           <div class="status-bar-track">
             <div class="status-bar-fill nerve" id="header-nerve-bar" style="width: 100%;"></div>
           </div>
-          <span class="hud-stat-flavor" id="hud-sketch-flavor">Morally flexible. Terms of Service unread.</span>
+          <span class="hud-stat-flavor" id="hud-sketch-flavor">Regenerates +2 chutzpah daily or via gigs.</span>
         </div>
 
         <div class="status-bar-container hud-bar-block">
