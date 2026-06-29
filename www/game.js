@@ -414,6 +414,18 @@ const LOG_BADGES = {
 let hudTickerIndex = 0;
 let hudFlavorTimer = 0;
 
+function renderASCIIBar(pct, width = 12) {
+  pct = Math.max(0, Math.min(100, pct));
+  const filledCount = Math.round((pct / 100) * width);
+  const emptyCount = width - filledCount;
+  const barStr = "█".repeat(filledCount) + "░".repeat(emptyCount);
+  let barClass = "ascii-bar";
+  if (pct >= 100) barClass += " done";
+  else if (pct < 30) barClass += " warn";
+  return `<span class="${barClass}">[${barStr}] ${Math.floor(pct)}%</span>`;
+}
+window.renderASCIIBar = renderASCIIBar;
+
 function getImposterTitle(level) {
   const titles = HUD_COPY.imposter.titles;
   return titles[Math.min(level - 1, titles.length - 1)] || `Tier ${level} Chaos Agent`;
@@ -537,6 +549,23 @@ function notifyMetaStepsCompleted(newly) {
       spawnFloatText("QUEST!", "gold");
     }
   });
+
+  // Check act completions
+  if (window.MetaProgression) {
+    gameState.metaProgress.completedActs = gameState.metaProgress.completedActs || [];
+    for (let act = 1; act <= 5; act++) {
+      if (!gameState.metaProgress.completedActs.includes(act)) {
+        const prog = MetaProgression.getActProgress(gameState, act);
+        if (prog.pct >= 100) {
+          gameState.metaProgress.completedActs.push(act);
+          setTimeout(() => {
+            showActCompletionModal(act);
+          }, 850);
+        }
+      }
+    }
+  }
+
   if (newly.includes("capstone_ready")) {
     showToast("🌐 WEB-GAME COMPLETE — You shipped Dev End!", "success", true);
     triggerScreenFlash(0, 229, 255);
@@ -727,8 +756,22 @@ function spawnFloatText(text, variant = "xp", big = false) {
 
 function triggerScreenShake() {
   document.body.classList.add("screen-shake");
-  setTimeout(() => document.body.classList.remove("screen-shake"), 380);
+  const app = document.querySelector(".app-wrapper");
+  if (app) app.classList.add("crt-screen-shake");
+  setTimeout(() => {
+    document.body.classList.remove("screen-shake");
+    if (app) app.classList.remove("crt-screen-shake");
+  }, 380);
 }
+
+function triggerScreenGlitch(duration = 600) {
+  const elements = document.querySelectorAll(".logo-title, .dev-section-label, .modal-title, .stat-value");
+  elements.forEach(el => el.classList.add("rgb-shift-glitch"));
+  setTimeout(() => {
+    elements.forEach(el => el.classList.remove("rgb-shift-glitch"));
+  }, duration);
+}
+window.triggerScreenGlitch = triggerScreenGlitch;
 
 function playZoneTransition(tabName) {
   const flavor = ZONE_FLAVOR[tabName];
@@ -1319,6 +1362,11 @@ function gameTick() {
   // 7. Random studio events (~4% per tick)
   if (Math.random() < 0.04) {
     triggerRandomEvent();
+  }
+
+  // 7b. Interactive Narrative Choice Events (~1.2% per tick)
+  if (Math.random() < 0.012) {
+    triggerNarrativeEvent();
   }
 
   // 8. Slack @here simulator (~2% per tick)
@@ -2590,9 +2638,9 @@ function getLeaseClause(tier) {
 
 function renderStudioMeter(label, value, color) {
   return `
-    <div class="studio-meter">
-      <div class="studio-meter-head"><span>${label}</span><span>${value}%</span></div>
-      <div class="status-bar-track studio-meter-track"><div class="studio-meter-fill" style="width:${value}%; background:${color};"></div></div>
+    <div class="studio-meter" style="margin-bottom: 8px;">
+      <div class="studio-meter-head" style="margin-bottom: 4px;"><span>${label}</span></div>
+      <div style="font-size:1.1rem; line-height:1.2;">${renderASCIIBar(value, 16)}</div>
     </div>
   `;
 }
@@ -4320,10 +4368,10 @@ function renderProjectProgress() {
         <div class="dev-stat-card"><span>Scope+</span><strong>${proj.scopeFeatures}</strong></div>
       </div>
 
-      <div class="status-bar-container">
-        <div class="status-bar-header"><span>Completion (${phaseId})</span><span>${Math.floor(progressPercent)}%</span></div>
-        <div class="status-bar-track">
-          <div class="status-bar-fill" style="width:${progressPercent}%; height:100%; background:linear-gradient(90deg, var(--color-cyan), var(--color-purple));"></div>
+      <div class="status-bar-container" style="margin-bottom:12px;">
+        <div class="status-bar-header" style="margin-bottom:4px;"><span>Completion (${phaseId})</span></div>
+        <div style="font-size: 1.15rem; line-height: 1.4;">
+          ${renderASCIIBar(progressPercent, 22)}
         </div>
       </div>
 
@@ -6656,10 +6704,10 @@ function showQuestRoadmap() {
   if (window.MetaProgression) {
     MetaProgression.syncProgress(gameState);
     const overall = MetaProgression.getOverallProgress(gameState);
-    const overallPctEl = document.getElementById("roadmap-overall-pct");
-    const overallBarEl = document.getElementById("roadmap-overall-bar");
-    if (overallPctEl) overallPctEl.innerText = `${overall.pct}% Complete`;
-    if (overallBarEl) overallBarEl.style.width = `${overall.pct}%`;
+    const overallAsciiEl = document.getElementById("roadmap-overall-ascii");
+    if (overallAsciiEl) {
+      overallAsciiEl.innerHTML = `🏆 OVERALL PROGRESS: ${renderASCIIBar(overall.pct, 20)}`;
+    }
     
     // Default to the current act
     roadmapActiveAct = MetaProgression.getCurrentAct(gameState) || 1;
@@ -6748,9 +6796,216 @@ window.closeQuestRoadmap = closeQuestRoadmap;
 window.selectRoadmapAct = selectRoadmapAct;
 window.renderRoadmapSteps = renderRoadmapSteps;
 
+// --- Narrative Choice-Based Event Engine ---
+const NARRATIVE_EVENTS = [
+  {
+    id: "reddit_lockout",
+    title: "🔒 Reddit Lockout Paradox",
+    text: "A user on Reddit posted that your game saved their marriage, but it was because of a bug that locks them out of the game. If you patch it, they will divorce.",
+    choices: [
+      {
+        text: "Patch the bug anyway. Rule of law.",
+        reward: "Bugs -3, Hype -10. Ethics +1 (cosmetic).",
+        fn: () => {
+          if (gameState.current_project) gameState.current_project.bug_points = Math.max(0, gameState.current_project.bug_points - 3);
+          addLog("Reddit Lockout", "You patched the bug. The Reddit thread is in absolute mourning.");
+        }
+      },
+      {
+        text: "Monetize it as 'Digital Wellness DLC' ($10).",
+        reward: "Cash +$300, Hype +15, Bugs +2, Morale -5.",
+        fn: () => {
+          gameState.cash += 300;
+          if (gameState.current_project) {
+            gameState.current_project.bug_points += 2;
+            gameState.current_project.hypeMeter = Math.min(100, (gameState.current_project.hypeMeter || 0) + 15);
+          }
+          gameState.studioMorale = Math.max(0, gameState.studioMorale - 5);
+          addLog("Reddit Lockout", "Wellness DLC released! Monetizing software faults is synergy.");
+        }
+      },
+      {
+        text: "Blame the intern. Claim it was their side project.",
+        reward: "Morale +8, Bugs +1.",
+        fn: () => {
+          gameState.studioMorale = Math.min(100, gameState.studioMorale + 8);
+          if (gameState.current_project) gameState.current_project.bug_points += 1;
+          addLog("Reddit Lockout", "Intern publicly scapegoated. Studio morale increases as accountability reaches zero.");
+        }
+      }
+    ]
+  },
+  {
+    id: "investor_ai",
+    title: "🤖 The AI-Blockchain Pivot",
+    text: "An angel investor promises $1500 if you promise to replace your game's physics engine with 'generative AI blockchain synergy'. Physics will be completely broken.",
+    choices: [
+      {
+        text: "Decline. Keep wobbly gravity.",
+        reward: "Morale +15, Hype -5, Rep +5.",
+        fn: () => {
+          gameState.studioMorale = Math.min(100, gameState.studioMorale + 15);
+          gameState.studioReputation = Math.min(100, gameState.studioReputation + 5);
+          if (gameState.current_project) gameState.current_project.hypeMeter = Math.max(0, (gameState.current_project.hypeMeter || 0) - 5);
+          addLog("AI-Blockchain", "You declined the pivot. Your wobbly box gravity remains pure.");
+        }
+      },
+      {
+        text: "Take the cash. Delete the physics class.",
+        reward: "Cash +$1500, Tech Debt +20, Bugs +8.",
+        fn: () => {
+          gameState.cash += 1500;
+          if (gameState.current_project) {
+            gameState.current_project.bug_points += 8;
+            gameState.current_project.techDebt += 20;
+          }
+          addLog("AI-Blockchain", "Angels funded your synergy. Gravity is now a blockchain transaction.");
+        }
+      }
+    ]
+  },
+  {
+    id: "linter_mutiny",
+    title: "🚨 The Linter Mutiny",
+    text: "Your developers refuse to compile because the linter is throwing 847 errors about single-quotes vs double-quotes. Production is completely stalled.",
+    choices: [
+      {
+        text: "Spend 3 hours manually refactoring quotes.",
+        reward: "Energy -15, Tech Debt -5.",
+        fn: () => {
+          gameState.energy = Math.max(0, gameState.energy - 15);
+          if (gameState.current_project) gameState.current_project.techDebt = Math.max(0, gameState.current_project.techDebt - 5);
+          addLog("Linter Mutiny", "Single-quotes restored. Backs wincing, quotes standardized.");
+        }
+      },
+      {
+        text: "Add 'eslint-disable-next-line' to index.js.",
+        reward: "Bugs +3, Tech Debt +10.",
+        fn: () => {
+          if (gameState.current_project) {
+            gameState.current_project.bug_points += 3;
+            gameState.current_project.techDebt += 10;
+          }
+          addLog("Linter Mutiny", "Eslint disabled globally. The terminal is clean, but the soul is dirty.");
+        }
+      }
+    ]
+  },
+  {
+    id: "caffeine_leak",
+    title: "☕ Memory Leak vs Caffeine Leak",
+    text: "A dev suggests that fixing the memory leak is less important than fixing the wobbly coffee machine. Do you support their hydration priorities?",
+    choices: [
+      {
+        text: "Fix the coffee machine. Desperation P0.",
+        reward: "Energy +25, Morale +10, Cash -$100.",
+        fn: () => {
+          gameState.energy = Math.min(gameState.max_energy, gameState.energy + 25);
+          gameState.studioMorale = Math.min(100, gameState.studioMorale + 10);
+          gameState.cash = Math.max(0, gameState.cash - 100);
+          addLog("Caffeine Leak", "Burnt espresso restored! Energy reserves overflow.");
+        }
+      },
+      {
+        text: "Enforce code fixing. No coffee until compile succeeds.",
+        reward: "Morale -15, Tech -8.",
+        fn: () => {
+          gameState.studioMorale = Math.max(0, gameState.studioMorale - 15);
+          if (gameState.current_project) gameState.current_project.tech_points = Math.max(0, gameState.current_project.tech_points - 8);
+          addLog("Caffeine Leak", "Dry mutiny. Devs copy-pasting wrong StackOverflow snippets out of spite.");
+        }
+      }
+    ]
+  },
+  {
+    id: "lawyer_cease",
+    title: "⚖️ The Legal Cease & Desist",
+    text: "A mega-corporation claims your logo's wobbly pixel looks 4% similar to their logo. They threaten to sue.",
+    choices: [
+      {
+        text: "Slightly rotate the pixel by 3 degrees.",
+        reward: "Cash -$50, Rep +5.",
+        fn: () => {
+          gameState.cash = Math.max(0, gameState.cash - 50);
+          gameState.studioReputation = Math.min(100, gameState.studioReputation + 5);
+          addLog("Legal Dispute", "Pixel rotated. Compliance officers high-fived.");
+        }
+      },
+      {
+        text: "Counter-sue. Claim the pixel represents artistic expression.",
+        reward: "Hype +20, Morale -10, Rep -10.",
+        fn: () => {
+          if (gameState.current_project) gameState.current_project.hypeMeter = Math.min(100, (gameState.current_project.hypeMeter || 0) + 20);
+          gameState.studioMorale = Math.max(0, gameState.studioMorale - 10);
+          gameState.studioReputation = Math.max(0, gameState.studioReputation - 10);
+          addLog("Legal Dispute", "PR battle commenced. Fanboys defending your wobbly pixel on Reddit.");
+        }
+      }
+    ]
+  }
+];
+
+let currentNarrativeEvent = null;
+
+function triggerNarrativeEvent() {
+  if (currentNarrativeEvent || activeMiniGame) return;
+  
+  const ev = NARRATIVE_EVENTS[Math.floor(Math.random() * NARRATIVE_EVENTS.length)];
+  currentNarrativeEvent = ev;
+
+  const modal = document.getElementById("narrative-event-modal");
+  const titleEl = document.getElementById("narrative-title");
+  const bodyEl = document.getElementById("narrative-body");
+  const choicesEl = document.getElementById("narrative-choices-container");
+
+  if (!modal || !titleEl || !bodyEl || !choicesEl) return;
+
+  titleEl.innerHTML = `🚨 EVENT: ${ev.title}`;
+  bodyEl.innerHTML = ev.text;
+
+  choicesEl.innerHTML = ev.choices.map((c, i) => {
+    return `
+      <button class="narrative-choice-card" onclick="selectNarrativeChoice(${i})">
+        <span class="narrative-choice-text">${c.text}</span>
+        <span class="narrative-choice-reward">CONSEQUENCE: ${c.reward}</span>
+      </button>
+    `;
+  }).join("");
+
+  modal.style.display = "flex";
+  if (window.SynthwaveAudio) SynthwaveAudio.playSFX("fail");
+}
+
+function selectNarrativeChoice(idx) {
+  const ev = currentNarrativeEvent;
+  if (!ev) return;
+  const choice = ev.choices[idx];
+  if (choice) {
+    choice.fn();
+    showToast("Choice recorded. Reality adjusted.", "info");
+    if (window.SynthwaveAudio) SynthwaveAudio.playSFX("success");
+  }
+
+  closeNarrativeModal();
+  saveGame();
+  updateUI();
+}
+
+function closeNarrativeModal() {
+  const modal = document.getElementById("narrative-event-modal");
+  if (modal) modal.style.display = "none";
+  currentNarrativeEvent = null;
+}
+
+window.triggerNarrativeEvent = triggerNarrativeEvent;
+window.selectNarrativeChoice = selectNarrativeChoice;
+window.closeNarrativeModal = closeNarrativeModal;
+
 function triggerPanic() {
   if (window.SynthwaveAudio) SynthwaveAudio.playSFX("fail");
   triggerScreenFlash(255, 23, 68);
+  triggerScreenShake();
+  triggerScreenGlitch(800);
   const alerts = [
     "🔥 CRITICAL: Production DB has dropped itself. CEO demands a PowerPoint EOD.",
     "🐛 SEVERE: A user clicked 'Settings' and opened a gateway to the 4th dimension.",
@@ -6764,6 +7019,124 @@ function triggerPanic() {
   spawnFloatText("🔥 DISASTER", "red", true);
 }
 window.triggerPanic = triggerPanic;
+
+// --- Act Completion Banners and Modal Controllers ---
+const ACT_ASCII_BANNERS = {
+  1: `
+===================================================
+   ___   ___ _____   __   __
+  / _ \\ / _ \\_   _|  \\ \\ / /
+ / /_\\ / /_\\ \\| |     \\ V / 
+ |  _  |  _  || |      | |  
+ | | | | | | || |      | |  
+ \\_| |_\\_| |_/\\_/      \\_/  
+                            
+ ACT I COMPLETED — BASEMENT ORIGINS
+===================================================
+Morale: +15% | Cash Reward: +$300
+Unlocked: Overpriced Co-Working Desk
+`,
+  2: `
+===================================================
+   ___   ___ _____   __   __
+  / _ \\ / _ \\_   _|  \\ \\ / /
+ / /_\\ / /_\\ \\| |     \\ V / 
+ |  _  |  _  || |      | |  
+ | | | | | | || |      | |  
+ \\_| |_\\_| |_/\\_/      \\_/  
+                            
+ ACT II COMPLETED — FIRST SHIP
+===================================================
+Morale: +15% | Cash Reward: +$1,000
+Unlocked: Hipster Loft with Single Window
+`,
+  3: `
+===================================================
+   ___   ___ _____   __   __
+  / _ \\ / _ \\_   _|  \\ \\ / /
+ / /_\\ / /_\\ \\| |     \\ V / 
+ |  _  |  _  || |      | |  
+ | | | | | | || |      | |  
+ \\_| |_\\_| |_/\\_/      \\_/  
+                            
+ ACT III COMPLETED — LIVE OPS FIRE
+===================================================
+Morale: +15% | Cash Reward: +$2,500
+Unlocked: Day-One Patches & Shipped Platformer
+`,
+  4: `
+===================================================
+   ___   ___ _____   __   __
+  / _ \\ / _ \\_   _|  \\ \\ / /
+ / /_\\ / /_\\ \\| |     \\ V / 
+ |  _  |  _  || |      | |  
+ | | | | | | || |      | |  
+ \\_| |_\\_| |_/\\_/      \\_/  
+                            
+ ACT IV COMPLETED — STUDIO EMPIRE
+===================================================
+Morale: +15% | Cash Reward: +$6,000
+Unlocked: Mega-Corp Subterranean Bunker
+`,
+  5: `
+===================================================
+   ___   ___ _____   __   __
+  / _ \\ / _ \\_   _|  \\ \\ / /
+ / /_\\ / /_\\ \\| |     \\ V / 
+ |  _  |  _  || |      | |  
+ | | | | | | || |      | |  
+ \\_| |_\\_| |_/\\_/      \\_/  
+                            
+ ACT V COMPLETED — WEB-GAME CONVERGENCE
+===================================================
+Morale: +15% | Legacy Score: +100
+Unlocked: NG+ Vibe Loops & Total Enlightenment
+`
+};
+
+function showActCompletionModal(actNum) {
+  const modal = document.getElementById("act-completion-modal");
+  const bannerEl = document.getElementById("act-complete-ascii-banner");
+  const detailsEl = document.getElementById("act-complete-details");
+  
+  if (!modal || !bannerEl || !detailsEl) return;
+
+  const banner = ACT_ASCII_BANNERS[actNum] || "ACT COMPLETED!";
+  bannerEl.textContent = banner;
+
+  const rewards = {
+    1: { cash: 300, desc: "Runway secured. Parent's basement lease terminated emotionally. Gained +$300 act completion bonus!" },
+    2: { cash: 1000, desc: "First game shipped successfully. Net worth valuation validated. Gained +$1000 act completion bonus!" },
+    3: { cash: 2500, desc: "Live Ops survived. Bug classification completed. Gained +$2500 act completion bonus!" },
+    4: { cash: 6000, desc: "Office expansion accomplished. Staff headcount fully synergetic. Gained +$6000 act completion bonus!" },
+    5: { cash: 12000, desc: "Dev End successfully shipped. Meta-loop converged. Gained +$12000 act completion bonus!" }
+  };
+
+  const r = rewards[actNum] || { cash: 0, desc: "" };
+  gameState.cash += r.cash;
+  ensureStudioMeta();
+  gameState.studioMorale = Math.min(100, gameState.studioMorale + 15);
+
+  detailsEl.innerHTML = `
+    <p>${r.desc}</p>
+    <p style="color:#39ff14; font-weight:bold; margin-top:8px;">Morale increased by +15%! Cash rewarded: +$${r.cash.toLocaleString()}</p>
+  `;
+
+  modal.style.display = "flex";
+  triggerScreenShake();
+  triggerScreenGlitch(1200);
+  if (window.SynthwaveAudio) SynthwaveAudio.playSFX("levelup");
+}
+
+function closeActCompletionModal() {
+  const modal = document.getElementById("act-completion-modal");
+  if (modal) modal.style.display = "none";
+  saveGame();
+  updateUI();
+}
+
+window.showActCompletionModal = showActCompletionModal;
+window.closeActCompletionModal = closeActCompletionModal;
 
 function showGameGuide() {
   const modal = document.getElementById("game-guide-modal");

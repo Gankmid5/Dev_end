@@ -5116,3 +5116,152 @@ h4, .dev-section-label {
   border-color: var(--neon-magenta) !important;
   box-shadow: 0 0 8px rgba(255, 0, 128, 0.5) !important;
 }
+
+/* ═══════════════════════════════════════
+   CRT SCREEN SHAKE & GLITCH ANIMATIONS
+   ═══════════════════════════════════════ */
+.crt-screen-shake {
+  animation: crt-shake 0.4s cubic-bezier(.36,.07,.19,.97) both !important;
+}
+
+@keyframes crt-shake {
+  10%, 90% { transform: translate3d(-2px, 0, 0); }
+  20%, 80% { transform: translate3d(3px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-5px, 0, 0); }
+  40%, 60% { transform: translate3d(5px, 0, 0); }
+}
+
+.rgb-shift-glitch {
+  text-shadow: 3px 0 0 rgba(255,0,128,0.6), -3px 0 0 rgba(0,229,255,0.6) !important;
+  animation: rgb-flicker 0.15s infinite alternate !important;
+}
+
+@keyframes rgb-flicker {
+  0% { text-shadow: 2px 0 0 rgba(255,0,128,0.6), -2px 0 0 rgba(0,229,255,0.6); }
+  100% { text-shadow: -2px 0 0 rgba(255,0,128,0.6), 2px 0 0 rgba(0,229,255,0.6); }
+}
+
+/* ═══════════════════════════════════════
+   NARRATIVE CHOICE DIALOGS
+   ═══════════════════════════════════════ */
+.narrative-modal-content {
+  max-width: 550px !important;
+  border: 3px double var(--neon-magenta) !important;
+  box-shadow: 0 0 35px rgba(255, 0, 128, 0.4) !important;
+  background: linear-gradient(135deg, #0e041a 0%, #03000b 100%) !important;
+}
+
+.narrative-body-text {
+  font-size: 1.1rem;
+  line-height: 1.5;
+  color: var(--color-light-grey);
+  margin-bottom: 20px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px dashed rgba(255, 0, 128, 0.3);
+  padding: 14px;
+  border-radius: 8px;
+  font-family: 'Outfit', sans-serif;
+  letter-spacing: 0.3px;
+}
+
+.narrative-choices-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 15px;
+}
+
+.narrative-choice-card {
+  background: rgba(6, 2, 18, 0.85);
+  border: 1px solid var(--border-glass);
+  border-radius: 8px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  font-family: 'Outfit', sans-serif;
+}
+
+.narrative-choice-card:hover {
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.25);
+  transform: translateY(-2px);
+  background: rgba(12, 4, 32, 0.95);
+}
+
+.narrative-choice-text {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--color-text-main);
+  margin-bottom: 4px;
+}
+
+.narrative-choice-reward {
+  font-size: 0.76rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.narrative-choice-card:hover .narrative-choice-text {
+  color: var(--color-cyan);
+}
+
+/* ═══════════════════════════════════════
+   ACT COMPLETION OVERLAY
+   ═══════════════════════════════════════ */
+.act-completion-content {
+  max-width: 600px !important;
+  border: 3px double var(--neon-cyan) !important;
+  box-shadow: 0 0 45px rgba(0, 229, 255, 0.4) !important;
+  background: #020008 !important;
+  text-align: center;
+}
+
+.retro-ascii-banner {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.52rem;
+  line-height: 1.2;
+  color: #39ff14;
+  text-shadow: 0 0 8px rgba(57, 255, 20, 0.6);
+  background: #000000;
+  padding: 16px;
+  border: 1px solid #39ff14;
+  border-radius: 6px;
+  overflow-x: auto;
+  text-align: left;
+  margin: 15px 0;
+}
+
+.act-complete-details-text {
+  font-size: 1.15rem;
+  font-family: 'VT323', monospace;
+  color: var(--color-light-grey);
+  margin: 18px 0;
+  line-height: 1.6;
+  text-transform: uppercase;
+}
+
+/* ═══════════════════════════════════════
+   ASCII PROGRESS BARS
+   ═══════════════════════════════════════ */
+.ascii-bar {
+  font-family: 'Courier New', Courier, monospace !important;
+  font-size: 0.82rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.5px;
+  color: var(--color-cyan) !important;
+  text-shadow: 0 0 5px rgba(0, 229, 255, 0.4);
+}
+
+.ascii-bar.done {
+  color: #39ff14 !important;
+  text-shadow: 0 0 5px rgba(57, 255, 20, 0.4);
+}
+
+.ascii-bar.warn {
+  color: #ff1744 !important;
+  text-shadow: 0 0 5px rgba(255, 23, 68, 0.4);
+}
+
